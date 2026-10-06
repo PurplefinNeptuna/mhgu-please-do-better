@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r1 two-site startup plugin candidate; gameplay/cache freshness and distribution approval remain pending.",
+  "reason": "Local r2 guarded live-mode/settings and attribution candidate; highlight transform/copy gate is incomplete and no renderer is accepted. Gameplay/cache freshness remain unverified; r1 is preserved.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }
