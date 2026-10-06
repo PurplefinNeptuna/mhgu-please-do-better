@@ -1,40 +1,36 @@
-# Remaining gameplay checks
+# Remaining gameplay coverage
 
-All items below are **NOT RUN**. Installation, activation and game launches
-require a separate user-authorized session. This checklist does not authorize
-save editing, emulator setting changes or installation. Normally collected
-quest rewards can persist through ordinary game saving.
+All gameplay is **NOT RUN**. This checklist authorizes no installation, activation,
+launch, save edit or emulator setting change. R2 has no accepted highlight renderer;
+marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
 
-## Required Eden checks
+- [ ] Identify exact NRO/ZIP hashes and actual launch set; retain rollback packages
+  and a fresh hashed launch log.
+- [ ] Disable the legacy Great Luck cheat, including the old Please do Better
+  cheat package. Verify selected activation, not directory presence.
+- [ ] Verify MHGU 1.4.0/main build and maintained Forge/Better Input fingerprints.
+- [ ] Cover startup, ordinary save loading, Forge navigation, quest completion/
+  return and full restart. Examine ownership/cache/rollback diagnostics.
+- [ ] With forcing off, compare no-luck and natural Good/Great/Miraculous Luck
+  across repeated comparable quests. No visible equipment skill is added.
+- [ ] With forcing on and no equipped luck, cover the intended Miraculous branch
+  across repeated quests. One lucky screen is insufficient evidence.
+- [ ] Toggle before, during and after generation: current batches keep their latch,
+  future checks use the new choice, and existing rewards stay unchanged.
+- [ ] Check Save settings/restart persistence, delayed storage availability and
+  edit cancellation through the plugin's own files.
+- [ ] Cover repeated reward screens, nested/overflow diagnostics, closing and return;
+  inspect incomplete/lost attribution.
+- [ ] Document Eden translation freshness/multicore separately from flush/readback.
+  Cover removal and full-restart baseline recovery when authorized.
+- [ ] Repeat startup/modes/quest/return/persistence on Ryujinx with its exact revision,
+  loader fingerprint and fresh log.
+- [ ] Investigate the second site's broader gameplay role; retaining its 0x102
+  continuation does not establish its complete behavior.
+- [ ] After the display gate passes, test natural positive-luck markers, no-luck
+  suppression, forced mode, scale/animation/clipping, rows, duplicate items,
+  cursor/icons, empty/changed entries and repeated screen lifetimes.
 
-- [ ] Preserve rollback packages and identify the exact r1 NRO/ZIP hashes.
-- [ ] Disable the legacy Great Luck cheat, including any old `Please do Better`
-      cheat package. Verify the actual selected mod/cheat set, not folder presence.
-- [ ] Confirm MHGU 1.4.0/main build `FB08F1D20FD1204FE7070672777F869B`
-      and the maintained Forge/Better Input fingerprints in the launch evidence.
-- [ ] Retain/hash the launch log. Confirm the plugin startup result reports both
-      patches applied without rollback/cache errors. This alone proves no reward effect.
-- [ ] Load an ordinary save, open/close the compact plugin row, and confirm normal
-      controls and Forge navigation. No new visible equipment skill is expected.
-- [ ] Complete and return from comparable quests without equipped luck skills.
-      Record reward screens across repeated quests, with an unpatched comparison.
-      A single lucky result does not establish the probability effect. Determine
-      whether the observations support the expected branch; do not infer rare-drop
-      guarantees or an unmeasured success rate.
-- [ ] Fully restart and repeat a quest/return. Check that no old cheat or stale
-      process state was retained. Document remaining multicore/cache uncertainty.
-- [ ] Confirm the observed crafting/equipment availability and inventory behavior
-      show no unexplained changes. The plugin contains no changes to these paths.
-- [ ] In a separate authorized rollback check, disable/remove the plugin and fully
-      restart; retain the log and confirm baseline behavior returns.
-
-## Additional coverage
-
-- [ ] Repeat the required startup/quest/return/restart checks on Ryujinx with its
-      actual loader fingerprint and fresh log. Eden evidence does not cover it.
-- [ ] Cover additional quest categories/ranks when useful; record which were tested.
-- [ ] Investigate the second site's broader gameplay role if a concrete issue appears.
-
-Stop and inspect any signature conflict, unsafe state, cache failure or partial
-rollback. Do not use live reinitialization as a recovery mechanism. Preserve
-logs before another launch overwrites them.
+Normal collection is outside attribution and may persist through ordinary game
+saving. No collection tracker is planned. Crafting, equipment unlocks and
+inventory editing remain outside scope.

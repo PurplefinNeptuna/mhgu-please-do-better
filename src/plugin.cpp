@@ -1,5 +1,6 @@
 #include "native_platform.h"
-#include "transaction.h"
+#include "runtime.h"
+#include "settings.h"
 #include <forge/log.h>
 // This maintained header lacks a C++ linkage guard; installed exports are C.
 extern "C" {
@@ -14,8 +15,7 @@ struct ForgeVersion { uint16_t major, minor, patch; };
 struct PluginInitParam { ForgeVersion required_ver; char name[64]; };
 static_assert(sizeof(void*) == 4 && sizeof(PluginInitParam) == 70 &&
               offsetof(PluginInitParam, name) == 6, "Native Forge plugin ARM32 ABI");
-static pdb::NativePlatform platform;
-static pdb::Transaction<pdb::NativePlatform> transaction(platform);
+
 extern "C" void init() {}
 extern "C" void fini() {} // Patches are process-lived; never unpatch during gameplay.
 extern "C" void forge_onLoad(PluginInitParam* out) {
@@ -26,16 +26,8 @@ extern "C" void forge_onLoad(PluginInitParam* out) {
     const char* name = "Please do Better";
     for (unsigned i = 0; name[i]; ++i) bytes[offsetof(PluginInitParam, name)+i] = name[i];
 }
-extern "C" void forge_onInit() {
-    const auto r = transaction.install(forge_mem_getMainTextAddr());
-    forge_log(r.state == pdb::State::Applied ? LOG_LEVEL_INFO : LOG_LEVEL_ERROR,
-              "[please-do-better] %s reason=%s site=%u owned=0x%X rollback=0x%X cache=0x%X rollback_cache=0x%X",
-              pdb::status(r.state), pdb::failure_status(r.failure), r.site, r.owned, r.rollback_failed,
-              r.cache_result, r.rollback_cache_result);
-    forge_log_info("[please-do-better] r1: Miraculous Luck branch; no equipped luck skill required. "
-                   "Translation freshness/gameplay unverified; legacy Great Luck cheat must be disabled.");
-}
-extern "C" void forge_onUpdate(float) {}
+extern "C" void forge_onInit() { pdb::install(); }
+extern "C" void forge_onUpdate(float) { pdb::update(); }
 extern "C" void forge_onImGuiInit(void* context, void* allocate, void* release) {
     igSetCurrentContext(static_cast<ImGuiContext*>(context));
     igSetAllocatorFunctions(reinterpret_cast<ImGuiMemAllocFunc>(allocate),
@@ -43,18 +35,29 @@ extern "C" void forge_onImGuiInit(void* context, void* allocate, void* release) 
 }
 extern "C" void forge_onImGuiRender() {
     if (!igTreeNode_Str("Please do Better###pdb_panel")) return;
-    const auto r = transaction.report();
-    igTextUnformatted(pdb::status(r.state), nullptr);
-    igTextUnformatted("Reproduces Great Luck cheat's Miraculous Luck reward branch.", nullptr);
-    igTextUnformatted("No equipped luck skill required. Gameplay/cache freshness unverified.", nullptr);
-    igTextUnformatted("Disable the legacy cheat. Removing this plugin requires a full restart.", nullptr);
-    if (igTreeNode_Str("Diagnostics###pdb_diagnostics")) {
-        igText("r1 state=%u failure=%u site=%u", unsigned(r.state), unsigned(r.failure), r.site);
-        igTextUnformatted(pdb::failure_status(r.failure), nullptr);
-        igText("Owned=0x%X rollback failures=0x%X cache result=0x%X", r.owned, r.rollback_failed, r.cache_result);
-        igText("Rollback cache result=0x%X", r.rollback_cache_result);
-        igTreePop();
+    bool force=pdb::requested_force();
+    if(igCheckbox("Force Miraculous Luck###pdb_force", &force)) {
+        pdb::preferences_changed();pdb::request_force(force);
     }
+    if(!pdb::forcing_available())igTextUnformatted("Forcing unavailable: guarded hooks or batch capture failed.",nullptr);
+    igTextUnformatted(force && pdb::forcing_available() ? "New batches: forced Miraculous Luck" :
+                     "New batches: natural luck (highlights unavailable)",nullptr);
+    igTextUnformatted("Changes affect subsequent reward batches. Existing rewards stay unchanged.",nullptr);
+    if(igButton("Save settings###pdb_save",ImVec2_c{0,0}))pdb::save_preferences({force});
+    igTextUnformatted(pdb::preferences_status(),nullptr);
+    igTextUnformatted("Luck markers mean extra slots compared with normal luck; no rare-drop guarantee.",nullptr);
+    igTextUnformatted("Disable the legacy Great Luck cheat. Removal requires a full restart.",nullptr);
+    pdb::diagnostics();
     igTreePop();
 }
-extern "C" void forge_onImGuiFreeRender() {}
+extern "C" void forge_onImGuiFreeRender() {
+    // Forge update and NVN presentation need not share a thread. Keep all
+    // preference access with the ImGui callbacks; free-render runs with the
+    // settings panel closed too. Mode publication is the only cross-thread edit.
+    static uint32_t retry=59;
+    if(pdb::preferences_pending() && ++retry>=60) {
+        retry=0;pdb::Preferences p{};
+        if(pdb::load_preferences(p))pdb::request_force(p.force);
+    }
+    pdb::render();
+}

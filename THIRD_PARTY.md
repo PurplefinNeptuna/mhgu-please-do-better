@@ -9,6 +9,10 @@ reference data and are not included in the candidate ZIP.
 
 The plugin uses owned ARM32 scaffolding from Key Quest Markers and a narrow
 adaptation of Modern Controls' native backend, also compiled by Damage Numbers.
+R2 adapts owned Damage Numbers gateway, bounded mailbox and ARM32 SDK declaration
+patterns. Its fixture-only SDK reader is reused from the owned
+`scripts/damage_numbers_sdk_tls_probe.py`, fingerprinted in the manifest.
+No game executable, shader program, texture or decompiled source is bundled.
 Build headers/dependencies are the maintained Forge, pinned libnx and cimgui.
 The runtime imports existing Forge/cimgui implementations; it bundles no loader.
 Input/source SHA-256 values are recorded in the adjacent candidate manifest.
