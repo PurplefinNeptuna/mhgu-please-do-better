@@ -1,0 +1,11 @@
+{
+  "mod": "please-do-better",
+  "publication": {
+    "date": null,
+    "published": false,
+    "url": null
+  },
+  "reason": "Local r1 two-site startup plugin candidate; gameplay/cache freshness and distribution approval remain pending.",
+  "schema_version": 1,
+  "status": "DEVELOPMENT"
+}
