@@ -3,13 +3,13 @@
 The user accepted r4 forced observation on Eden: eight generated slots and four
 luck extras on the reward grid, with totals retained in the village. This is
 limited to the reported session, installed r4 hash and retained launch log.
-**R5 gameplay is NOT RUN.** Check last completed tier, generated/extra totals,
-coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md.
+**R6 gameplay is NOT RUN.** Check last completed tier, generated/extra totals,
+coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md and R6_HIGHLIGHTS.md.
 
 This checklist authorizes no installation, activation, launch, save edit or
-emulator setting change. Highlights remain unimplemented until the final native
-slot-frame, shader/viewport and presented-frame proof gate passes. Later
-marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
+emulator setting change. R6 implements gold highlights on the verified direct and native parallel
+presentation paths. The local fixtures establish CPU code behavior and shader
+dataflow; actual GPU alignment and emulator frame timing remain pending.
 
 - [ ] Identify exact NRO/ZIP hashes and actual launch set; retain rollback packages
   and a fresh hashed launch log.
@@ -42,7 +42,7 @@ marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
   loader fingerprint and fresh log.
 - [ ] Investigate the second site's broader gameplay role; retaining its 0x102
   continuation does not establish its complete behavior.
-- [ ] After the display gate passes, test natural positive-luck markers, no-luck
+- [ ] Test natural positive-luck markers, no-luck
   suppression, forced mode, scale/animation/clipping, rows, duplicate items,
   cursor/icons, empty/changed entries and repeated screen lifetimes.
 

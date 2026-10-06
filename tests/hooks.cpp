@@ -5,6 +5,7 @@
 #include <stdio.h>
 using namespace pdb;
 extern "C" void pdb_gateway_26() {}
+extern "C" void pdb_gateway_27() {}
 struct Fake {
     std::map<uint32_t,uint32_t> memory;
     unsigned writes=0,flushes=0,prepares=0,creates=0,closes=0;
@@ -89,7 +90,7 @@ int main(){unsigned checks=0;
   assert(r.state==expected);
   assert(f.creates==created && core.report().state==State::Applied);
   for(const auto& h:hs)for(unsigned j=0;j<8;++j)assert(f.memory[0x100000+h.window+j*4]==before.at(0x100000+h.window+j*4));
-  assert(!highlight_rendering_accepted);++checks;
+  assert(highlight_rendering_accepted);++checks;
  }
  printf("PASS: %u guarded hook publication/ownership rollback checks\n",checks);
 }

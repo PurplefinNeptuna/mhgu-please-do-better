@@ -1,7 +1,10 @@
-# Attribution and display research gate (r5)
+# Attribution and display research (r6)
 
 These are static traces and executable fixtures, not gameplay coverage.
-The required highlight gate is **INCOMPLETE**. No border renderer is accepted.
+R6 implements rendering for the verified normal-vertex, 2D-shader, full-viewport
+and direct/native parallel presentation routes. See [R6_HIGHLIGHTS.md](R6_HIGHLIGHTS.md).
+The R5 placement decision below is retained as historical evidence; it no longer
+describes the current renderer. Unknown paths remain unmarked.
 
 ## Decisions and accepted copies
 
@@ -111,7 +114,7 @@ subordinate to original instructions.
 Free-render currently polls preferences and draws nothing. Screen placement,
 border rendering and cursor coverage are not reported as passing.
 
-## R5 placement trace and acceptance decision
+## Historical R5 placement trace and acceptance decision
 
 State-1 UI routine `0x384AF0` can grow the main array to 16 or 48 entries before
 opening the grid. Original copy loops `0x384BF0..0x384C24` and

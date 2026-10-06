@@ -7,6 +7,8 @@
 #include "sdk_tls.h"
 #include "mailbox.h"
 #include "highlight_gate.h"
+#include "highlight.h"
+#include <forge/singleton.h>
 #include <switch.h>
 #include <forge/log.h>
 extern "C" {
@@ -18,7 +20,7 @@ Result pdb_svc_query(MemoryInfo*,uint32_t*,uint64_t);
 #include <cimgui.h>
 namespace pdb {
 static NativePlatform platform;
-static Hooks<NativePlatform> conditional(platform), visual(platform);
+static Hooks<NativePlatform> conditional(platform), visual(platform), highlight(platform);
 static Mode mode;
 static uint32_t base, initialized, pair_ready, capture_ready, drops;
 static uint32_t expected_refreshes, remapped_arrays, mapping_faults;
@@ -75,6 +77,152 @@ static bool copy(uint32_t a,void* dest,unsigned n) {
     for(unsigned i=0;i<n;++i)d[i]=s[i];
     return true;
 }
+static Snapshot<Binding> bindings[64];
+static Snapshot<Geometry> geometries[64];
+static Snapshot<Presentation> presentation;
+static uint32_t binding_count, highlight_ready, highlighted_count, render_faults, unsupported_draws;
+static uint32_t live_fence=1, draw_cycle=1, present_pending, native_render;
+static uint32_t frame_overflow[2]{},geometry_claims[64]{};
+static void mark_overflow(unsigned frame,uint32_t serial) {
+    const uint32_t value=serial+1;uint32_t prior=seen(frame_overflow[frame]);
+    // Out-of-order older producers cannot clear a newer frame's failure tag.
+    while(!prior || (uint32_t(value-prior)>0 && uint32_t(value-prior)<0x80000000u))
+        if(__atomic_compare_exchange_n(&frame_overflow[frame],&prior,value,false,__ATOMIC_SEQ_CST,__ATOMIC_SEQ_CST))break;
+}
+static void invalidate_highlights() { __atomic_add_fetch(&live_fence,1,__ATOMIC_SEQ_CST); }
+static uint32_t indirect(uint32_t address,unsigned offset) {
+    if(!field(address,offset,4))return 0;
+    const uint32_t p=word(address+offset);
+    return readable(p,4)?word(p):0;
+}
+static uint32_t gui_node(uint32_t holder,unsigned root_index,unsigned node_index) {
+    if(root_index>=128 || node_index>=128 || !field(holder,0x298,4))return 0;
+    const uint32_t split=word(holder+0x298);
+    if(split>128)return 0;
+    unsigned adjusted=root_index;
+    const unsigned offset=root_index<split?0xf8:0x294;
+    if(root_index>=split)adjusted-=split;
+    if(!field(holder,offset,4))return 0;
+    uint32_t table=word(holder+offset);
+    if(!field(table,adjusted*4,4))return 0;
+    const uint32_t root=word(table+adjusted*4);
+    if(!field(root,0xd8,4))return 0;
+    table=word(root+0xd8);
+    if(!field(table,node_index*4,4))return 0;
+    return word(table+node_index*4);
+}
+static bool shader_2d(uint32_t renderer) {
+    if(!field(renderer,0x1d8,4) || word(renderer+0x1d8)!=0xd7376b18 || !field(renderer,0x1a4,4))return false;
+    const uint32_t packet=word(renderer+0x1a4);
+    if(!field(packet,8,4))return false;
+    const uint32_t program=word(packet+8);
+    if(!readable(program,72))return false;
+    const uint32_t uniforms=word(program+0x40),n=word(program+0x44);
+    if(n<3 || n>9 || !readable(uniforms,n*4))return false;
+    // Six exact uniform sequences cover the twelve verified 2D programs.
+    // The 3D blend variant shares the first three IDs, so prefix matching alone
+    // would incorrectly adopt its perspective transform.
+    static const uint32_t patterns[6][8]={
+        {0x2d7,0x2d6,0x16f,0x2db,0x2d9,0x2de,0x3ca},
+        {0x2d7,0x2d6,0x16f,0x2db,0x2de,0x3ca},
+        {0x2d7,0x2d6,0x16f,0x2db,0x2d8,0x2d9,0x2de,0x3ca},
+        {0x2d7,0x2d6,0x16f},
+        {0x2d7,0x2d6,0x16f,0x2db,0x2d8,0x2de,0x3ca},
+        {0x2d7,0x2d6,0x16f,0x2d9}};
+    static const unsigned lengths[6]={7,6,8,3,7,4};
+    for(unsigned j=0;j<6;++j)if(n==lengths[j]) {
+        bool equal=true;for(unsigned i=0;i<n;++i)equal=equal && word(uniforms+i*4)==patterns[j][i];
+        if(equal)return true;
+    }
+    return false;
+}
+static void capture_geometry(RawFrame& f) {
+    if(!seen(highlight_ready) || !seen(binding_count))return;
+    const uint32_t node=f.r[5],ctx=f.r[4];
+    if(uint64_t(node)+0xcc>UINT32_MAX || f.r[6]!=node+0xcc)return;
+    Binding b{};unsigned slot=64;
+    const uint32_t fence=seen(live_fence),cycle=seen(draw_cycle);
+    for(unsigned i=0;i<seen(binding_count) && i<64;++i)
+        if(bindings[i].read(b) && b.node==node && b.fence==fence) {slot=i;break;}
+    if(slot==64)return;
+    // Native draw proves the node is alive. Its exact list identity is retained
+    // until a UI exit/destructor invalidates the fence BEFORE native freeing.
+    if(!field(b.list,0x4c,0x14) || word(b.list+0x4c)!=b.group || b.index>=word(b.list+0x5c) ||
+       !field(b.list,0x60+b.index*4,4))return;
+    Reward current{};
+    if(!copy(b.list+0x60+b.index*4,&current,4) || !current.item || !current.amount ||
+       !compatible_refresh(b.item,current))return;
+    if(!readable(node,0x130) || word(node)!=base+0x178fcc8 || word(node+0x50)!=b.id ||
+       !field(ctx,4,4))return;
+    if(!(word(node+0xc0)&0x800000))return;
+    if(word(node+0x108)&0x30) {count(unsupported_draws);return;}
+    const uint32_t renderer=word(ctx+4),sr=seen(native_render);
+    if(!field(renderer,0x18bc,4) || !field(sr,0x389cc,4))return;
+    if(!field(sr,0x1f,1) || !field(sr,0x33f50,4) ||
+       *reinterpret_cast<volatile const uint8_t*>(sr+0x1f)>1 || word(sr+0x33f4c)>1)return;
+    if(!field(renderer,0x138,4) || *reinterpret_cast<volatile const uint8_t*>(renderer+0x134)!=24 ||
+       word(renderer+0x138)!=word(node+0xbc))return;
+    // The native draw-packet helper returns without enqueueing when these
+    // renderer flags suppress submission, even though vertex construction
+    // itself returns success. Such frames must receive no marker.
+    const uint32_t draw_flags=word(renderer+0x54);
+    if(!(draw_flags&0x100) && (draw_flags&0x50))return;
+    const uint32_t target_packet=word(renderer+0x1ac);
+    if(!readable(target_packet,0x5c) || word(target_packet)!=indirect(word(sr+0x389c0),0x204) ||
+       (word(target_packet+0x14)&0x200) || !shader_2d(renderer)) {count(unsupported_draws);return;}
+    int32_t viewport[4]{},clip[4]{};
+    if(!copy(target_packet+0x18,viewport,16) || !copy(renderer+0xe4,clip,16) ||
+       viewport[0] || viewport[1] || viewport[2]<=0 || viewport[3]<=0 ||
+       viewport[2]>16384 || viewport[3]>16384)return;
+    // Full viewport is the same NVN viewport as Forge's selected texture.
+    // Offset/half-size targets are deliberately unsupported.
+    const uint32_t gui=field(base,0x212668c,4)?word(base+0x212668c):0;
+    if(!field(gui,0xb0,4))return;
+    const uint32_t start=word(gui+0xb0),offset=word(node+0xbc);
+    if(uint64_t(start)+offset+96>0x100000000ull)return;
+    float vertices[24]{},model[16]{},global[4]{};
+    if(!copy(start+offset,vertices,96) || !copy(word(renderer+0x18bc),model,64) ||
+       !field(renderer,0x18b4,4) || !copy(word(renderer+0x18b4),global,16))return;
+    Geometry g{};g.binding=b;g.cycle=cycle;g.frame=word(sr+0x33f4c);g.owner=sr+0x34100;g.serial=word(sr+0x33f50);
+    g.width=float(viewport[2]);g.height=float(viewport[3]);
+    if(!screen_quad(vertices,model,global,g.width,g.height,g.points))return;
+    for(unsigned i=0;i<4;++i)g.clip[i]=float(clip[i]);
+    if(clip[2]<=clip[0] || clip[3]<=clip[1])return;
+    if(seen(live_fence)!=fence || seen(draw_cycle)!=cycle)return;
+    // Retain current AND previous producer frames for the native ping-pong
+    // executor. Sixty-four samples total; competing producers never wait.
+    // Prefer updating the same node/frame, then reuse only older samples.
+    for(unsigned pass=0;pass<2;++pass)for(unsigned i=0;i<64;++i) {
+        uint32_t expected=0;
+        if(!__atomic_compare_exchange_n(&geometry_claims[i],&expected,1,false,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED))continue;
+        Geometry old{};const bool exists=geometries[i].read(old);
+        const bool same=exists && old.serial==g.serial && old.owner==g.owner &&
+            old.binding.node==g.binding.node && old.binding.fence==g.binding.fence;
+        const bool reusable=!exists || old.binding.fence!=fence || old.owner!=g.owner ||
+            (uint32_t(g.serial-old.serial)>1 && uint32_t(g.serial-old.serial)<0x80000000u);
+        if((pass==0 && same) || (pass==1 && reusable)) {
+            const bool published=geometries[i].publish(g);
+            __atomic_store_n(&geometry_claims[i],0,__ATOMIC_RELEASE);
+            if(!published) {count(render_faults);mark_overflow(g.frame,g.serial);}
+            return;
+        }
+        __atomic_store_n(&geometry_claims[i],0,__ATOMIC_RELEASE);
+    }
+    count(render_faults);mark_overflow(g.frame,g.serial);
+}
+static void capture_present(RawFrame& f) {
+    if(!seen(highlight_ready))return;
+    const uint32_t sr=seen(native_render),owner=sr+0x34100;
+    if(!sr || !field(owner,0x46f8,8) || !field(sr,0x33f4c,8) || !field(sr,0x1f,1) ||
+       f.r[1]!=owner+0x4740 || f.r[12]!=word(owner+0x46f8) || f.r[2]!=word(owner+0x46fc))return;
+    const uint32_t parallel=*reinterpret_cast<volatile const uint8_t*>(sr+0x1f),frame=word(sr+0x33f4c);
+    if(parallel>1 || frame>1)return;
+    // beginFrame latches parallel mode and increments the producer serial;
+    // executeFrame uses producer index XOR parallel, i.e. one frame behind.
+    Presentation p{seen(draw_cycle),frame^parallel,owner,f.r[12],f.r[1],f.r[2],word(sr+0x33f50)-parallel};
+    if(presentation.publish(p))__atomic_store_n(&present_pending,1,__ATOMIC_RELEASE);
+    else {count(render_faults);mark_overflow(p.frame,p.serial);}
+}
 static void lost() { __atomic_fetch_add(&drops,1,__ATOMIC_RELAXED); }
 static Context* context() {
     if(tls<0)return nullptr;
@@ -129,10 +277,12 @@ static bool force(Context* c) {
 // registers/flags are preserved; only the LR value created by BL is reconstructed.
 extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     if(kind==26) {
-        // Compiled for instruction/state fixtures only. The rendering gate is
-        // closed, so install() does not publish this detour or capture geometry.
+        capture_geometry(*f);
         f->r[0]=word(f->r[6])&15;
         return base+0xa4fe58;
+    }
+    if(kind==27) {
+        capture_present(*f);f->r[0]=f->r[12];return f->r[3];
     }
     if(kind<26)count(gateway_hits[kind]);
     if(kind==25) {
@@ -227,6 +377,7 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     auto& s=c->scopes[c->depth++];s={};s.kind=kind;s.caller=f->r[13];s.sp=f->caller_sp();s.force=latched;
     s.subject=f->r[0];
     if(kind==12) {
+        invalidate_highlights();
         s.epoch=++c->serial;s.ui=s.subject;
         c->last_ui=s.ui;
         Record r{};r.kind=1;r.ui=s.ui;r.epoch=s.epoch;c->records.publish(r);
@@ -243,6 +394,8 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     } else if(kind==14) {
         if(readable(f->r[1],8)) { s.array=word(f->r[1]);s.count=word(f->r[1]+4); }
         Scope* ui=find(*c,15);if(ui)s.ui=ui->subject;
+    } else if(kind==16) {
+        invalidate_highlights();
     } else if(kind==15 && field(s.subject,0x3c,4) && word(s.subject+0x3c)==1) {
         // State 1 may reallocate the main array before opening the grid.
         // Snapshot BEFORE native frees it. Observe through the existing paired
@@ -311,7 +464,7 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
     } else if(s.kind==14 && s.ui && s.array && field(s.subject,0x5c,4)) {
         // Native 0x623c08 copies source[i] to list.buffer[i], up to capacity.
         // The consumer follows that index mapping only after checking contents.
-        Record r{};r.kind=5;r.ui=s.ui;r.epoch=s.array;
+        Record r{};r.kind=5;r.ui=s.ui;r.epoch=s.array;r.tier=s.subject;
         r.rewards.array=s.subject+0x60;
         r.rewards.count=s.count<word(s.subject+0x5c)?s.count:word(s.subject+0x5c);
         if(r.rewards.count<=48 && uint64_t(s.subject)+0x60+r.rewards.count*4<=0x100000000ull &&
@@ -344,6 +497,7 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
         }
         if(field(s.subject,0x3c,4))__atomic_store_n(&last_ui_state,word(s.subject+0x3c),__ATOMIC_RELAXED);
         if(!field(s.subject,0x3c,4) || word(s.subject+0x3c)<2 || word(s.subject+0x3c)>5) {
+            invalidate_highlights();
             count(cleared_rewards);
             Record r{};r.kind=4;r.ui=s.subject;c->records.publish(r);
         }
@@ -357,29 +511,38 @@ bool requested_force() { return mode.get(); }
 bool forcing_available() { return __atomic_load_n(&pair_ready,__ATOMIC_ACQUIRE) &&
                                  __atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE); }
 void install() {
-    static_assert(!highlight_rendering_accepted,"Accept native geometry/frame fixtures and implement rendering before publishing the boundary hook");
+    static_assert(highlight_rendering_accepted,"Native frame, shader and presentation fixtures required");
     if(initialized) {
         // Recheck owned signatures, without republishing or allocating. A
         // conflict cancels effective forcing and further attribution.
         const auto r=conditional.install(base,nullptr,0);
+        if(highlight.report().state==State::Applied && highlight.install(base,nullptr,0).state!=State::Applied)
+            __atomic_store_n(&highlight_ready,0,__ATOMIC_RELEASE);
         const auto v=visual.report().state==State::Fresh?visual.report():visual.install(base,nullptr,0);
         if(r.state!=State::Applied || v.state!=State::Applied) {
             __atomic_store_n(&pair_ready,0,__ATOMIC_RELEASE);
             __atomic_store_n(&capture_ready,0,__ATOMIC_RELEASE);
+            __atomic_store_n(&highlight_ready,0,__ATOMIC_RELEASE);
+            invalidate_highlights();
         }
         return;
     }
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r5 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
+    forge_log_info("[please-do-better] r6 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r5 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    forge_log_info("[please-do-better] r6 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    if(v.state!=State::Applied)return;
+    Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
+    const auto h=highlight.install(base,rendering,2);
+    if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
+    forge_log_info("[please-do-better] r6 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -387,6 +550,10 @@ static uint32_t epochs[8]{}, owners[8]{}, latest_tier=0, bonus_count=0;
 static uint32_t generated_count, summary_status, summary_order, summary_records;
 void update() {
     count(update_hits);
+    if(!seen(native_render)) {
+        const uint32_t sr=uint32_t(uintptr_t(forge_singleton_getInstanceByName("sFestaRender")));
+        if(field(sr,0x389cc,4))__atomic_store_n(&native_render,sr,__ATOMIC_RELEASE);
+    }
     for(unsigned thread=0;thread<8;++thread) {
         auto& c=contexts[thread];Record r{};
         const uint32_t lost_before=c.records.overwritten;
@@ -440,7 +607,7 @@ void update() {
                     const uint32_t offset=source.rewards.array-r.epoch;
                     if((offset&3) || uint64_t(offset)+source.rewards.count*4>uint64_t(r.rewards.count)*4 ||
                        uint64_t(r.rewards.array)+offset+source.rewards.count*4>0x100000000ull)continue;
-                    Record target=source;target.rewards.array=r.rewards.array+offset;
+                    Record target=source;target.generated=r.tier;target.rewards.array=r.rewards.array+offset;
                     Reward contents[8]{};bool same=copy(target.rewards.array,contents,target.rewards.count*4);
                     bool changed=false;
                     for(unsigned j=0;j<target.rewards.count;++j) {
@@ -462,6 +629,35 @@ void update() {
             __atomic_store_n(&summary_status,2,__ATOMIC_RELEASE);
         }
     }
+    unsigned bound=0;
+    const uint32_t fence=seen(live_fence);
+    for(const auto& thread:displayed)for(const auto& record:thread)if(record.kind && record.generated) {
+        const uint32_t list=record.generated;
+        if(record.rewards.array<list+0x60 || !field(list,0x4c,4) || !field(list,0x24,4))continue;
+        const unsigned first=(record.rewards.array-list-0x60)/4,group=word(list+0x4c);
+        if(group>7 || first>=48 || !field(list,0x160+group*0x28,20))continue;
+        const uint32_t holder=word(list+0x24),ir=word(list+0x160+group*0x28),br=word(list+0x164+group*0x28);
+        const uint32_t ids=word(list+0x16c+group*0x28);
+        for(unsigned j=0;j<record.rewards.count;++j)if((record.rewards.mask>>j)&1u) {
+            const unsigned index=first+j;
+            if(index>=48 || !field(ids,index*4,4))continue;
+            const unsigned icon_index=word(ids+index*4);unsigned frame_index=0,id=0;
+            if(!frame_layout(group,ir,br,index,icon_index,frame_index,id))continue;
+            const uint32_t icon=gui_node(holder,ir,icon_index),node=gui_node(holder,br,frame_index);
+            if(!readable(icon,0x130) || !readable(node,0x130) || word(node)!=base+0x178fcc8 ||
+               word(icon)!=base+0x178fcc8 || word(node+0x50)!=id)continue;
+            if(bound==64) {count(render_faults);const uint32_t sr=seen(native_render);
+                if(sr)for(unsigned frame=0;frame<2;++frame) {
+                    const uint32_t serial=word(sr+0x33f50)-(word(sr+0x33f4c)!=frame);
+                    mark_overflow(frame,serial);
+                }bound=0;goto bindings_done;}
+            Binding b{fence,record.ui,record.epoch,list,group,index,node,icon,id,record.rewards.items[j]};
+            if(!bindings[bound++].publish(b)) {count(render_faults);bound=0;goto bindings_done;}
+        }
+    }
+ bindings_done:
+    __atomic_store_n(&binding_count,bound,__ATOMIC_RELEASE);
+
 }
 void diagnostics() {
     const auto r=conditional.report(),v=visual.report();
@@ -474,7 +670,8 @@ void diagnostics() {
         if(status==1)igText("Last rewards: %s; %u generated, %u extra slots",name,seen(generated_count),seen(bonus_count));
         else igTextUnformatted("Extra-slot total unavailable: observation incomplete.",nullptr);
     }
-    igTextUnformatted("Gold highlights unavailable: slot frame, final transform and presented-frame mapping unverified.",nullptr);
+    if(seen(highlight_ready))igTextUnformatted("Gold highlights: verified extra reward frames.",nullptr);
+    else igTextUnformatted("Gold highlights unavailable: startup rendering checks failed.",nullptr);
     if(!igTreeNode_Str("Diagnostics###pdb_diagnostics"))return;
     const char* states[]={"not installed","safe startup checks passed","rejected","rolled back","UNSAFE; residual/changed bytes"};
     igText("Conditional: %s",states[unsigned(r.state)]);
@@ -482,15 +679,62 @@ void diagnostics() {
     if(r.failure!=Failure::None || r.unsafe)igText("Conditional failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(r.failure),r.site,r.cache);
     if(v.failure!=Failure::None || v.unsafe)igText("Observation failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(v.failure),v.site,v.cache);
     igTextUnformatted(status==1?"Observation coverage: verified traced routes.":status?"Observation coverage: incomplete.":"Observation coverage: awaiting rewards.",nullptr);
-    igTextUnformatted("Currently highlighted slots: 0 (rendering gate closed).",nullptr);
+    igText("Currently highlighted slots: %u",seen(highlighted_count));
+    if(seen(render_faults))igText("Highlight capture faults: %u",seen(render_faults));
+    if(seen(unsupported_draws))igTextUnformatted("Some draw paths are unsupported; their markers are suppressed.",nullptr);
+    const auto h=highlight.report();
+    if(h.failure!=Failure::None || h.unsafe)igText("Highlight failure %u at site %u; full restart required.",unsigned(h.failure),h.site);
     igText("Capture faults: %u; incompatible display copies: %u",seen(drops),seen(mapping_faults));
     igTextUnformatted("Extra slots compare with normal luck; no rare-drop guarantee. Last reward totals remain after collection.",nullptr);
     igTextUnformatted("Disable the legacy Great Luck cheat. Plugin removal requires a full restart.",nullptr);
     igTreePop();
 }
 void render() {
-    // Research gate is closed: world quads alone do not establish the native
-    // shader/viewport transform or every list-to-node route. Publish no border
-    // from guessed coordinates. See RESEARCH.md for the remaining bindings.
+    __atomic_store_n(&highlighted_count,0,__ATOMIC_RELAXED);
+    const uint32_t cycle=__atomic_fetch_add(&draw_cycle,1,__ATOMIC_SEQ_CST);
+    Presentation p{};
+    if(!seen(highlight_ready) || !__atomic_exchange_n(&present_pending,0,__ATOMIC_ACQ_REL) ||
+       !presentation.read(p) || p.cycle!=cycle || seen(frame_overflow[p.frame])==p.serial+1)return;
+    ImGuiIO* io=igGetIO_Nil();
+    if(!io || io->DisplaySize.x<=0 || io->DisplaySize.y<=0)return;
+    ImDrawList* draw=igGetBackgroundDrawList_Nil();if(!draw)return;
+    // Triangle wave: two-second period, 0.45..0.75 alpha, no animation RNG.
+    const float now=float(igGetTime());if(!std::isfinite(now) || now<0 || now>4294967296.f)return;
+    const float phase=now*.5f-float(uint32_t(now*.5f));
+    const float alpha=.45f+.30f*float(1-std::fabs(phase*2-1));
+    const uint32_t gold=(uint32_t(alpha*255)<<24)|0x0054c5f2u;
+    const float scale=io->DisplaySize.y/720,thickness=1.5f*scale;
+    const uint32_t fence=seen(live_fence);unsigned rendered=0;
+    // Read each atomic snapshot once. A fixed stack copy avoids repeatedly
+    // loading 64 geometry payloads for every slot at the presentation boundary.
+    Binding current[64]{};bool valid[64]{},drawn[64]{};
+    const unsigned bound=seen(binding_count)<64?seen(binding_count):64;
+    for(unsigned i=0;i<bound;++i)valid[i]=bindings[i].read(current[i]) && current[i].fence==fence;
+    for(unsigned sample=0;sample<64;++sample) {
+        Geometry g{};
+        if(!geometries[sample].read(g) || g.frame!=p.frame || g.owner!=p.owner || g.serial!=p.serial ||
+           std::fabs(g.width-io->DisplaySize.x)>.5f || std::fabs(g.height-io->DisplaySize.y)>.5f)continue;
+        unsigned matched=64;
+        for(unsigned i=0;i<bound;++i)if(valid[i] && !drawn[i] && current[i].node==g.binding.node &&
+            !std::memcmp(&current[i],&g.binding,sizeof(Binding))) {matched=i;break;}
+        if(matched==64)continue;
+        if(seen(live_fence)!=fence)return;
+        drawn[matched]=true;
+        ImVec2 corners[4];for(unsigned k=0;k<4;++k)corners[k]={g.points[k*2],g.points[k*2+1]};
+        ImDrawList_PushClipRect(draw,{g.clip[0],g.clip[1]},{g.clip[2],g.clip[3]},true);
+        // Native texture strip order is TL,TR,BL,BR. Walk the perimeter rather
+        // than crossing its diagonals; mirrored/rotated frames keep that order.
+        const unsigned order[4]={0,1,3,2};
+        for(unsigned k=0;k<4;++k)ImDrawList_AddLine(draw,corners[order[k]],corners[order[(k+1)%4]],gold,thickness);
+        const ImVec2 anchor=corners[0];
+        const float radius=3.0f*scale;
+        const ImVec2 spark[8]={{anchor.x,anchor.y-radius},{anchor.x+.7f*scale,anchor.y-.7f*scale},
+          {anchor.x+radius,anchor.y},{anchor.x+.7f*scale,anchor.y+.7f*scale},
+          {anchor.x,anchor.y+radius},{anchor.x-.7f*scale,anchor.y+.7f*scale},
+          {anchor.x-radius,anchor.y},{anchor.x-.7f*scale,anchor.y-.7f*scale}};
+        for(unsigned k=0;k<8;++k)ImDrawList_AddLine(draw,spark[k],spark[(k+1)%8],gold,scale);
+        ImDrawList_PopClipRect(draw);++rendered;
+    }
+    __atomic_store_n(&highlighted_count,rendered,__ATOMIC_RELAXED);
 }
 }

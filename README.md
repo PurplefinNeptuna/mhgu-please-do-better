@@ -1,16 +1,17 @@
 # Please do Better
 
-Current local recipe builds **r5 compact diagnostics and display-copy repairs**.
-The user's accepted r4 run observed eight generated slots and four luck extras,
-with totals retained in the village. R5 separates native collection refreshes
-from capture faults and follows the main array's state-1 reallocation by index.
-See [observations](R5_OBSERVATIONS.md) and [r5 validation](R5_VALIDATION.md).
+Current local recipe builds **r6 gold luck highlights and compact diagnostics**
+for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
+subtle pulsing gold border and tiny procedural sparkle, independently of whether
+the panel is open. Native frame geometry, clipping and exact slot provenance
+control placement. Unknown shader, target or execution paths remain unmarked.
+See [highlight implementation](R6_HIGHLIGHTS.md) and [validation](R6_VALIDATION.md).
 
-R2 provides the **DEVELOPMENT** implementation for MHGU Nintendo Switch 1.4.0 and
-Forge 1.4.1, retained in r5. It implements guarded live forcing, plugin preferences and bounded
-reward attribution. **Slot highlights remain unavailable:** final screen geometry
-and slot-frame/presented-frame mappings have not passed the required research gate.
-This candidate draws no borders or luck markers.
+The accepted r4 run observed eight generated slots and four luck extras, retained
+in the village. R5 repaired collection refreshes and array relocation. R6 retains
+both changes. **R6 gold alignment has not been tested in gameplay.** Local ARM
+fixtures exercise the compiled capture, presentation and drawing code; they do
+not run a GPU or emulator. Status remains **DEVELOPMENT**.
 
 Fresh installs use natural luck. With **Force Miraculous Luck** off, both original
 checks run and equipped skills determine rewards. Turning it on reproduces the
@@ -24,7 +25,7 @@ The checkbox changes the request immediately; each observed batch retains its
 entry mode. Existing rewards stay unchanged. **Save settings** remembers the
 request in `please_do_better.ini` with its plugin-specific recovery copy through
 Forge's counted player save mount. Editing the checkbox cancels delayed loading.
-Closing the panel leaves observation and storage polling active.
+Closing the panel leaves highlighting, observation and storage polling active.
 
 The row reports the mode for new batches, the last completed batch's observed
 tier and verified slot totals. Closed diagnostics show startup safety, observation
@@ -48,7 +49,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r5/please-do-better-r5-candidate.zip`.
+`build/please-do-better/candidates/r6/please-do-better-r6-candidate.zip`.
 Its only member is:
 
 ```text
@@ -57,7 +58,7 @@ Please do Better/romfs/nativeNX/plugins/please_do_better.nro
 
 Documentation, notices, manifest and checksums sit beside the ZIP. The original
 r1 candidate/source commit `d01c9c3`, r2/r3 and accepted r4 commit `f789cbb` and
-candidate bytes are preserved. These
+candidate bytes are preserved, including r5 commit `fe87ff1`. These
 candidates are not approved for distribution. Maintained Forge and Better Input are unchanged
 dependencies and are not bundled.
 

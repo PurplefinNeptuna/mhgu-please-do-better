@@ -23,7 +23,9 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-R5 retains r4's twenty-two eight-byte detours journaling 44 words (176 game-code bytes). Each publishes
+R6 retains r4's twenty-two detours and adds two fixed rendering detours in a
+separate transaction: `0xA4FE50` (LDR/AND) and `0x86A330` (MOV/BX tail call).
+The twenty-four eight-byte detours journal 48 words (192 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
 originals share one pooled 4 KiB CodeMemory arena. The main-count PC-relative
 literal is relocated explicitly; other stolen pairs use a checked whitelist.
@@ -115,7 +117,9 @@ query SVC and fingerprinted SDK TLS/thread bodies. GetCurrentThread at SDK
 `0x9D56C` is MRC/LDR/BX; GetTlsValue/void SetTlsValue at `0x9D7F8`/`0x9D80C`
 use MRC/LDR/ADD/STR/BX without GE writes. C entries tail-call through SDK PLT;
 fixtures execute native bodies with synthetic thread storage, not SDK startup.
-Filesystem/logging/ImGui calls remain outside gameplay gateways.
+Filesystem/logging/ImGui and singleton lookup calls remain outside gameplay
+gateways. Rendering gateways call only bounded private helpers and the audited
+query SVC.
 
 Fixtures compare natural hasSkill bodies and forced behavior against original
 instructions across all GPR/flags/VFP state, both stack alignments and GE patterns.
@@ -163,13 +167,30 @@ counter tracks collected items; neither edits inventory. Screen close/destructio
 clears live provenance without erasing completed totals. A relocation failure
 invalidates live provenance without retroactively invalidating valid generation.
 
-The proposed fixed `0xA4FE50` gateway is compiled and audited for exact LDR/AND
-replay and full state preservation but is never installed. Its optional recipe
-has separate transaction fixtures and needs no arena. A compile-time closed gate
-prevents accidental acceptance before native slot-frame, shader/viewport and
-presented-frame fixtures exist. No binding/geometry snapshots or gold renderer
-are implemented while that gate is closed; no extra TLS, arena or heap is used.
+The fixed `0xA4FE50` gateway captures only verified reward frame nodes after
+successful normal vertex construction and replays LDR/AND. The `0x86A330`
+gateway records the exact native present queue/window/index, replays MOV r0,r12,
+and tail-calls r3 with native LR intact. Both use the existing full-state gateway
+frame; neither needs a callable original or another arena/TLS slot.
 
-The free-render callback draws nothing. World quads alone do not verify final
-projection, viewport, clipping, complete node identity or cursor coverage. See
-[RESEARCH.md](RESEARCH.md); unverified mappings remain unmarked.
+64 immutable binding snapshots and 64 immutable geometry snapshots use atomic
+payload words and nonblocking sequence tickets. A mismatched/torn snapshot or
+stale fence/frame suppresses rendering. Overflow suppresses its whole frame.
+The geometry pool retains current and previous producer serials for native
+parallel execution; monotonic per-buffer overflow tags cannot be overwritten
+by an older publication. Bindings contain exact UI/batch/list/group/index/frame-node/icon-node identity;
+item IDs alone never select slots. Native screen exit/destruction invalidates
+the fence before freeing UI state. Live item/quantity checks suppress empty or
+incompatible slots; completed scalar totals remain retained.
+
+Forge free-render uses its background draw list. The native shader/model/global
+bindings and full viewport determine the perimeter. It pushes native clipping,
+draws four gold lines at 1.5px scaled from 720p plus eight lines for a four-point
+sparkle, then pops clipping. Alpha follows a deterministic two-second pulse.
+No fill covers icons or quantities. Unsupported geometry produces no draw.
+The detailed shader and direct presentation route are in [R6_HIGHLIGHTS.md](R6_HIGHLIGHTS.md).
+
+Repeat initialization checks every installed transaction without republishing.
+A lost conditional/observation owner disables forcing, capture and highlighting
+and invalidates the live binding fence. External bytes stay untouched; unsafe
+transaction status remains explicit. There is no live unpatching or enforcement.
