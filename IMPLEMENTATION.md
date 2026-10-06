@@ -23,7 +23,7 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-R4's twenty-two eight-byte detours journal 44 words (176 game-code bytes). Each publishes
+R5 retains r4's twenty-two eight-byte detours journaling 44 words (176 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
 originals share one pooled 4 KiB CodeMemory arena. The main-count PC-relative
 literal is relocated explicitly; other stolen pairs use a checked whitelist.
@@ -147,6 +147,28 @@ Last completed batch totals retain scalar generation evidence independently of
 live array invalidation. Partial coverage reports the extra total unavailable.
 No collection tracker is added. See [R4_OBSERVATIONS.md](R4_OBSERVATIONS.md) for
 exact route offsets and runtime evidence.
+
+R5 also snapshots state-1 main-array contents on entry to the existing update
+hook. Up to six eight-entry records fit its existing eight-record scope storage.
+At return, the new pointer/capacity and every copied prefix entry must match;
+only then publish a batch-tagged old/new index mapping. The old allocation is
+never read after native return. Count limits remain 48. No allocator/free is
+intercepted. See [R5_OBSERVATIONS.md](R5_OBSERVATIONS.md).
+
+List refresh accepts same-index quantity decreases or fully empty pairs verified
+against generation snapshots. Empty slots lose live eligibility. Other IDs,
+increased quantities, malformed pairs and read failures report mapping faults.
+The internal expected-refresh count is separate from genuine drops. Neither
+counter tracks collected items; neither edits inventory. Screen close/destruction
+clears live provenance without erasing completed totals. A relocation failure
+invalidates live provenance without retroactively invalidating valid generation.
+
+The proposed fixed `0xA4FE50` gateway is compiled and audited for exact LDR/AND
+replay and full state preservation but is never installed. Its optional recipe
+has separate transaction fixtures and needs no arena. A compile-time closed gate
+prevents accidental acceptance before native slot-frame, shader/viewport and
+presented-frame fixtures exist. No binding/geometry snapshots or gold renderer
+are implemented while that gate is closed; no extra TLS, arena or heap is used.
 
 The free-render callback draws nothing. World quads alone do not verify final
 projection, viewport, clipping, complete node identity or cursor coverage. See

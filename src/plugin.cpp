@@ -41,12 +41,9 @@ extern "C" void forge_onImGuiRender() {
     }
     if(!pdb::forcing_available())igTextUnformatted("Forcing unavailable: guarded hooks or batch capture failed.",nullptr);
     igTextUnformatted(force && pdb::forcing_available() ? "New batches: forced Miraculous Luck" :
-                     "New batches: natural luck (highlights unavailable)",nullptr);
-    igTextUnformatted("Changes affect subsequent reward batches. Existing rewards stay unchanged.",nullptr);
+                     "New batches: natural luck",nullptr);
     if(igButton("Save settings###pdb_save",ImVec2_c{0,0}))pdb::save_preferences({force});
     igTextUnformatted(pdb::preferences_status(),nullptr);
-    igTextUnformatted("Luck markers mean extra slots compared with normal luck; no rare-drop guarantee.",nullptr);
-    igTextUnformatted("Disable the legacy Great Luck cheat. Removal requires a full restart.",nullptr);
     pdb::diagnostics();
     igTreePop();
 }

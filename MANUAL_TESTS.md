@@ -1,16 +1,14 @@
 # Remaining gameplay coverage
 
-The user reported an unresolved r2 observation failure on Eden with the reward
-screen still open after a 2-star Great Maccao hunt and forcing enabled. The r3
-item-grid screenshot confirms forced checks and threshold 31 executed, with
-zero published records. **R4 gameplay is NOT RUN.** Capture gateway hits,
-forced/natural counts, copy taps, published records, last completed tier, generated
-and extra totals, coverage status and UI state while rewards remain open. See
-R4_OBSERVATIONS.md. Startup applied status alone does not complete that check.
+The user accepted r4 forced observation on Eden: eight generated slots and four
+luck extras on the reward grid, with totals retained in the village. This is
+limited to the reported session, installed r4 hash and retained launch log.
+**R5 gameplay is NOT RUN.** Check last completed tier, generated/extra totals,
+coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md.
 
 This checklist authorizes no installation, activation, launch, save edit or
-emulator setting change. Highlights remain unimplemented until added rewards can
-be observed in gameplay; r4 has no accepted highlight renderer. Later
+emulator setting change. Highlights remain unimplemented until the final native
+slot-frame, shader/viewport and presented-frame proof gate passes. Later
 marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
 
 - [ ] Identify exact NRO/ZIP hashes and actual launch set; retain rollback packages
@@ -19,7 +17,7 @@ marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
   cheat package. Verify selected activation, not directory presence.
 - [ ] Verify MHGU 1.4.0/main build and maintained Forge/Better Input fingerprints.
 - [ ] Cover startup, ordinary save loading, Forge navigation, quest completion/
-  return and full restart. Examine ownership/cache/rollback diagnostics.
+  return and full restart. Examine compact startup safety/failure diagnostics.
 - [ ] With forcing off, compare no-luck and natural Good/Great/Miraculous Luck
   across repeated comparable quests. No visible equipment skill is added.
 - [ ] With forcing on and no equipped luck, cover the intended Miraculous branch
@@ -32,6 +30,10 @@ marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
   inspect incomplete/lost attribution.
 - [ ] Verify completed totals survive UI state 18, collection and return. Missing
   records/taps must report unavailable or incomplete, never a verified zero bonus.
+- [ ] Recheck quantity decreases/emptied slots and village return: ordinary
+  refreshes must not increment capture faults. Record any remaining genuine fault.
+- [ ] Cover native capacity-16/48 main-array reallocation before opening the grid;
+  static fixtures do not establish every runtime category route.
 - [ ] Compare all four copy routes and absent tables against visible item prefixes;
   cover duplicate items, capped guarantees, main A/B and secondary rewards.
 - [ ] Document Eden translation freshness/multicore separately from flush/readback.

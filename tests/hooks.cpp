@@ -1,12 +1,14 @@
 #include "hooks.h"
+#include "highlight_gate.h"
 #include <map>
 #include <assert.h>
 #include <stdio.h>
 using namespace pdb;
+extern "C" void pdb_gateway_26() {}
 struct Fake {
     std::map<uint32_t,uint32_t> memory;
     unsigned writes=0,flushes=0,prepares=0,creates=0,closes=0;
-    unsigned fail_write=0,fail_flush=0;
+    unsigned fail_write=0,fail_flush=0,rollback_after=2;
     bool poststore=false,external=false,rollback_fail=false,allocate=true,prepared=true;
     bool owned=false,bad_mapping=false,fail_close=false;uint64_t title=program_id;
     bool program(uint64_t& id){id=title;return true;}
@@ -14,7 +16,7 @@ struct Fake {
     bool read(uint32_t a,uint32_t& out){if(!memory.count(a))return false;out=memory[a];return true;}
     bool write(uint32_t a,uint32_t expected,uint32_t value,bool& stored){
         ++writes;stored=false;
-        if(rollback_fail && writes>2)return false;
+        if(rollback_fail && writes>rollback_after)return false;
         if(writes==fail_write && !poststore)return false;
         if(memory[a]!=expected)return false;
         memory[a]=value;stored=true;return writes!=fail_write;
@@ -66,5 +68,28 @@ int main(){unsigned checks=0;
   f.memory[0x10010c]=0xdeadbeef;const auto writes=f.writes,creates=f.creates;
   const auto r=t.install(0x100000,hs,2);assert(r.state==State::Unsafe&&r.failure==Failure::Changed&&r.unsafe&&
    f.writes==writes&&f.creates==creates&&f.memory[0x10010c]==0xdeadbeef);++checks;}
+ // A separate, unpaired boundary transaction cannot roll back working groups.
+ for(unsigned failure=0;failure<=6;++failure) {
+  auto f=fresh();Hooks<Fake> core(f);assert(core.install(0x100000,hs,2).state==State::Applied);
+  Hook boundary=highlight_boundary_recipe();boundary.detour=0x800200;
+  for(unsigned j=0;j<8;++j)f.memory[0x100000+boundary.window+j*4]=boundary.words[j];
+  const auto before=f.memory;const auto created=f.creates;
+  if(failure==1)f.memory[0x100000+boundary.window]^=1;
+  if(failure==2)f.fail_write=f.writes+1;
+  if(failure==3)f.fail_write=f.writes+2;
+  if(failure>=4)f.fail_flush=f.flushes+1;
+  if(failure==5)f.external=true;
+  if(failure==6) {f.rollback_fail=true;f.rollback_after=f.writes+2;}
+  // External edit injection normally fires on the first flush; start its
+  // independent transaction's count at zero without altering core bytes.
+  if(failure==5) {f.flushes=0;f.fail_flush=1;}
+  Hooks<Fake> optional(f);const auto r=optional.install(0x100000,&boundary,1);
+  const auto expected=failure==0?State::Applied:failure>=5?State::Unsafe:failure==1 || failure==2?State::Rejected:State::RolledBack;
+  if(r.state!=expected)fprintf(stderr,"Optional boundary failure %u: state %u expected %u\n",failure,unsigned(r.state),unsigned(expected));
+  assert(r.state==expected);
+  assert(f.creates==created && core.report().state==State::Applied);
+  for(const auto& h:hs)for(unsigned j=0;j<8;++j)assert(f.memory[0x100000+h.window+j*4]==before.at(0x100000+h.window+j*4));
+  assert(!highlight_rendering_accepted);++checks;
+ }
  printf("PASS: %u guarded hook publication/ownership rollback checks\n",checks);
 }

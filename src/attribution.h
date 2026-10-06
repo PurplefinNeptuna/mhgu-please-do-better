@@ -36,6 +36,13 @@ struct Attribution {
 };
 struct Reward { uint16_t item, amount; };
 static_assert(sizeof(Reward) == 4);
+// Native collection (main+0x388EE8) may reduce quantity or clear both fields.
+// A refresh is checked by INDEX, never by searching for an identical item ID.
+inline bool compatible_refresh(Reward original, Reward current) {
+    return (!current.item && !current.amount) ||
+        (original.item && current.item==original.item && current.amount &&
+         current.amount<=original.amount);
+}
 struct Provenance {
     uint32_t epoch = 0, array = 0, count = 0, mask = 0;
     Reward items[reward_cap]{};

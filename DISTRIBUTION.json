@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r4 native-copy observation candidate; r3 user counters confirm forced checks and threshold 31 but no published items. R4 gameplay observation remains unverified. Highlights remain unimplemented pending observed extras and verified display mappings. R1/r2/r3 candidates preserved; cache freshness and Ryujinx remain unverified.",
+  "reason": "Local r5 compact diagnostics and display-copy repairs. R4 user evidence supports forced observation of eight slots/four extras retained in the village; r5 gameplay is not run. Gold highlights remain unimplemented under the required gate: native slot-frame identity, shader/viewport transform and presented-frame correspondence are unverified. R1/r2/r3/r4 candidates preserved; cache freshness, natural-luck coverage and Ryujinx remain unverified.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

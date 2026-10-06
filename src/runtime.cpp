@@ -6,6 +6,7 @@
 #include "native_platform.h"
 #include "sdk_tls.h"
 #include "mailbox.h"
+#include "highlight_gate.h"
 #include <switch.h>
 #include <forge/log.h>
 extern "C" {
@@ -20,6 +21,7 @@ static NativePlatform platform;
 static Hooks<NativePlatform> conditional(platform), visual(platform);
 static Mode mode;
 static uint32_t base, initialized, pair_ready, capture_ready, drops;
+static uint32_t expected_refreshes, remapped_arrays, mapping_faults;
 // Execution evidence is distinct from successful instruction publication.
 // Only scalar atomics cross from gameplay producers to the ImGui reader.
 static uint32_t gateway_hits[26]{}, forced_checks[2]{}, natural_checks[2]{};
@@ -126,6 +128,12 @@ static bool force(Context* c) {
 // sees untouched argument/working registers and the original stack. Its output
 // registers/flags are preserved; only the LR value created by BL is reconstructed.
 extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
+    if(kind==26) {
+        // Compiled for instruction/state fixtures only. The rendering gate is
+        // closed, so install() does not publish this detour or capture geometry.
+        f->r[0]=word(f->r[6])&15;
+        return base+0xa4fe58;
+    }
     if(kind<26)count(gateway_hits[kind]);
     if(kind==25) {
         Context* c=context();Scope* s=c && !c->quarantine?find(*c,9):nullptr;
@@ -235,6 +243,23 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     } else if(kind==14) {
         if(readable(f->r[1],8)) { s.array=word(f->r[1]);s.count=word(f->r[1]+4); }
         Scope* ui=find(*c,15);if(ui)s.ui=ui->subject;
+    } else if(kind==15 && field(s.subject,0x3c,4) && word(s.subject+0x3c)==1) {
+        // State 1 may reallocate the main array before opening the grid.
+        // Snapshot BEFORE native frees it. Observe through the existing paired
+        // update hook; no additional arena, TLS slot or game writes are needed.
+        s.epoch=c->serial;
+        if(field(s.subject,0x5c,8)) {
+            s.array=word(s.subject+0x5c);s.count=word(s.subject+0x60);
+            if(s.count<=48 && s.array) {
+                for(unsigned start=0;start<s.count;start+=8) {
+                    Record r{};r.kind=7;r.ui=s.subject;r.epoch=s.array+start*4;r.tier=s.epoch;
+                    r.rewards.count=s.count-start<8?s.count-start:8;
+                    if(uint64_t(s.array)+start*4+r.rewards.count*4>0x100000000ull ||
+                       !copy(r.epoch,r.rewards.items,r.rewards.count*4)) {s.incomplete=true;break;}
+                    s.pending[s.pending_count++]=r;
+                }
+            } else s.incomplete=true;
+        } else s.incomplete=true;
     }
     f->r[13]=uint32_t(uintptr_t(pdb_gateway_after));
     return original;
@@ -292,6 +317,31 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
         if(r.rewards.count<=48 && uint64_t(s.subject)+0x60+r.rewards.count*4<=0x100000000ull &&
            readable(r.rewards.array,r.rewards.count*4))c->records.publish(r);else lost();
     } else if(s.kind==15) {
+        if(s.array && s.pending_count) {
+            bool valid=!s.incomplete && field(s.subject,0x5c,8);
+            const uint32_t destination=valid?word(s.subject+0x5c):0;
+            valid=valid && destination && word(s.subject+0x60)>=s.count && word(s.subject+0x60)<=48;
+            for(unsigned i=0;i<s.pending_count && valid;++i) {
+                const auto& r=s.pending[i];Reward contents[8]{};
+                const unsigned offset=r.epoch-s.array;
+                valid=uint64_t(destination)+offset+r.rewards.count*4<=0x100000000ull &&
+                    copy(destination+offset,contents,r.rewards.count*4);
+                for(unsigned j=0;j<r.rewards.count;++j)valid=valid &&
+                    contents[j].item==r.rewards.items[j].item && contents[j].amount==r.rewards.items[j].amount;
+            }
+            if(valid) {
+                for(unsigned i=0;i<s.pending_count;++i) {
+                    Record r=s.pending[i];r.rewards.array=destination+(r.epoch-s.array);c->records.publish(r);
+                }
+                if(destination!=s.array)count(remapped_arrays);
+            } else {
+                lost();count(mapping_faults);
+                Record r{};r.kind=4;r.ui=s.subject;r.coverage=2;c->records.publish(r);
+            }
+        } else if(s.incomplete) {
+            lost();count(mapping_faults);
+            Record r{};r.kind=4;r.ui=s.subject;r.coverage=2;c->records.publish(r);
+        }
         if(field(s.subject,0x3c,4))__atomic_store_n(&last_ui_state,word(s.subject+0x3c),__ATOMIC_RELAXED);
         if(!field(s.subject,0x3c,4) || word(s.subject+0x3c)<2 || word(s.subject+0x3c)>5) {
             count(cleared_rewards);
@@ -307,6 +357,7 @@ bool requested_force() { return mode.get(); }
 bool forcing_available() { return __atomic_load_n(&pair_ready,__ATOMIC_ACQUIRE) &&
                                  __atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE); }
 void install() {
+    static_assert(!highlight_rendering_accepted,"Accept native geometry/frame fixtures and implement rendering before publishing the boundary hook");
     if(initialized) {
         // Recheck owned signatures, without republishing or allocating. A
         // conflict cancels effective forcing and further attribution.
@@ -321,14 +372,14 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r4 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
+    forge_log_info("[please-do-better] r5 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r4 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    forge_log_info("[please-do-better] r5 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -342,7 +393,7 @@ void update() {
         for(unsigned budget=0;budget<16 && c.records.read(r);++budget) {
             if(c.records.overwritten!=lost_before)break;
             if(r.kind==1 || ((r.kind==3 || r.kind==4) && r.ui==owners[thread])) {
-                if(r.kind==4 && r.coverage)__atomic_store_n(&summary_status,2,__ATOMIC_RELEASE);
+                if(r.kind==4 && r.coverage==1)__atomic_store_n(&summary_status,2,__ATOMIC_RELEASE);
                 for(auto& record:observed[thread])record={};
                 for(auto& record:displayed[thread])record={};
                 owners[thread]=r.kind==1?r.ui:0;epochs[thread]=r.epoch;
@@ -369,6 +420,18 @@ void update() {
                 __atomic_store_n(&generated_count,generated,__ATOMIC_RELEASE);
                 __atomic_store_n(&summary_records,records,__ATOMIC_RELEASE);
                 __atomic_store_n(&summary_status,records && records==r.generated && complete?1:2,__ATOMIC_RELEASE);
+            } else if(r.kind==7 && r.ui==owners[thread] && r.tier==epochs[thread]) {
+                for(auto& source:observed[thread]) {
+                    if(!source.kind || source.rewards.array<r.epoch)continue;
+                    const uint32_t offset=source.rewards.array-r.epoch;
+                    if((offset&3) || uint64_t(offset)+source.rewards.count*4>uint64_t(r.rewards.count)*4)continue;
+                    bool same=true;
+                    for(unsigned j=0;j<source.rewards.count;++j)same=same &&
+                        source.rewards.items[j].item==r.rewards.items[offset/4+j].item &&
+                        source.rewards.items[j].amount==r.rewards.items[offset/4+j].amount;
+                    if(same)source.rewards.array=r.rewards.array+offset;
+                    else {source={};lost();count(mapping_faults);}
+                }
             } else if(r.kind==5 && r.ui==owners[thread]) {
                 for(auto& record:displayed[thread])record={};
                 for(unsigned i=0;i<8;++i) {
@@ -379,9 +442,15 @@ void update() {
                        uint64_t(r.rewards.array)+offset+source.rewards.count*4>0x100000000ull)continue;
                     Record target=source;target.rewards.array=r.rewards.array+offset;
                     Reward contents[8]{};bool same=copy(target.rewards.array,contents,target.rewards.count*4);
-                    for(unsigned j=0;j<target.rewards.count;++j)same=same &&
-                        contents[j].item==target.rewards.items[j].item && contents[j].amount==target.rewards.items[j].amount;
-                    if(same)displayed[thread][i]=target;else lost();
+                    bool changed=false;
+                    for(unsigned j=0;j<target.rewards.count;++j) {
+                        same=same && compatible_refresh(target.rewards.items[j],contents[j]);
+                        changed=changed || contents[j].item!=target.rewards.items[j].item ||
+                            contents[j].amount!=target.rewards.items[j].amount;
+                        if(!contents[j].item)target.rewards.mask&=~(1u<<j);
+                    }
+                    if(same) {displayed[thread][i]=target;if(changed)count(expected_refreshes);}
+                    else {lost();count(mapping_faults);}
                 }
             }
         }
@@ -398,39 +467,25 @@ void diagnostics() {
     const auto r=conditional.report(),v=visual.report();
     const auto tier=__atomic_load_n(&latest_tier,__ATOMIC_ACQUIRE);
     const char* name=tier==25?"Good Luck":tier==28?"Great Luck":tier==31?"Miraculous Luck":
-                     tier==22?"Normal":tier==16?"Bad Luck":tier==8?"Horrible Luck":"Unavailable";
+                     tier==22?"Normal":tier==16?"Bad Luck":tier==8?"Horrible Luck":tier==UINT32_MAX?"Mixed luck":"Unavailable";
     const uint32_t status=seen(summary_status);
     if(!status)igTextUnformatted("No completed reward observation yet; extra slots unavailable.",nullptr);
     else {
-        if(tier==UINT32_MAX)igTextUnformatted("Last completed batch: mixed observed luck tiers.",nullptr);
-        else igText("Last completed batch tier: %s (%u)",name,tier);
-        if(seen(summary_records))igText("Verified generated slots: %u",seen(generated_count));
-        else igTextUnformatted("No verified item records; generated-slot count unavailable.",nullptr);
-        if(status==1)igText("Verified extra slots: %u",seen(bonus_count));
+        if(status==1)igText("Last rewards: %s; %u generated, %u extra slots",name,seen(generated_count),seen(bonus_count));
         else igTextUnformatted("Extra-slot total unavailable: observation incomplete.",nullptr);
-        igTextUnformatted(status==1?"Observation coverage: verified traced routes.":"Observation coverage: incomplete; totals cover verified records only.",nullptr);
-        igTextUnformatted("Completed-batch totals remain after collection; no collection tracking.",nullptr);
     }
-    igTextUnformatted("Highlights unavailable: final display transform verification pending.",nullptr);
+    igTextUnformatted("Gold highlights unavailable: slot frame, final transform and presented-frame mapping unverified.",nullptr);
     if(!igTreeNode_Str("Diagnostics###pdb_diagnostics"))return;
-    igTextUnformatted("R4 reward observation diagnostics",nullptr);
-    const char* states[]={"not installed","applied; flush/readback checked","rejected","rolled back","UNSAFE; residual/changed bytes"};
-    igText("Conditional: %s; failure %u, site %u",states[unsigned(r.state)],unsigned(r.failure),r.site);
-    igText("Observation: %s; failure %u, site %u",states[unsigned(v.state)],unsigned(v.failure),v.site);
-    igText("Owned words: %llx / %llx; unsafe: %llx / %llx",r.owned,v.owned,r.unsafe,v.unsafe);
-    igText("Dropped/incomplete observations: %u",__atomic_load_n(&drops,__ATOMIC_RELAXED));
-    igText("Executed checks: reward %u / secondary %u",seen(gateway_hits[0]),seen(gateway_hits[1]));
-    igText("Forced checks: %u / %u; natural checks: %u / %u",seen(forced_checks[0]),seen(forced_checks[1]),seen(natural_checks[0]),seen(natural_checks[1]));
-    igText("Main/secondary counts: %u / %u; comparison taps: %u",seen(gateway_hits[9]),seen(gateway_hits[10]),
-           seen(gateway_hits[2])+seen(gateway_hits[3])+seen(gateway_hits[4])+seen(gateway_hits[5])+seen(gateway_hits[6])+seen(gateway_hits[7])+seen(gateway_hits[8]));
-    igText("Main initial-count taps: %u",seen(gateway_hits[25]));
-    igText("Last comparison threshold: %u (22 normal, 31 Miraculous)",seen(last_comparison_tier));
-    igText("Reward builds: entered %u / returned %u; generation returns: %u",seen(gateway_hits[12]),seen(completed_batches),seen(completed_generations));
-    igText("Reward copy taps: %u / %u / %u / %u; generator entries: %u",seen(gateway_hits[21]),seen(gateway_hits[22]),seen(gateway_hits[23]),seen(gateway_hits[24]),seen(gateway_hits[11]));
-    igText("Published reward records: %u; clearing events: %u",seen(published_rewards),seen(cleared_rewards));
-    igText("UI update hits: %u; last state: %u; Forge updates: %u",seen(gateway_hits[15]),seen(last_ui_state),seen(update_hits));
-    igTextUnformatted("Counters are cumulative for this process. Applied bytes alone do not prove gateway execution.",nullptr);
-    igTextUnformatted("Successful cache calls do not verify emulator translation freshness.",nullptr);
+    const char* states[]={"not installed","safe startup checks passed","rejected","rolled back","UNSAFE; residual/changed bytes"};
+    igText("Conditional: %s",states[unsigned(r.state)]);
+    igText("Observation: %s",states[unsigned(v.state)]);
+    if(r.failure!=Failure::None || r.unsafe)igText("Conditional failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(r.failure),r.site,r.cache);
+    if(v.failure!=Failure::None || v.unsafe)igText("Observation failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(v.failure),v.site,v.cache);
+    igTextUnformatted(status==1?"Observation coverage: verified traced routes.":status?"Observation coverage: incomplete.":"Observation coverage: awaiting rewards.",nullptr);
+    igTextUnformatted("Currently highlighted slots: 0 (rendering gate closed).",nullptr);
+    igText("Capture faults: %u; incompatible display copies: %u",seen(drops),seen(mapping_faults));
+    igTextUnformatted("Extra slots compare with normal luck; no rare-drop guarantee. Last reward totals remain after collection.",nullptr);
+    igTextUnformatted("Disable the legacy Great Luck cheat. Plugin removal requires a full restart.",nullptr);
     igTreePop();
 }
 void render() {

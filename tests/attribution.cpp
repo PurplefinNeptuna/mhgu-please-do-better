@@ -36,5 +36,13 @@ int main(){
     assert(p.matches(10,0x1000,6,{123,2})&&p.matches(10,0x1000,7,{123,1}));++checks;
     assert(!p.matches(10,0x1000,5,{123,2})&&!p.matches(11,0x1000,7,{123,2})&&!p.matches(10,0x2000,7,{123,2}));++checks;
     assert(!p.matches(10,0x1000,7,{0,0})&&!p.matches(10,0x1000,7,{124,2})&&!p.matches(10,0x1000,7,{123,3}));++checks;
+    for(unsigned amount=1;amount<=8;++amount)for(unsigned current=0;current<=9;++current) {
+        assert(compatible_refresh({123,uint16_t(amount)}, {123,uint16_t(current)})==
+               (current && current<=amount));++checks;
+        assert(compatible_refresh({123,uint16_t(amount)}, {0,0}));++checks;
+        assert(!compatible_refresh({123,uint16_t(amount)}, {124,uint16_t(current)}));++checks;
+        assert(!compatible_refresh({123,uint16_t(amount)}, {0,uint16_t(current+1)}));++checks;
+    }
+    assert(compatible_refresh({0,0},{0,0}) && !compatible_refresh({0,0},{123,1}));++checks;
     printf("PASS: %u attribution boundary and provenance checks\n",checks);
 }
