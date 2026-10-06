@@ -15,8 +15,8 @@ has six comparisons, the last enabling slot eight. Absent tables generate no ite
 Fixtures execute both full native count bodies and selector with deterministic
 quest/player/table and RNG-source stubs. Across 1,092 cases, compiled natural mode
 matches original counts/consumed rolls; forced mode matches the original cheat.
-Native item selection is not rerun. Generation observation snapshots actual
-four-byte item/quantity entries afterward.
+Native item selection is not rerun. R4 captures actual four-byte item/quantity
+entries at the native array-copy boundary; generator returns are diagnostic only.
 
 UI construction `0x3874E0` has these verified eight-entry copies. Fixtures execute
 each original fragment with duplicate IDs/distinct quantities and untouched
@@ -95,6 +95,10 @@ subordinate to original instructions.
 
 ## Required next coverage
 
+- Confirm r4 count-to-copy observation in gameplay, with verified extra slots,
+  before beginning highlight implementation. See R4_OBSERVATIONS.md. R3's
+  threshold 31 and zero generation/publication counters justify independent copy
+  capture; they do not identify the generator detour's runtime failure cause.
 - Resolve the exact GUI shader variant and prove matrix, viewport and framebuffer
   conversion against native bindings.
 - Fixture every relevant category copy, list row/group/node route and lifetime

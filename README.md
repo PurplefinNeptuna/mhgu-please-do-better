@@ -1,12 +1,13 @@
 # Please do Better
 
-Current local recipe builds **r3 execution diagnostics**. The r2 user-reported
-Unavailable observation during rewards remains unresolved; r3 exposes actual
-gateway, batch, publication and clearing activity without changing gameplay.
-See [diagnostics](R3_DIAGNOSTICS.md) and [r3 validation](R3_VALIDATION.md).
+Current local recipe builds **r4 reward observations**. Item capture uses verified
+native copy boundaries and retains completed batch totals. The user's r3 counters
+showed forced checks and threshold 31 executing, but no item records published.
+The r4 repair still requires gameplay confirmation. See
+[observations](R4_OBSERVATIONS.md) and [r4 validation](R4_VALIDATION.md).
 
 R2 provides the **DEVELOPMENT** implementation for MHGU Nintendo Switch 1.4.0 and
-Forge 1.4.1, retained in r3. It implements guarded live forcing, plugin preferences and bounded
+Forge 1.4.1, retained in r4. It implements guarded live forcing, plugin preferences and bounded
 reward attribution. **Slot highlights remain unavailable:** final screen geometry
 and complete list-to-node mappings have not passed the required research gate.
 This candidate draws no borders or luck markers.
@@ -25,8 +26,11 @@ request in `please_do_better.ini` with its plugin-specific recovery copy through
 Forge's counted player save mount. Editing the checkbox cancels delayed loading.
 Closing the panel leaves observation and storage polling active.
 
-The row reports the mode for new batches, observed tier, verified bonus-slot count,
-unavailable features and nested startup diagnostics. Attribution means extra slots
+The row reports the mode for new batches, the last completed batch's observed
+tier and verified slot totals, coverage status and nested execution diagnostics.
+Missing or partial observation reports the extra total unavailable. Completed
+totals remain after collection; live provenance still clears at screen close.
+Attribution means extra slots
 enabled by positive luck compared with normal luck using the observed rolls.
 It cannot predict the items a separate unmodified run would produce. Collection
 tracking and item-ID-only matching are absent.
@@ -43,7 +47,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r3/please-do-better-r3-candidate.zip`.
+`build/please-do-better/candidates/r4/please-do-better-r4-candidate.zip`.
 Its only member is:
 
 ```text
@@ -51,7 +55,7 @@ Please do Better/romfs/nativeNX/plugins/please_do_better.nro
 ```
 
 Documentation, notices, manifest and checksums sit beside the ZIP. The original
-r1 candidate/source commit `d01c9c3` and r2 candidate are preserved. These
+r1 candidate/source commit `d01c9c3`, r2 and r3 candidates are preserved. These
 candidates are not approved for distribution. Maintained Forge and Better Input are unchanged
 dependencies and are not bundled.
 
@@ -66,8 +70,9 @@ is reported explicitly, retaining reachable executable storage. Effective forcin
 stays disabled if batch capture cannot be installed.
 
 Readback, checked cache calls and barriers do not establish Eden translation
-freshness. R2 has a user-reported observation failure on Eden; forcing effect and
-multicore behavior remain unverified. R3 gameplay and Ryujinx compatibility are untested.
+freshness. R3 has user evidence of executed forcing and failed item observation
+on Eden. R4 item capture, reward effect and multicore behavior remain unverified
+in gameplay. Ryujinx compatibility is untested.
 Native Switch support is not claimed. Crafting, equipment unlocks, inventory edits
 and global skill-query hooks remain outside scope.
 

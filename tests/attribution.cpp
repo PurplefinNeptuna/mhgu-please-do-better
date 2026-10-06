@@ -19,6 +19,19 @@ int main(){
     Attribution absent;assert(!absent.mask(8));absent.begin(24);absent.compare(2,22);assert(!absent.mask(8));++checks;
     Attribution minimum;minimum.begin(31);minimum.compare(0,22);minimum.compare(1,0);minimum.compare(2,0);
     assert(minimum.mask(3)==6);++checks; // Native return clamps a zero-slot stop to one.
+    for(unsigned tier:{8u,16u,22u,25u,28u,31u})for(unsigned first=0;first<=9;++first){
+        Attribution a;a.begin(tier,first);
+        if(first<8)for(unsigned slot=first;slot<8;++slot)a.compare(slot,0);
+        assert(a.complete(8));++checks;
+        a.begin(tier,first);
+        if(first<8){a.compare(first,tier);assert(a.complete(first?first:1));++checks;}
+        else {assert(!a.complete(7));++checks;}
+    }
+    Attribution gap;gap.begin(31,2);gap.compare(3,22);gap.compare(4,31);assert(!gap.complete(4));++checks;
+    gap.begin(31,2);gap.compare(2,22);gap.compare(4,31);assert(!gap.complete(4));++checks;
+    gap.begin(31,2);gap.compare(2,31);gap.compare(3,0);assert(!gap.complete(4));++checks;
+    gap.begin(31,2);gap.compare(2,22);assert(!gap.complete(3));++checks;
+    gap.begin(31);assert(!gap.complete(8));++checks;
     Provenance p{};p.epoch=10;p.array=0x1000;p.count=8;p.mask=0xc0;p.items[6]={123,2};p.items[7]={123,2};
     assert(p.matches(10,0x1000,6,{123,2})&&p.matches(10,0x1000,7,{123,1}));++checks;
     assert(!p.matches(10,0x1000,5,{123,2})&&!p.matches(11,0x1000,7,{123,2})&&!p.matches(10,0x2000,7,{123,2}));++checks;

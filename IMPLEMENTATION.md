@@ -1,4 +1,4 @@
-# R2 implementation and state audit
+# Implementation and state audit
 
 ## Identity and hook inventory
 
@@ -20,8 +20,10 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3874E0`, `0x381D30` | Paired UI-array construction and main wrapper |
 | `0x623C08` | Paired indexed copy into inline native list |
 | `0x384848`, `0x384408` | Paired result update/destruction |
+| `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
+| `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-Seventeen eight-byte detours journal 34 words (136 game-code bytes). Each publishes
+R4's twenty-two eight-byte detours journal 44 words (176 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
 originals share one pooled 4 KiB CodeMemory arena. The main-count PC-relative
 literal is relocated explicitly; other stolen pairs use a checked whitelist.
@@ -127,12 +129,24 @@ Compare actual observed rolls with normal threshold 22; positive tiers 25/28/31
 mark slots beyond the first normal stopping point. Negative/normal tiers 8/16/22
 mark none. Preserve quest/meal guarantees, minimum-one and cap-eight behavior.
 Observe all six secondary comparisons including slot eight. Consume no extra RNG,
-select no items and rerun no generation.
+select no items and rerun no generation. The initial main-count tap supplies
+the actual selected tier even when guaranteed slots reach the cap without rolls.
+Complete sequences must start at the observed initial main count or secondary
+slot two, progress consecutively, and end at a stop or cap. Missing taps suppress
+complete attribution.
 
 Exact epoch/array/index plus item/quantity snapshots distinguish duplicate items.
+Snapshot the full eight-entry temporary at each verified native copy boundary,
+bind it to the matching count scope/caller/category, and verify the complete
+destination at UI build return. Generator returns are diagnostic only. The
+secondary routine returns void: derive its count from comparisons and validate
+the generated prefix, never read its return register as a count.
 Accept only traced copies with matching contents. Lost scopes, overflow, overwritten
 mailboxes, empty/incompatible entries or unknown routes suppress attribution.
-Quantities may decrease in an exact nonempty slot; no collection tracker is added.
+Last completed batch totals retain scalar generation evidence independently of
+live array invalidation. Partial coverage reports the extra total unavailable.
+No collection tracker is added. See [R4_OBSERVATIONS.md](R4_OBSERVATIONS.md) for
+exact route offsets and runtime evidence.
 
 The free-render callback draws nothing. World quads alone do not verify final
 projection, viewport, clipping, complete node identity or cursor coverage. See

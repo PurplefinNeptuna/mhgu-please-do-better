@@ -67,6 +67,11 @@ ENTRY 15, pdb_gateway_dispatch
 ENTRY 16, pdb_gateway_dispatch
 ENTRY 19, pdb_gateway_dispatch
 ENTRY 20, pdb_gateway_dispatch
+ENTRY 21, pdb_gateway_dispatch
+ENTRY 22, pdb_gateway_dispatch
+ENTRY 23, pdb_gateway_dispatch
+ENTRY 24, pdb_gateway_dispatch
+ENTRY 25, pdb_gateway_dispatch
 .section .text.pdb_gateway_after,"ax",%progbits
 .balign 4
 .global pdb_gateway_after

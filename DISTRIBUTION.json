@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r3 execution diagnostics; r2 user-reported Unavailable observation during rewards remains unresolved. Highlight transform/copy gate is incomplete. R1/r2 candidates are preserved; r3 gameplay/cache freshness remain unverified.",
+  "reason": "Local r4 native-copy observation candidate; r3 user counters confirm forced checks and threshold 31 but no published items. R4 gameplay observation remains unverified. Highlights remain unimplemented pending observed extras and verified display mappings. R1/r2/r3 candidates preserved; cache freshness and Ryujinx remain unverified.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

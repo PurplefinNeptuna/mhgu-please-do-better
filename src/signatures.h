@@ -21,6 +21,11 @@ void pdb_gateway_16();
 void pdb_gateway_19();
 void pdb_gateway_20();
 void pdb_gateway_after();
+void pdb_gateway_21();
+void pdb_gateway_22();
+void pdb_gateway_23();
+void pdb_gateway_24();
+void pdb_gateway_25();
 }
 namespace pdb {
 inline Hook hook(unsigned i) {
@@ -42,8 +47,13 @@ inline Hook hook(unsigned i) {
   {0x00623c08,0x00623c08,0,{0xe92d4830,0xe5913004,0xe3530000,0x0a000011,0xe280ce12,0xe3a0e000,0xe590305c,0xe15e0003},true},
   {0x00384848,0x00384848,0,{0xe92d4010,0xe1a04000,0xe59f0278,0xe59f1278,0xed9f3a9e,0xed942a55,0xe79f0000,0xe79f1001},true},
   {0x00384408,0x00384408,0,{0xe92d4070,0xe1a04000,0xe59f0198,0xe79f0000,0xe2800008,0xe5840000,0xe5945174,0xe3550000},true},
+  {0x003875bc,0x003875bc,0,{0xe594005c,0xe1d710b0,0xe3570000,0xe1c010b0,0xe594005c,0xe1d710b2,0xe1c010b2,0xe594005c},false},
+  {0x003878e0,0x003878e0,0,{0xe594005c,0xe1d710b0,0xe3570000,0xe1c010b0,0xe594005c,0xe1d710b2,0xe1c010b2,0xe594005c},false},
+  {0x00387b00,0x00387b00,0,{0xe594005c,0xe1d610b0,0xe3560000,0xe1c012b0,0xe594005c,0xe1d610b2,0xe1c012b2,0xe594005c},false},
+  {0x00388084,0x00388084,0,{0xe5940064,0xe1d510b0,0xe1c012b0,0xe5940064,0xe1d510b2,0xe1c012b2,0xe5940064,0xe1d510b4},false},
+  {0x003820b4,0x003820a0,0,{0xe5900000,0xeb01d8a6,0xe2001001,0xe0814005,0xeb000081,0xe1a05000,0xe3540007,0x8a000009},false},
  };
- static void (*const gateways[])() = {pdb_gateway_0,pdb_gateway_1,pdb_gateway_2,pdb_gateway_3,pdb_gateway_4,pdb_gateway_5,pdb_gateway_6,pdb_gateway_7,pdb_gateway_8,pdb_gateway_9,pdb_gateway_10,pdb_gateway_11,pdb_gateway_12,pdb_gateway_13,pdb_gateway_14,pdb_gateway_15,pdb_gateway_16};
+ static void (*const gateways[])() = {pdb_gateway_0,pdb_gateway_1,pdb_gateway_2,pdb_gateway_3,pdb_gateway_4,pdb_gateway_5,pdb_gateway_6,pdb_gateway_7,pdb_gateway_8,pdb_gateway_9,pdb_gateway_10,pdb_gateway_11,pdb_gateway_12,pdb_gateway_13,pdb_gateway_14,pdb_gateway_15,pdb_gateway_16,pdb_gateway_21,pdb_gateway_22,pdb_gateway_23,pdb_gateway_24,pdb_gateway_25};
  Hook h=recipes[i]; h.detour=uint32_t(uintptr_t(gateways[i])); return h;
 }
 }

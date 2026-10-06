@@ -1,14 +1,16 @@
 # Remaining gameplay coverage
 
 The user reported an unresolved r2 observation failure on Eden with the reward
-screen still open after a 2-star Great Maccao hunt and forcing enabled. R3 gameplay
-is **NOT RUN**. Its diagnostic follow-up must record gateway hits, forced/natural
-counts, raw threshold, build/publication/clearing counters and UI state while
-rewards remain open. See R3_DIAGNOSTICS.md. Startup applied status alone does not
-complete that check.
+screen still open after a 2-star Great Maccao hunt and forcing enabled. The r3
+item-grid screenshot confirms forced checks and threshold 31 executed, with
+zero published records. **R4 gameplay is NOT RUN.** Capture gateway hits,
+forced/natural counts, copy taps, published records, last completed tier, generated
+and extra totals, coverage status and UI state while rewards remain open. See
+R4_OBSERVATIONS.md. Startup applied status alone does not complete that check.
 
 This checklist authorizes no installation, activation, launch, save edit or
-emulator setting change. R2/r3 have no accepted highlight renderer;
+emulator setting change. Highlights remain unimplemented until added rewards can
+be observed in gameplay; r4 has no accepted highlight renderer. Later
 marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
 
 - [ ] Identify exact NRO/ZIP hashes and actual launch set; retain rollback packages
@@ -28,6 +30,10 @@ marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
   edit cancellation through the plugin's own files.
 - [ ] Cover repeated reward screens, nested/overflow diagnostics, closing and return;
   inspect incomplete/lost attribution.
+- [ ] Verify completed totals survive UI state 18, collection and return. Missing
+  records/taps must report unavailable or incomplete, never a verified zero bonus.
+- [ ] Compare all four copy routes and absent tables against visible item prefixes;
+  cover duplicate items, capped guarantees, main A/B and secondary rewards.
 - [ ] Document Eden translation freshness/multicore separately from flush/readback.
   Cover removal and full-restart baseline recovery when authorized.
 - [ ] Repeat startup/modes/quest/return/persistence on Ryujinx with its exact revision,
