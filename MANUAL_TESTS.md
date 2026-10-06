@@ -1,7 +1,14 @@
 # Remaining gameplay coverage
 
-All gameplay is **NOT RUN**. This checklist authorizes no installation, activation,
-launch, save edit or emulator setting change. R2 has no accepted highlight renderer;
+The user reported an unresolved r2 observation failure on Eden with the reward
+screen still open after a 2-star Great Maccao hunt and forcing enabled. R3 gameplay
+is **NOT RUN**. Its diagnostic follow-up must record gateway hits, forced/natural
+counts, raw threshold, build/publication/clearing counters and UI state while
+rewards remain open. See R3_DIAGNOSTICS.md. Startup applied status alone does not
+complete that check.
+
+This checklist authorizes no installation, activation, launch, save edit or
+emulator setting change. R2/r3 have no accepted highlight renderer;
 marker tests require a later candidate that passes [RESEARCH.md](RESEARCH.md).
 
 - [ ] Identify exact NRO/ZIP hashes and actual launch set; retain rollback packages

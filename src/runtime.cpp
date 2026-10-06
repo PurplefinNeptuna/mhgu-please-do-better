@@ -20,6 +20,13 @@ static NativePlatform platform;
 static Hooks<NativePlatform> conditional(platform), visual(platform);
 static Mode mode;
 static uint32_t base, initialized, pair_ready, capture_ready, drops;
+// Execution evidence is distinct from successful instruction publication.
+// Only scalar atomics cross from gameplay producers to the ImGui reader.
+static uint32_t gateway_hits[21]{}, forced_checks[2]{}, natural_checks[2]{};
+static uint32_t update_hits, completed_batches, completed_generations, published_rewards;
+static uint32_t cleared_rewards, last_ui_state, last_comparison_tier;
+static void count(uint32_t& value) { __atomic_fetch_add(&value,1,__ATOMIC_RELAXED); }
+static uint32_t seen(const uint32_t& value) { return __atomic_load_n(&value,__ATOMIC_RELAXED); }
 static TlsSlot tls=-1;
 static uint32_t claimed[8]{};
 struct Record { uint32_t ui=0, epoch=0, tier=0, kind=0; Provenance rewards{}; };
@@ -105,6 +112,7 @@ static bool force(Context* c) {
 // sees untouched argument/working registers and the original stack. Its output
 // registers/flags are preserved; only the LR value created by BL is reconstructed.
 extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
+    if(kind<21)count(gateway_hits[kind]);
     if(kind==19 || kind==20) {
         const unsigned i=kind-19;
         f->r[5]=i?1:31;
@@ -113,11 +121,13 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     }
     if(kind<2) {
         Context* c=context();
-        if(force(c)) { f->r[0]=1;f->r[5]=kind?1:31;return base+site_offset(kind)+8; }
+        if(force(c)) { count(forced_checks[kind]);f->r[0]=1;f->r[5]=kind?1:31;return base+site_offset(kind)+8; }
+        count(natural_checks[kind]);
         f->r[13]=uint32_t(uintptr_t(kind?pdb_gateway_20:pdb_gateway_19));
         return base+(kind?0x26fe08:0xe0da0);
     }
     if(kind<9) {
+        __atomic_store_n(&last_comparison_tier,f->r[kind==2?5:6],__ATOMIC_RELAXED);
         Context* c=context();
         if(c && !c->quarantine) {
             Scope* s=find(*c,kind==2?9:10);
@@ -170,6 +180,7 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
     if(s.sp!=f->caller_sp())__builtin_trap();
     if(f->r[13]==uint32_t(uintptr_t(pdb_gateway_after)))f->r[13]=s.caller;
     if(c->quarantine) { if(!c->depth)c->quarantine=false;return s.caller; }
+    if(s.kind==11)count(completed_generations);
     if(s.kind==9) {
         Scope* parent=find(*c,13);if(!parent)parent=find(*c,12);
         if(parent)parent->attribution=s.attribution;
@@ -195,13 +206,14 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
             else if(r.rewards.mask)lost();
         } else lost();
     } else if(s.kind==12) {
+        count(completed_batches);
         for(unsigned i=0;i<s.pending_count;++i) {
             Record r=s.pending[i];Reward check[8]{};
             if(copy(r.rewards.array,check,r.rewards.count*4)) {
                 bool same=true;
                 for(unsigned j=0;j<r.rewards.count;++j) same=same &&
                     check[j].item==r.rewards.items[j].item && check[j].amount==r.rewards.items[j].amount;
-                if(same)c->records.publish(r);else lost();
+                if(same) {c->records.publish(r);count(published_rewards);}else lost();
             } else lost();
         }
     } else if(s.kind==14 && s.ui && s.array && field(s.subject,0x5c,4)) {
@@ -213,7 +225,9 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
         if(r.rewards.count<=48 && uint64_t(s.subject)+0x60+r.rewards.count*4<=0x100000000ull &&
            readable(r.rewards.array,r.rewards.count*4))c->records.publish(r);else lost();
     } else if(s.kind==15) {
+        if(field(s.subject,0x3c,4))__atomic_store_n(&last_ui_state,word(s.subject+0x3c),__ATOMIC_RELAXED);
         if(!field(s.subject,0x3c,4) || word(s.subject+0x3c)<2 || word(s.subject+0x3c)>5) {
+            count(cleared_rewards);
             Record r{};r.kind=4;r.ui=s.subject;c->records.publish(r);
         }
     } else if(s.kind==16) {
@@ -240,19 +254,20 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r2 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
+    forge_log_info("[please-do-better] r3 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[15];for(unsigned i=0;i<15;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,15);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r2 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    forge_log_info("[please-do-better] r3 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
 static uint32_t epochs[8]{}, owners[8]{}, latest_tier=0, bonus_count=0;
 void update() {
+    count(update_hits);
     uint32_t tier=0,bonuses=0;
     for(unsigned thread=0;thread<8;++thread) {
         auto& c=contexts[thread];Record r{};
@@ -312,11 +327,21 @@ void diagnostics() {
     igText("Observed tier: %s (%u); verified extra slots: %u",name,tier,__atomic_load_n(&bonus_count,__ATOMIC_ACQUIRE));
     igTextUnformatted("Highlights unavailable: final display transform verification pending.",nullptr);
     if(!igTreeNode_Str("Diagnostics###pdb_diagnostics"))return;
+    igTextUnformatted("R3 execution diagnostics",nullptr);
     const char* states[]={"not installed","applied; flush/readback checked","rejected","rolled back","UNSAFE; residual/changed bytes"};
     igText("Conditional: %s; failure %u, site %u",states[unsigned(r.state)],unsigned(r.failure),r.site);
     igText("Observation: %s; failure %u, site %u",states[unsigned(v.state)],unsigned(v.failure),v.site);
     igText("Owned words: %llx / %llx; unsafe: %llx / %llx",r.owned,v.owned,r.unsafe,v.unsafe);
     igText("Dropped/incomplete observations: %u",__atomic_load_n(&drops,__ATOMIC_RELAXED));
+    igText("Executed checks: reward %u / secondary %u",seen(gateway_hits[0]),seen(gateway_hits[1]));
+    igText("Forced checks: %u / %u; natural checks: %u / %u",seen(forced_checks[0]),seen(forced_checks[1]),seen(natural_checks[0]),seen(natural_checks[1]));
+    igText("Main/secondary counts: %u / %u; comparison taps: %u",seen(gateway_hits[9]),seen(gateway_hits[10]),
+           seen(gateway_hits[2])+seen(gateway_hits[3])+seen(gateway_hits[4])+seen(gateway_hits[5])+seen(gateway_hits[6])+seen(gateway_hits[7])+seen(gateway_hits[8]));
+    igText("Last comparison threshold: %u (22 normal, 31 Miraculous)",seen(last_comparison_tier));
+    igText("Reward builds: entered %u / returned %u; generation returns: %u",seen(gateway_hits[12]),seen(completed_batches),seen(completed_generations));
+    igText("Published reward records: %u; clearing events: %u",seen(published_rewards),seen(cleared_rewards));
+    igText("UI update hits: %u; last state: %u; Forge updates: %u",seen(gateway_hits[15]),seen(last_ui_state),seen(update_hits));
+    igTextUnformatted("Counters are cumulative for this process. Applied bytes alone do not prove gateway execution.",nullptr);
     igTextUnformatted("Successful cache calls do not verify emulator translation freshness.",nullptr);
     igTreePop();
 }

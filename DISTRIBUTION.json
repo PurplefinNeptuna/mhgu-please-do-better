@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r2 guarded live-mode/settings and attribution candidate; highlight transform/copy gate is incomplete and no renderer is accepted. Gameplay/cache freshness remain unverified; r1 is preserved.",
+  "reason": "Local r3 execution diagnostics; r2 user-reported Unavailable observation during rewards remains unresolved. Highlight transform/copy gate is incomplete. R1/r2 candidates are preserved; r3 gameplay/cache freshness remain unverified.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

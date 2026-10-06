@@ -1,7 +1,12 @@
 # Please do Better
 
-R2 is a local **DEVELOPMENT** candidate for MHGU Nintendo Switch 1.4.0 and
-Forge 1.4.1. It implements guarded live forcing, plugin preferences and bounded
+Current local recipe builds **r3 execution diagnostics**. The r2 user-reported
+Unavailable observation during rewards remains unresolved; r3 exposes actual
+gateway, batch, publication and clearing activity without changing gameplay.
+See [diagnostics](R3_DIAGNOSTICS.md) and [r3 validation](R3_VALIDATION.md).
+
+R2 provides the **DEVELOPMENT** implementation for MHGU Nintendo Switch 1.4.0 and
+Forge 1.4.1, retained in r3. It implements guarded live forcing, plugin preferences and bounded
 reward attribution. **Slot highlights remain unavailable:** final screen geometry
 and complete list-to-node mappings have not passed the required research gate.
 This candidate draws no borders or luck markers.
@@ -38,7 +43,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r2/please-do-better-r2-candidate.zip`.
+`build/please-do-better/candidates/r3/please-do-better-r3-candidate.zip`.
 Its only member is:
 
 ```text
@@ -46,8 +51,8 @@ Please do Better/romfs/nativeNX/plugins/please_do_better.nro
 ```
 
 Documentation, notices, manifest and checksums sit beside the ZIP. The original
-r1 candidate and source commit `d01c9c3` are preserved. Neither candidate is
-approved for distribution. Maintained Forge and Better Input are unchanged
+r1 candidate/source commit `d01c9c3` and r2 candidate are preserved. These
+candidates are not approved for distribution. Maintained Forge and Better Input are unchanged
 dependencies and are not bundled.
 
 Disable the legacy Great Luck cheat for a separately authorized gameplay test,
@@ -61,9 +66,10 @@ is reported explicitly, retaining reachable executable storage. Effective forcin
 stays disabled if batch capture cannot be installed.
 
 Readback, checked cache calls and barriers do not establish Eden translation
-freshness. Eden gameplay/multicore and separate Ryujinx compatibility are untested.
+freshness. R2 has a user-reported observation failure on Eden; forcing effect and
+multicore behavior remain unverified. R3 gameplay and Ryujinx compatibility are untested.
 Native Switch support is not claimed. Crafting, equipment unlocks, inventory edits
 and global skill-query hooks remain outside scope.
 
 See [implementation](IMPLEMENTATION.md), [research gate](RESEARCH.md),
-[local validation](VALIDATION.md) and [remaining gameplay coverage](MANUAL_TESTS.md).
+[r2 local validation](VALIDATION.md) and [remaining gameplay coverage](MANUAL_TESTS.md).
