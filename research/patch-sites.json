@@ -1,0 +1,24 @@
+{
+  "patch_sites": [
+    {
+      "main_offset": "0x003822dc",
+      "database_address": "0x00d4b2dc",
+      "original_word": "0xebf57aaf",
+      "replacement_word": "0xe3a00001",
+      "original_le_bytes": "af7af5eb",
+      "replacement_le_bytes": "0100a0e3",
+      "surrounding_start": "0x003822d0",
+      "surrounding_bytes": "044080e2fb10a0e30400a0e1af7af5eb1f50a0e3000050e31c00001a0400a0e1"
+    },
+    {
+      "main_offset": "0x004d17f4",
+      "database_address": "0x00e9a7f4",
+      "original_word": "0xebf67983",
+      "replacement_word": "0xe3a00001",
+      "original_le_bytes": "8379f6eb",
+      "replacement_le_bytes": "0100a0e3",
+      "surrounding_start": "0x004d17e8",
+      "surrounding_bytes": "a3fdffea0400a0e1fb10a0e38379f6eb0150a0e3010050e39dfdff1a0400a0e1"
+    }
+  ]
+}

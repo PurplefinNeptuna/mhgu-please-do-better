@@ -1,0 +1,11 @@
+{
+  "main": "work/inputs/main",
+  "sdk": "work/inputs/sdk",
+  "forge": "work/inputs/subsdk9",
+  "python": "python3",
+  "container_storage": "tools/forge-container/storage",
+  "inputs": "work/input-source",
+  "hd": "work/inputs/HD",
+  "library": "work/inputs/library",
+  "romfs": "work/inputs/romfs/nativeNX"
+}

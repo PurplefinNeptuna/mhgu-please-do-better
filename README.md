@@ -1,5 +1,24 @@
 # Please do Better
 
+## Build this mod
+
+Run `./build.sh doctor`, `./build.sh prepare`, `./build.sh build`,
+`./build.sh test --host`, `./build.sh test`, `./build.sh verify`, and
+`./build.sh package` from this folder. The entry point also works from any other
+current directory. `package --release` requires the approved payload and full
+validation. `build --diagnostics` produces a development build only.
+
+Dependencies are pinned in `dependencies.lock.json`; Python requirements are
+pinned in `requirements.txt`. Downloads occur only with `prepare --fetch`.
+Copy `build.local.example.json` to ignored `build.local.json` and configure
+copies of your MHGU 1.4.0 main/SDK, Forge loader, and required resource inputs.
+No installed emulator package or emulator settings file is needed.
+
+The coordinating workspace retains root `build/` and `work/` outputs. An
+independent checkout uses its own ignored `build/` and `work/` directories.
+The author keeps all rights to owned code; third-party and font licenses remain separate.
+
+
 Current local recipe builds **r15 with quiet release logging**
 for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
 subtle pulsing gold border and tiny procedural sparkle, independently of whether
