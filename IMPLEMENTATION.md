@@ -23,7 +23,7 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-R7 retains r4's twenty-two detours and adds two fixed rendering detours in a
+R8 retains r4's twenty-two detours and adds two fixed rendering detours in a
 separate transaction: `0xA4FE50` (LDR/AND) and `0x86A330` (MOV/BX tail call).
 The twenty-four eight-byte detours journal 48 words (192 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
@@ -165,6 +165,14 @@ only that exact list; capture failure publishes a clearing record. Delayed reads
 never compare earlier copy mappings with later native destination bytes. The
 renderer accepts the two verified base/Festa texture vtables with inherited
 layout and draw methods; other classes stay rejected.
+
+State 1's `0x384AF0` resizes before its original `0x384FC0` call to builder
+`0x3874E0`, all inside the same paired update. R8 supersedes the outer preimage
+when that nested builder starts a new batch for the same UI object. Newly
+validated generation records already refer to the current destination. Their
+contents must not be compared with the old empty array. Genuine relocations
+without a same-object new batch retain their existing guards. Incomplete new
+batches remain unavailable. See [R8_HIGHLIGHTS.md](R8_HIGHLIGHTS.md).
 
 List refresh accepts same-index quantity decreases or fully empty pairs verified
 against generation snapshots. Empty slots lose live eligibility. Other IDs,

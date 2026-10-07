@@ -1,18 +1,18 @@
 # Please do Better
 
-Current local recipe builds **r7 gold luck highlights and compact diagnostics**
+Current local recipe builds **r8 gold luck highlights and compact diagnostics**
 for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
 subtle pulsing gold border and tiny procedural sparkle, independently of whether
 the panel is open. Native frame geometry, clipping and exact slot provenance
 control placement. Unknown shader, target or execution paths remain unmarked.
-See [highlight implementation](R7_HIGHLIGHTS.md) and [validation](R7_VALIDATION.md).
+See [highlight implementation](R8_HIGHLIGHTS.md) and [validation](R8_VALIDATION.md).
 
 The accepted r4 run observed eight generated slots and four luck extras, retained
-in the village. The user's r6 reward-grid test retained these totals but showed
-zero highlights and one incompatible copy. R7 repairs texture subclass acceptance
-and mutable display-copy observation. **R7 visible alignment remains untested.**
-Compiled fixtures exercise native count/copy through gold drawing; they do not
-run a GPU or emulator. Status remains **DEVELOPMENT**.
+in the village. R7's user-run grid still showed zero bound/highlighted slots and
+one mapping fault. R8 fixes the verified native state-1 call order: a new batch
+supersedes its empty pre-generation snapshot. The corrected regression fails
+against R7 and passes against R8 through four gold markers in compiled fixtures. **R8 visible
+alignment remains untested.** Status remains **DEVELOPMENT**.
 
 Fresh installs use natural luck. With **Force Miraculous Luck** off, both original
 checks run and equipped skills determine rewards. Turning it on reproduces the
@@ -50,7 +50,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r7/please-do-better-r7-candidate.zip`.
+`build/please-do-better/candidates/r8/please-do-better-r8-candidate.zip`.
 Its only member is:
 
 ```text

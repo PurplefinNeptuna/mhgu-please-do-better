@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r7 texture-class and immutable display-copy repairs after the user-run r6 grid showed zero highlights. R7 gameplay alignment, natural luck, Eden multicore/translation and Ryujinx remain pending. Previous candidates and maintained Forge preserved; no installation or publication.",
+  "reason": "Local r8 native reward-initialization repair after R7 runtime showed zero bindings and one mapping fault. Corrected call-order fixture reproduces R7 clearing new rewards as an old-array mismatch. R8 gameplay alignment, natural luck, Eden multicore/translation and Ryujinx remain pending. Prior candidates and Forge preserved; no installation or publication.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

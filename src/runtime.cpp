@@ -24,7 +24,7 @@ static Hooks<NativePlatform> conditional(platform), visual(platform), highlight(
 static Mode mode;
 static uint32_t base, initialized, pair_ready, capture_ready, drops;
 static uint32_t expected_refreshes, remapped_arrays, mapping_faults;
-struct CopyFault { uint32_t index,expected,actual; };
+struct CopyFault { uint32_t index,expected,actual,route=0; };
 static Snapshot<CopyFault> mapping_detail;
 // Execution evidence is distinct from successful instruction publication.
 // Only scalar atomics cross from gameplay producers to the ImGui reader.
@@ -388,6 +388,14 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     if(kind==12) {
         invalidate_highlights();
         s.epoch=++c->serial;s.ui=s.subject;
+        // State 1 resizes first, then calls this builder inside the SAME paired
+        // update (native BL at 0x384fc0). Its empty pre-generation snapshot is
+        // superseded by this newly verified batch, not a copy of old rewards.
+        // Different UI objects retain their independent relocation checks.
+        Scope* refresh=find(*c,15);
+        if(refresh && refresh->subject==s.subject) {
+            refresh->array=0;refresh->pending_count=0;refresh->incomplete=false;
+        }
         c->last_ui=s.ui;
         Record r{};r.kind=1;r.ui=s.ui;r.epoch=s.epoch;c->records.publish(r);
     } else if(kind==9) {
@@ -496,13 +504,19 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
             bool valid=!s.incomplete && field(s.subject,0x5c,8);
             const uint32_t destination=valid?word(s.subject+0x5c):0;
             valid=valid && destination && word(s.subject+0x60)>=s.count && word(s.subject+0x60)<=48;
+            if(!valid)mapping_detail.publish({0,0,0,3});
             for(unsigned i=0;i<s.pending_count && valid;++i) {
                 const auto& r=s.pending[i];Reward contents[8]{};
                 const unsigned offset=r.epoch-s.array;
                 valid=uint64_t(destination)+offset+r.rewards.count*4<=0x100000000ull &&
                     copy(destination+offset,contents,r.rewards.count*4);
-                for(unsigned j=0;j<r.rewards.count;++j)valid=valid &&
-                    contents[j].item==r.rewards.items[j].item && contents[j].amount==r.rewards.items[j].amount;
+                if(!valid)mapping_detail.publish({offset/4,0,0,3});
+                for(unsigned j=0;j<r.rewards.count && valid;++j) {
+                    valid=contents[j].item==r.rewards.items[j].item && contents[j].amount==r.rewards.items[j].amount;
+                    if(!valid)mapping_detail.publish({offset/4+j,
+                        uint32_t(r.rewards.items[j].item)|(uint32_t(r.rewards.items[j].amount)<<16),
+                        uint32_t(contents[j].item)|(uint32_t(contents[j].amount)<<16),1});
+                }
             }
             if(valid) {
                 for(unsigned i=0;i<s.pending_count;++i) {
@@ -514,6 +528,7 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
                 Record r{};r.kind=4;r.ui=s.subject;r.coverage=2;c->records.publish(r);
             }
         } else if(s.incomplete) {
+            mapping_detail.publish({0,0,0,3});
             lost();count(mapping_faults);
             Record r{};r.kind=4;r.ui=s.subject;r.coverage=2;c->records.publish(r);
         }
@@ -552,19 +567,19 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r7 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
+    forge_log_info("[please-do-better] r8 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r7 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    forge_log_info("[please-do-better] r8 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
     if(v.state!=State::Applied)return;
     Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
     const auto h=highlight.install(base,rendering,2);
     if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r7 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
+    forge_log_info("[please-do-better] r8 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -619,7 +634,16 @@ void update() {
                         source.rewards.items[j].item==r.rewards.items[offset/4+j].item &&
                         source.rewards.items[j].amount==r.rewards.items[offset/4+j].amount;
                     if(same)source.rewards.array=r.rewards.array+offset;
-                    else {source={};lost();count(mapping_faults);}
+                    else {
+                        for(unsigned j=0;j<source.rewards.count;++j)
+                            if(source.rewards.items[j].item!=r.rewards.items[offset/4+j].item ||
+                               source.rewards.items[j].amount!=r.rewards.items[offset/4+j].amount) {
+                                mapping_detail.publish({offset/4+j,
+                                    uint32_t(source.rewards.items[j].item)|(uint32_t(source.rewards.items[j].amount)<<16),
+                                    uint32_t(r.rewards.items[offset/4+j].item)|(uint32_t(r.rewards.items[offset/4+j].amount)<<16),2});break;
+                            }
+                        source={};lost();count(mapping_faults);
+                    }
                 }
             } else if(r.kind==5 && r.ui==owners[thread] && r.rewards.epoch==epochs[thread]) {
                 if(r.coverage)for(auto& record:displayed[thread])
@@ -717,10 +741,14 @@ void diagnostics() {
     if(seen(unsupported_draws))igTextUnformatted("Some draw paths are unsupported; their markers are suppressed.",nullptr);
     const auto h=highlight.report();
     if(h.failure!=Failure::None || h.unsafe)igText("Highlight failure %u at site %u; full restart required.",unsigned(h.failure),h.site);
-    igText("Capture faults: %u; incompatible display copies: %u",seen(drops),seen(mapping_faults));
+    igText("Capture faults: %u; mapping faults: %u",seen(drops),seen(mapping_faults));
     CopyFault fault{};
-    if(seen(mapping_faults) && mapping_detail.read(fault))igText("Last copy mismatch: index %u, item/quantity %u/%u -> %u/%u",
-        fault.index,fault.expected&65535,fault.expected>>16,fault.actual&65535,fault.actual>>16);
+    if(seen(mapping_faults) && mapping_detail.read(fault)) {
+        const char* routes[]={"display-copy contents","relocation contents","batch-to-relocation contents","relocation input/bounds"};
+        igText("Last mapping fault: %s",fault.route<4?routes[fault.route]:"unknown");
+        if(fault.route<3)igText("Chunk index %u, item/quantity %u/%u -> %u/%u",fault.index,
+            fault.expected&65535,fault.expected>>16,fault.actual&65535,fault.actual>>16);
+    }
     igTextUnformatted("Extra slots compare with normal luck; no rare-drop guarantee. Last reward totals remain after collection.",nullptr);
     igTextUnformatted("Disable the legacy Great Luck cheat. Plugin removal requires a full restart.",nullptr);
     igTreePop();
