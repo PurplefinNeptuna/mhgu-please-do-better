@@ -1,0 +1,963 @@
+{
+  "acceptance": "Verified reward frame ordinals and 2D shader dataflow; native producer serial/index correlated to direct and one-frame parallel presentation",
+  "clip_sentinel": {
+    "got_offset": "0x183f2b0",
+    "native_fragment": [
+      "0xbc12d8",
+      "0xbc1368"
+    ],
+    "runtime_contents": "Read guarded; no zero-value assumption",
+    "semantics": "Compare normalized intersection with runtime sentinel; exact match uses cached viewport",
+    "unrelocated_pointer": "0x191eaa0"
+  },
+  "downsample": {
+    "arguments": "r8 command buffer; r11 source texture; r10 destination texture",
+    "callback_got": "0x18418f8",
+    "gateways": [
+      "0xbbfb08",
+      "0xbbfb44"
+    ],
+    "kind": "nvnCommandBufferDownsample",
+    "scope": "Original same-size whole-texture native branches, with equal or differing surface formats; observed source to acquired image for exact frame"
+  },
+  "main_sha256": "b3935415499549adaf4c0e89822831daa175cfd456a7990791c79be3997645ef",
+  "native": [
+    {
+      "functions": 18,
+      "sha256": "e0ecd42876150211a1c32b94eed24601b336e37e36fd0ffe3864c3e1cc91e1fd",
+      "trace": "verified"
+    },
+    {
+      "functions": 5,
+      "sha256": "41a576d906ca503ee4ba0ddddc5e88ee056908005a124010a2dac61197f5b7db",
+      "trace": "r9-draw"
+    },
+    {
+      "functions": 3,
+      "sha256": "f61aa6a88a2b834d3d37cf437c6258c8d26beb861c39bef58680c600bfc6ee1f",
+      "trace": "r9-pipeline"
+    },
+    {
+      "functions": 1,
+      "sha256": "29bfa4fd5e1766e26f09682c35b866a1817bb41213a32464241da349870997d2",
+      "trace": "r9-shader"
+    },
+    {
+      "functions": 2,
+      "sha256": "ea55ac5c8410c64501be08dd86c2443e64b18100ca49b681859c01f6f58d5157",
+      "trace": "r9-program"
+    },
+    {
+      "functions": 1,
+      "sha256": "700dfa992ecb11d3ae0e486848287509756a0d927741a396f8203f2141c9bcca",
+      "trace": "r9-uniform"
+    },
+    {
+      "functions": 4,
+      "sha256": "eec8719bb5b5a469973cbd67137cf690dc83a83191995f1d02fa744c1c1e38b3",
+      "trace": "r10-surfaces"
+    },
+    {
+      "functions": 1,
+      "sha256": "71842b81e12f10a8779fb2f6cd3a53262f35a653104930286a05a71926074b06",
+      "trace": "r10-texture-surface"
+    },
+    {
+      "functions": 2,
+      "sha256": "7e0fbce288e20a83545c24a03a2af856327aa98b3be67da1fe39183a77fd1f25",
+      "trace": "r10-texture-create"
+    },
+    {
+      "functions": 1,
+      "sha256": "7ca2c49a3fdadbb630e4e81be2f2f98a1995bc5b0c39d33579bb547bb6ed948f",
+      "trace": "r10-surface-view"
+    },
+    {
+      "functions": 2,
+      "sha256": "454152f41fd7144299fc913ce718a9e5bcebe03262bb109fadf6f3d567326587",
+      "trace": "r10-window-init"
+    },
+    {
+      "functions": 1,
+      "sha256": "1a727d160f0e3de82bd38dfae87c1008f55b4dc05532a2aaa0933d6bfd84462e",
+      "trace": "r10-window"
+    },
+    {
+      "functions": 3,
+      "sha256": "5968e86f3fd4a5fc5992798aaa56033a78dd597a247686fe22251f3fde413603",
+      "trace": "r10-surface-bind"
+    },
+    {
+      "functions": 1,
+      "sha256": "469817ff0144ac6ebefd0e234df1810264deadc4e142296546c4ecfb67e365cd",
+      "trace": "r13-nvn"
+    }
+  ],
+  "resource": {
+    "layouts": [
+      {
+        "frame_id": 8,
+        "frame_index": 4,
+        "icon_index": 2,
+        "index": 0,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 9,
+        "frame_index": 5,
+        "icon_index": 3,
+        "index": 1,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 10,
+        "frame_index": 6,
+        "icon_index": 4,
+        "index": 2,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 11,
+        "frame_index": 7,
+        "icon_index": 5,
+        "index": 3,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 12,
+        "frame_index": 8,
+        "icon_index": 6,
+        "index": 4,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 13,
+        "frame_index": 9,
+        "icon_index": 7,
+        "index": 5,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 14,
+        "frame_index": 10,
+        "icon_index": 8,
+        "index": 6,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 15,
+        "frame_index": 11,
+        "icon_index": 9,
+        "index": 7,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 17,
+        "frame_index": 13,
+        "icon_index": 11,
+        "index": 8,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 18,
+        "frame_index": 14,
+        "icon_index": 12,
+        "index": 9,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 19,
+        "frame_index": 15,
+        "icon_index": 13,
+        "index": 10,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 20,
+        "frame_index": 16,
+        "icon_index": 14,
+        "index": 11,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 21,
+        "frame_index": 17,
+        "icon_index": 15,
+        "index": 12,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 22,
+        "frame_index": 18,
+        "icon_index": 16,
+        "index": 13,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 23,
+        "frame_index": 19,
+        "icon_index": 17,
+        "index": 14,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 24,
+        "frame_index": 20,
+        "icon_index": 18,
+        "index": 15,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 26,
+        "frame_index": 22,
+        "icon_index": 20,
+        "index": 16,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 27,
+        "frame_index": 23,
+        "icon_index": 21,
+        "index": 17,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 28,
+        "frame_index": 24,
+        "icon_index": 22,
+        "index": 18,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 29,
+        "frame_index": 25,
+        "icon_index": 23,
+        "index": 19,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 30,
+        "frame_index": 26,
+        "icon_index": 24,
+        "index": 20,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 31,
+        "frame_index": 27,
+        "icon_index": 25,
+        "index": 21,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 32,
+        "frame_index": 28,
+        "icon_index": 26,
+        "index": 22,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 33,
+        "frame_index": 29,
+        "icon_index": 27,
+        "index": 23,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 35,
+        "frame_index": 31,
+        "icon_index": 29,
+        "index": 24,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 36,
+        "frame_index": 32,
+        "icon_index": 30,
+        "index": 25,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 37,
+        "frame_index": 33,
+        "icon_index": 31,
+        "index": 26,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 38,
+        "frame_index": 34,
+        "icon_index": 32,
+        "index": 27,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 39,
+        "frame_index": 35,
+        "icon_index": 33,
+        "index": 28,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 40,
+        "frame_index": 36,
+        "icon_index": 34,
+        "index": 29,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 41,
+        "frame_index": 37,
+        "icon_index": 35,
+        "index": 30,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 42,
+        "frame_index": 38,
+        "icon_index": 36,
+        "index": 31,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 44,
+        "frame_index": 40,
+        "icon_index": 38,
+        "index": 32,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 45,
+        "frame_index": 41,
+        "icon_index": 39,
+        "index": 33,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 46,
+        "frame_index": 42,
+        "icon_index": 40,
+        "index": 34,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 47,
+        "frame_index": 43,
+        "icon_index": 41,
+        "index": 35,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 48,
+        "frame_index": 44,
+        "icon_index": 42,
+        "index": 36,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 49,
+        "frame_index": 45,
+        "icon_index": 43,
+        "index": 37,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 50,
+        "frame_index": 46,
+        "icon_index": 44,
+        "index": 38,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 51,
+        "frame_index": 47,
+        "icon_index": 45,
+        "index": 39,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 53,
+        "frame_index": 49,
+        "icon_index": 47,
+        "index": 40,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 54,
+        "frame_index": 50,
+        "icon_index": 48,
+        "index": 41,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 55,
+        "frame_index": 51,
+        "icon_index": 49,
+        "index": 42,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 56,
+        "frame_index": 52,
+        "icon_index": 50,
+        "index": 43,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 57,
+        "frame_index": 53,
+        "icon_index": 51,
+        "index": 44,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 58,
+        "frame_index": 54,
+        "icon_index": 52,
+        "index": 45,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 59,
+        "frame_index": 55,
+        "icon_index": 53,
+        "index": 46,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 60,
+        "frame_index": 56,
+        "icon_index": 54,
+        "index": 47,
+        "layout": "icon"
+      },
+      {
+        "frame_id": 64,
+        "frame_index": 6,
+        "icon_index": 2,
+        "index": 0,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 65,
+        "frame_index": 7,
+        "icon_index": 3,
+        "index": 1,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 66,
+        "frame_index": 8,
+        "icon_index": 4,
+        "index": 2,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 67,
+        "frame_index": 9,
+        "icon_index": 5,
+        "index": 3,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 68,
+        "frame_index": 10,
+        "icon_index": 6,
+        "index": 4,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 69,
+        "frame_index": 11,
+        "icon_index": 7,
+        "index": 5,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 70,
+        "frame_index": 12,
+        "icon_index": 8,
+        "index": 6,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 71,
+        "frame_index": 13,
+        "icon_index": 9,
+        "index": 7,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 17,
+        "frame_index": 15,
+        "icon_index": 11,
+        "index": 8,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 18,
+        "frame_index": 16,
+        "icon_index": 12,
+        "index": 9,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 19,
+        "frame_index": 17,
+        "icon_index": 13,
+        "index": 10,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 20,
+        "frame_index": 18,
+        "icon_index": 14,
+        "index": 11,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 21,
+        "frame_index": 19,
+        "icon_index": 15,
+        "index": 12,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 22,
+        "frame_index": 20,
+        "icon_index": 16,
+        "index": 13,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 23,
+        "frame_index": 21,
+        "icon_index": 17,
+        "index": 14,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 24,
+        "frame_index": 22,
+        "icon_index": 18,
+        "index": 15,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 35,
+        "frame_index": 24,
+        "icon_index": 20,
+        "index": 16,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 36,
+        "frame_index": 25,
+        "icon_index": 21,
+        "index": 17,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 37,
+        "frame_index": 26,
+        "icon_index": 22,
+        "index": 18,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 38,
+        "frame_index": 27,
+        "icon_index": 23,
+        "index": 19,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 39,
+        "frame_index": 28,
+        "icon_index": 24,
+        "index": 20,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 40,
+        "frame_index": 29,
+        "icon_index": 25,
+        "index": 21,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 41,
+        "frame_index": 30,
+        "icon_index": 26,
+        "index": 22,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 42,
+        "frame_index": 31,
+        "icon_index": 27,
+        "index": 23,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 44,
+        "frame_index": 33,
+        "icon_index": 29,
+        "index": 24,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 45,
+        "frame_index": 34,
+        "icon_index": 30,
+        "index": 25,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 46,
+        "frame_index": 35,
+        "icon_index": 31,
+        "index": 26,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 47,
+        "frame_index": 36,
+        "icon_index": 32,
+        "index": 27,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 48,
+        "frame_index": 37,
+        "icon_index": 33,
+        "index": 28,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 49,
+        "frame_index": 38,
+        "icon_index": 34,
+        "index": 29,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 50,
+        "frame_index": 39,
+        "icon_index": 35,
+        "index": 30,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 51,
+        "frame_index": 40,
+        "icon_index": 36,
+        "index": 31,
+        "layout": "icon_2"
+      },
+      {
+        "frame_id": 64,
+        "frame_index": 4,
+        "icon_index": 2,
+        "index": 0,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 65,
+        "frame_index": 5,
+        "icon_index": 3,
+        "index": 1,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 66,
+        "frame_index": 6,
+        "icon_index": 4,
+        "index": 2,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 67,
+        "frame_index": 7,
+        "icon_index": 5,
+        "index": 3,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 68,
+        "frame_index": 8,
+        "icon_index": 6,
+        "index": 4,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 69,
+        "frame_index": 9,
+        "icon_index": 7,
+        "index": 5,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 70,
+        "frame_index": 10,
+        "icon_index": 8,
+        "index": 6,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 71,
+        "frame_index": 11,
+        "icon_index": 9,
+        "index": 7,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 17,
+        "frame_index": 13,
+        "icon_index": 11,
+        "index": 8,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 18,
+        "frame_index": 14,
+        "icon_index": 12,
+        "index": 9,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 19,
+        "frame_index": 15,
+        "icon_index": 13,
+        "index": 10,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 20,
+        "frame_index": 16,
+        "icon_index": 14,
+        "index": 11,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 21,
+        "frame_index": 17,
+        "icon_index": 15,
+        "index": 12,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 22,
+        "frame_index": 18,
+        "icon_index": 16,
+        "index": 13,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 23,
+        "frame_index": 19,
+        "icon_index": 17,
+        "index": 14,
+        "layout": "icon_3"
+      },
+      {
+        "frame_id": 24,
+        "frame_index": 20,
+        "icon_index": 18,
+        "index": 15,
+        "layout": "icon_3"
+      }
+    ],
+    "sha256": "63b203017d58890f24e8a46c10dc01eb0f64fa8eabdb2979c294cd4db805ccde"
+  },
+  "runtime_gpu_tested": false,
+  "shaders": {
+    "encoding_table_sha256": "9be5e4566f5bbfba9dcdff88a8bf5bbbe0273353f39261a80b7d04fdec4a9b67",
+    "programs": [
+      {
+        "program": 489,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          729,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "90658a9bc8646a31ebb57a13d4f999876aa6d67c0207da1a5b090be4235d8621"
+      },
+      {
+        "program": 640,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "31185dd93c6b5e1588effae2fe3de32dc15965a9fb133499a3d57c618d4f4a8b"
+      },
+      {
+        "program": 769,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          728,
+          729,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "6f1bcd952cd08f67cbd71611bd7497d6f56e4be6312ffe3a6435509a941e9d9b"
+      },
+      {
+        "program": 2080,
+        "runtime_uniforms": [
+          727,
+          726,
+          367
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "06099c7a5a70596dd1dcff7df606be1e5a02abd9cb21942e932f82a6b6f912cd"
+      },
+      {
+        "program": 2550,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "c256aff9d892f16d8823ef2b9be548c26a3a3570d3fb8b9076463f48f63ff91e"
+      },
+      {
+        "program": 2952,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "3ae6937b6ad5439855d2604f65318a2d8f279be82fe643f65b042cec27eb460d"
+      },
+      {
+        "program": 3306,
+        "runtime_uniforms": [
+          727,
+          726,
+          367
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "1f36279af2c5e0b84dbb43e455423328e96d7a075756043e0d9be6f9aa7d1b4d"
+      },
+      {
+        "program": 3620,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          733,
+          734,
+          970,
+          971
+        ],
+        "screen_xy_w1": false,
+        "shader_sha256": "32cf89092f28da4307727ce2e9c92dba7e63fc58077aafd734ecd411d3a46144"
+      },
+      {
+        "program": 3688,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "759b2781371877f64675ea80cc00530c7f6b40029098e089dfe4cf96302e55ef"
+      },
+      {
+        "program": 4035,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          729,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "cd3bfeae698febd1d01c7144f7a387de0be1d84f5e6273a48b2e2c44d9e2ec16"
+      },
+      {
+        "program": 5958,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          728,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "321d805dfae02f3c220ebd39c94af81390a1316177dc3cf86069f44f4703bdf3"
+      },
+      {
+        "program": 6091,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          729
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "7874ccbb8582f5dd437d33ef6c59fe32bf52d6b1ba66c564ceb9de3653536268"
+      },
+      {
+        "program": 6303,
+        "runtime_uniforms": [
+          727,
+          726,
+          367,
+          731,
+          728,
+          734,
+          970
+        ],
+        "screen_xy_w1": true,
+        "shader_sha256": "5dc939e3205bd212fc0cbadde161fccf612e33bec1c8fd79094de3bd306f275e"
+      }
+    ]
+  },
+  "texture_classes": {
+    "festa_texture": {
+      "bytes_sha256": "93b0e8e82f6d3ba3da08a84936aa9208a603659a547a9c98d32b6ac2163a23a9",
+      "vtable": 24561604
+    },
+    "texture": {
+      "bytes_sha256": "e446ccbb64fd20b200a80a61314828345320f66cb3b542a4fe730e00ba33a331",
+      "vtable": 24706248
+    }
+  },
+  "unsupported": [
+    "half-size or offset render targets",
+    "unmatched shader variants"
+  ],
+  "scope": "Saved resource-layout and reflected-uniform facts; no game shader bytes, executable or decompiled source. Original resource and shader hashes retained."
+}

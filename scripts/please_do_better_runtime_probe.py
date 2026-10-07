@@ -259,7 +259,7 @@ def main():
               'Conflict at each new observation tap rejects observation before arena allocation')
     p=Probe(image,payload,fail_flush=4,fail_svc={0x5f:5});p.call('forge_onInit');p.tree=True;p.call('forge_onImGuiRender')
     check(not p.read(p.private('capture_ready')) and len(p.aliases)==1,'Unsafe restoration retains reachable executable arena')
-    check(any(fmt.startswith('Observation:') and state.startswith('UNSAFE') for fmt,state in p.text),'Unsafe restoration is explicitly reported to the player')
+    check(any('unsafe restore' in str(args) for fmt,args in p.log_records),'Unsafe restoration is explicitly reported once through Forge logs')
     p=Probe(image,payload);p.call('forge_onInit')
     check(p.read(p.private('pair_ready'))==1 and p.read(p.private('capture_ready'))==1,'Compiled startup publishes both transactions')
     # Execute exact native hasSkill bytes, not a synthetic successful-return stub.

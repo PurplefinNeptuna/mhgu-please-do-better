@@ -2,6 +2,7 @@ from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_pa
 #!/usr/bin/env python3
 """Compiled r6 geometry/presentation/gold draw fixtures. No game or GPU launch."""
 import json
+import os
 import itertools
 import struct
 from unicorn import arm_const as a
@@ -308,11 +309,11 @@ def main():
         present();check(not render(),'Rejected draw stays unmarked')
         detail=struct.unpack('<17I',u.mem_read(p.private('draw_rejection'),68))
         check(detail[1]==reason,'Precise immutable rejection class')
-        if reason==6:check(detail[3]==0x445567,'Unmapped texture descriptor is rejected')
-        if reason==5:check(detail[6:11]==(0,3,0x2d7,0x2d6,0x16f),'Shader rejection carries bounded actual binding sequence')
+        if reason==6 and os.environ.get('MHGU_DIAGNOSTICS','0')!='1':check(detail[3]==0,'Release rejection snapshot omits texture addresses')
+        if reason==5 and os.environ.get('MHGU_DIAGNOSTICS','0')!='1':check(detail[6:11]==(0,0,0,0,0),'Release rejection snapshot omits shader/uniform traces')
         p.tree=True;p.text.clear();p.call('forge_onImGuiRender')
-        check(any('details are in the emulator log' in text for text in p.messages) and p.tree_depth==0,
-              'Compact suppression notice with balanced trees and verbose fields confined to logs')
+        check(not any('details are in the emulator log' in text for text in p.messages) and p.tree_depth==0,
+              'Failures appear only in logs; settings trees remain balanced')
         check(not any(any(raw in fmt for raw in ('Draw texture','Surface 0x','Viewport %d','Technique 0x','Bindings:')) for fmt,text in p.text),'Panel contains no raw rendering addresses, viewport or shader data')
         p.tree=False;p.write(addr,prior)
     draw_logs=[message for message in p.logs if 'unsupported reward draw path' in message]
@@ -437,7 +438,7 @@ def main():
     check(not any(any(marker in fmt for marker in verbose) for fmt in p.logs),
           'Release retains only startup and bounded unsupported-path messages')
     rejects=[(fmt,args) for fmt,args in p.log_records if 'unsupported reward draw path' in fmt]
-    check(len(rejects)==6 and all(len(args)==1 and 1<=args[0]<=7 for fmt,args in rejects),
+    check(len(rejects)==6 and all(len(args)==2 and 1<=args[0]<=7 and isinstance(args[1],str) and len(args[1])>4 for fmt,args in rejects),
           'Concise suppression reasons retain correct ARM variadic ABI')
     recipe.write_json(recipe.OUT/'highlight-tests.json',dict(checks=checks,native_clip_equivalence_cases=clip_cases,present_preservation_cases=preservation,active_geometry_preservation_cases=geometry_preservation,native_resource_mapping_cases=mapping_cases,native_frame_fragment_cases=frame_fragments,nro_sha256=recipe.sha(payload),gpu_gameplay_tested=False))
     print(f'PASS: {checks} compiled capture/present/gold draw checks; {preservation} present state cases; GPU/gameplay pending')

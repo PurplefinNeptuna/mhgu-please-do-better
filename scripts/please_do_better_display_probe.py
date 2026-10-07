@@ -164,8 +164,8 @@ def main():
           'Different-UI generation cannot suppress a genuine old-object relocation mismatch')
     p.tree={'Please do Better###pdb_panel':True,'Diagnostics###pdb_diagnostics':True}
     p.messages.clear();p.text.clear();p.call('forge_onImGuiRender')
-    check(any(fmt=='Last mapping fault: %s' and state=='relocation contents' for fmt,state in p.text),
-          'A relocation mismatch reports its actual path rather than a display-copy label')
+    check(p.read(p.private('mapping_detail')+16)==1 and not any(fmt.startswith('Last mapping fault:') for fmt,state in p.text),
+          'A relocation mismatch retains its exact fault route internally without diagnostic UI')
     # Guard the copies, not just the pointer. Failures never adopt foreign data.
     for failure in ('changed_copy','unmapped','over_capacity','short_capacity','stale_epoch','identity'):
         batch(32);p.write(ui+0x3c,1);_,update=p.frame(15,[ui],at=DATA+0x4000)
@@ -232,8 +232,8 @@ def main():
         formats=[fmt for fmt,state in p.text]
         check(not any(any(raw in fmt for raw in ('Owned words','Executed checks','clearing events','UI update hits')) for fmt in formats),
               'Compact panel excludes raw counters and ownership masks')
-        check(any(fmt.startswith('Currently highlighted slots:') for fmt in formats)==(panel and diagnostics),
-              'Important diagnostics remain behind the closed diagnostic row')
+        check(not any(fmt.startswith('Currently highlighted slots:') for fmt in formats),
+              'Settings panel has no reward summaries or diagnostic rows')
     report={'checks':checks,'compiled_boundary_preservation_cases':preservation,'native_relocation_cases':relocation_cases,
             'native_group_stride_cases':16,'native_holder_index_cases':33,'native_scissor_cases':scissor_cases,
             'main_sha256':recipe.binary.MAIN_SHA,'nro_sha256':recipe.sha(payload),

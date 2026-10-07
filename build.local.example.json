@@ -7,5 +7,6 @@
   "inputs": "work/input-source",
   "hd": "work/inputs/HD",
   "library": "work/inputs/library",
-  "romfs": "work/inputs/romfs/nativeNX"
+  "romfs": "work/inputs/romfs",
+  "salad": "work/inputs/SaladSoftware.py"
 }

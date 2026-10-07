@@ -5,7 +5,6 @@
   "files": {
     "vendor/forge/LICENSE": "6d4fb3bcf0778cbac746ae328a61222de4308405f28b98044145e37ee7e03ef7",
     "vendor/forge/LICENSE.legacyCtx14": "6dfb69c3e1996c82b0bfdd36cb56123a664cc3fb2215dd061e7f1fac1f9bdfe9",
-    "vendor/forge/data/fonts/Roboto-Medium.ttf": "9d0d55a303bfd13b79a87721f65185e93f235e2d77fe398b2dca67ac519915f5",
     "vendor/forge/include/Mt/MtAllocator.h": "f058b9e2f28c9a126375a3bcbf4dc821f121bc509d59fb8998ac5f750939cf8e",
     "vendor/forge/include/Mt/MtArray.h": "a0af34197962e8ca53b717487eecfd79a90c2af781ded2c63aa244566a19d04f",
     "vendor/forge/include/Mt/MtCRC.h": "40002ecd266dba7fee34f34ae7bfab665bd5cab24c3cb3fc0fe9fd095af32f0a",
@@ -67,6 +66,7 @@
     "vendor/sdk/libs/cimgui/imgui/imstb_rectpack.h": "889b396795202d1457560a797a7242e96f6f132d4b88ca2d69be58bf05e1771f",
     "vendor/sdk/libs/cimgui/imgui/imstb_textedit.h": "a985f5fa0ed97353d493b497961e9eef52082edcd045cf6954b69990ec9d0741",
     "vendor/sdk/libs/cimgui/imgui/imstb_truetype.h": "c51a0f7e7ea760f2366bd3752635ec58e21fccfec4a832501639990ba6ce0528",
+    "vendor/sdk/libs/libnx/LICENSE-MIT": "55d5333af71557138d70049fbbd28d306eb855f3cff87cc7b6392a5291b6678e",
     "vendor/sdk/libs/libnx/nx/include/switch/applets/album_la.h": "f54d91281c8efe0f9a2a50ddf6fb1cf6a5bbf4be57a56b05d94101152046049a",
     "vendor/sdk/libs/libnx/nx/include/switch/applets/error.h": "df4fef1a3c8908cd3072f226cd7bf1989c602f35774779e63b06e5320bb245fc",
     "vendor/sdk/libs/libnx/nx/include/switch/applets/friends_la.h": "f28bf472d36f419d7dcc75cac7e4883fdb6de18689b654e7e271cd3ee1214efb",
@@ -251,5 +251,27 @@
   "python": {
     "unicorn": "2.1.4",
     "fonttools": "4.66.1"
+  },
+  "binary_inputs": {
+    "main": "b3935415499549adaf4c0e89822831daa175cfd456a7990791c79be3997645ef",
+    "sdk": "9a9b7035266637ee693a32da6b0fde54bda00e897bef05b1c8d8cda30f8ac8b0",
+    "forge": "9d472d56f81f834f366171426dbd0131af19c7697e132c731c3fd3f335af53d0"
+  },
+  "origins": {
+    "forge": {
+      "snapshot": "maintained b8921fa3bbe35bbbafb11ccc489d5f1c6aa24a2d headers and preserved local compatibility license",
+      "url": "https://github.com/jeffi6375/forge",
+      "license": "vendor/forge/LICENSE"
+    },
+    "cimgui": {
+      "snapshot": "pinned per-file hashes from accepted ARM32 compiler inputs",
+      "url": "https://github.com/cimgui/cimgui",
+      "license": "vendor/sdk/libs/cimgui/LICENSE"
+    },
+    "libnx": {
+      "snapshot": "pinned per-file hashes, accepted ARM32 SVC and headers",
+      "url": "https://github.com/switchbrew/libnx",
+      "license": "vendor/sdk/LICENSE.md"
+    }
   }
 }

@@ -16,7 +16,7 @@ creates a different NRO and therefore a new release version, r15.
 Known external limitation: Forge's menu can display corrupt geometry while a
 background overlay is drawing, as reported with Damage Numbers and now this
 plugin. The existing handoff is
-../../docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md. Forge is unchanged; this
+docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md. Forge is unchanged; this
 release does not fix that renderer defect. Close Forge while viewing marked
 rewards and adjust plugin settings outside active highlighting.
 

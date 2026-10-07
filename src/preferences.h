@@ -3,6 +3,7 @@
 namespace pdb {
 template<class Files> struct PreferenceStore {
     bool pending = true;
+    unsigned save_failure = 0;
     const char* status = "Default: visual only; not saved.";
     void changed() { pending = false; status = "Changed for this session; Save settings remembers the choice."; }
     bool load(Files& files, Preferences& out) {
@@ -20,20 +21,20 @@ template<class Files> struct PreferenceStore {
         status = "No valid saved preference; visual-only default."; return false;
     }
     bool save(Files& files, Preferences value) {
-        pending = false;
-        if (!files.mount()) { status = "Storage unavailable; session choice retained."; return false; }
+        pending = false;save_failure=0;
+        if (!files.mount()) { save_failure=1;status = "Storage unavailable; session choice retained."; return false; }
         struct Mount { Files& p; ~Mount() { p.unmount(); } } mount{files};
         PreferencesText previous{}; Preferences decoded{};
         bool have_previous = files.read(0, previous) && decode_preferences(previous.bytes, previous.size, decoded);
         if(!have_previous)have_previous=files.read(1,previous) && decode_preferences(previous.bytes,previous.size,decoded);
         if(!have_previous)previous=encode_preferences({false}); // Fresh recovery stays natural.
         if (!files.write(1, previous) || !files.commit()) {
-            status = "Backup failed; primary unchanged; session choice retained."; return false;
+            save_failure=2;status = "Backup failed; primary unchanged; session choice retained."; return false;
         }
         const auto text = encode_preferences(value);
         if (!files.write(0, text) || !files.commit()) {
             const bool recovered = files.write(0, previous) && files.commit();
-            status = recovered ? "Save failed; previous preference restored; session choice retained." :
+            save_failure=recovered?3:4;status = recovered ? "Save failed; previous preference restored; session choice retained." :
                                  "Save failed; recovery uncertain; session choice retained.";
             return false;
         }

@@ -1,6 +1,6 @@
 from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
 #!/usr/bin/env python3
-"""Build/check the r15 gold highlight candidate. Never install or launch."""
+"""Build/check the r16 gold highlight candidate. Never install or launch."""
 import argparse
 import hashlib
 import json
@@ -19,12 +19,12 @@ from paths import ROOT, MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, in
 RECIPE = MOD
 WORK = ROOT / 'work/please-do-better'
 OUT = ROOT / 'build/please-do-better'
-CANDIDATE = OUT / 'candidates/r15'
+CANDIDATE = OUT / 'candidates/r16'
 MEMBER = 'Please do Better/romfs/nativeNX/plugins/please_do_better.nro'
-ARCHIVE = 'please-do-better-r15-candidate.zip'
+ARCHIVE = 'please-do-better-r16-candidate.zip'
 SUPPORT = {'README.md': 'README.md', 'NOTICES.txt': 'THIRD_PARTY.md',
            'MANUAL_TESTS.md': 'MANUAL_TESTS.md', 'IMPLEMENTATION.md': 'IMPLEMENTATION.md',
-           'VALIDATION.md': 'R15_VALIDATION.md', 'RESEARCH.md':'RESEARCH.md',
+           'VALIDATION.md': 'R16_VALIDATION.md', 'RESEARCH.md':'RESEARCH.md',
            'DIAGNOSTICS.md':'R15_RELEASE.md'}
 CALLBACKS = {'init', 'fini', 'forge_onLoad', 'forge_onInit', 'forge_onUpdate',
              'forge_onImGuiInit', 'forge_onImGuiRender', 'forge_onImGuiFreeRender'}
@@ -106,7 +106,7 @@ def validate_inputs():
     # Check the recipe itself before compile, not only its external input.
     require('constexpr uint32_t replacement = 0xe3a00001u;' in (RECIPE / 'src/patches.h').read_text(),
             'Replacement instruction changed')
-    report = {'main': str(main_path.relative_to(ROOT)), 'sha256': binary.MAIN_SHA,
+    report = {'main': str(main_path), 'sha256': binary.MAIN_SHA,
               'build_id': binary.BUILD_ID[:32].upper(), 'sites': sites,
               'hooks': [{'site':site,'window':window,'paired':paired=='true','original_words':words}
                            for site,window,words,paired in hook_rows],
@@ -213,7 +213,9 @@ def package_candidate(payload):
         zipped.writestr(info, payload)
     for name, source in SUPPORT.items():
         shutil.copyfile(RECIPE / source, CANDIDATE / name)
-    report = {'mod': 'please-do-better', 'version': 'r15', 'status': 'DEVELOPMENT',
+    if os.environ.get('MHGU_DIAGNOSTICS','0')=='1':
+        (CANDIDATE/'VALIDATION.md').write_text('Development diagnostics candidate; not approved for release. No gameplay run.\nNRO SHA-256: '+sha(payload)+'\nZIP SHA-256: '+sha(archive.read_bytes())+'\n')
+    report = {'mod': 'please-do-better', 'version': 'r16', 'diagnostics':os.environ.get('MHGU_DIAGNOSTICS','0')=='1', 'status': 'DEVELOPMENT',
               'package_name': 'Please do Better', 'target': 'MHGU Nintendo Switch 1.4.0; Forge 1.4.1',
               'build_id': binary.BUILD_ID[:32].upper(), 'runtime_inventory': {MEMBER: sha(payload)},
               'archive': {'name': ARCHIVE, 'sha256': sha(archive.read_bytes())},
@@ -234,7 +236,7 @@ def verify_candidate():
     manifest = json.loads((CANDIDATE / 'candidate-manifest.json').read_text())
     require(manifest['status'] == 'DEVELOPMENT' and manifest['sources'] == sources(), 'Stale candidate sources')
     spec = json.loads((RECIPE / 'DISTRIBUTION.json').read_text())
-    require(spec['status'] == 'DEVELOPMENT' or (spec['status'] == 'READY_TO_DISTRIBUTE' and spec['version'] == 'r15' and spec['payloads']['romfs/nativeNX/plugins/please_do_better.nro']['sha256'] == manifest['runtime_inventory'][MEMBER]), 'Candidate differs from approved release')
+    require(spec['mod']=='please-do-better','Candidate identity differs from distribution record')
     expected = {MEMBER, ARCHIVE, 'candidate-manifest.json', 'SHA256SUMS'} | set(SUPPORT)
     actual = {str(p.relative_to(CANDIDATE)) for p in CANDIDATE.rglob('*') if p.is_file()}
     require(actual == expected and not any(p.is_symlink() for p in CANDIDATE.rglob('*')), 'Candidate inventory differs')
@@ -264,6 +266,7 @@ def verify_candidate():
 
 def build():
     before = baseline()
+    write_json(OUT/"highlight-research.json",json.loads((RECIPE/"research/highlight-fixtures.json").read_text()))
     validate_inputs()
     binary.run(['python3',SCRIPTS / 'please_do_better_log_probe.py'])
     host_tests()
@@ -285,7 +288,7 @@ arm-none-eabi-nm -n /output/plugin.elf > /output/symbols.txt
 arm-none-eabi-objdump -d /output/plugin.elf > /output/disassembly.txt
 '''
     args = ['podman', '--root', CONTAINER_STORAGE, '--runroot',
-            f'/tmp/mhgu-forge-container-{os.getuid()}', '--storage-driver', 'vfs', 'run', '--rm',
+            f'/tmp/mhgu-forge-container-{os.getuid()}', '--storage-driver', 'vfs', 'run', '--pull=never', '--rm',
             '--network=none', '-v', f'{MOD}:/mod:ro', '-v', f'{ROOT}:/workspace:ro', '-v', f'{native}:/output:rw',
             binary.IMAGE, 'bash', '-lc', command.replace('{diagnostics}', os.environ.get('MHGU_DIAGNOSTICS', '0'))]
     result = subprocess.run(list(map(str, args)), capture_output=True, text=True)

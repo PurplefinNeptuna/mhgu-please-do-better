@@ -159,7 +159,7 @@ def main():
         check(p.read(p.private('summary_status'))==(1 if failure=='empty_table' else 2),'Missing count/taps, malformed prefix or changed destination never reports complete zero-bonus coverage')
         if failure!='empty_table':
             p.tree=True;p.messages.clear();p.call('forge_onImGuiRender')
-            check('Extra-slot total unavailable: observation incomplete.' in p.messages,'Incomplete observation explicitly avoids a verified zero-extra claim')
+            check(not any('Extra-slot total' in x for x in p.messages),'Incomplete observation remains guarded internally and emits no reward summary UI')
         if failure=='empty_table':
             check(p.read(p.private('generated_count'))==p.read(p.private('bonus_count'))==0,'Absent native table yields a verified empty copied batch')
             p.native[MAIN+0x3c6124]=rem

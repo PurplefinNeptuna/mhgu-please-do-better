@@ -19,7 +19,7 @@ has local compiled/static validation, with no new gameplay run claimed.
 The user reports Forge's menu corrupts while this background overlay is present,
 and explicitly excludes fixing forge-patched from this task. The inspected Forge
 multi-list buffer offset defect is documented in
-../../docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md. Its relevance to this plugin
+docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md. Its relevance to this plugin
 fits the source mechanism and user report; no fixed Forge build was tested.
 The limitation remains disclosed in the release README. Use the settings panel
 outside reward highlighting and close Forge's menu while viewing marked rewards.
@@ -31,3 +31,7 @@ persistence, collection/quantity decreases, repeated grids/transitions/destructi
 animations, Eden multicore/translation freshness, Ryujinx and the second check's
 broader gameplay role remain pending or incompletely traced. No clean-shutdown,
 rare-drop guarantee, native Switch or universal emulator compatibility claim.
+
+## r16 standalone/settings/log cleanup
+
+This binary has its own fresh compiled/static checks, recorded in CLEANUP_VALIDATION.json. No new gameplay test was run; the preceding observations retain their original version and scope. Forge remains unchanged.

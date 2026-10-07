@@ -26,7 +26,7 @@ extern "C" void forge_onLoad(PluginInitParam* out) {
     const char* name = "Please do Better";
     for (unsigned i = 0; name[i]; ++i) bytes[offsetof(PluginInitParam, name)+i] = name[i];
 }
-extern "C" void forge_onInit() { pdb::install(); }
+extern "C" void forge_onInit() { pdb::install(); static bool reported; if(reported)return; reported=true; forge_log_info("[please-do-better] r16 loaded; %s",pdb::startup_status()); }
 extern "C" void forge_onUpdate(float) { pdb::update(); }
 extern "C" void forge_onImGuiInit(void* context, void* allocate, void* release) {
     igSetCurrentContext(static_cast<ImGuiContext*>(context));
@@ -39,12 +39,8 @@ extern "C" void forge_onImGuiRender() {
     if(igCheckbox("Force Miraculous Luck###pdb_force", &force)) {
         pdb::preferences_changed();pdb::request_force(force);
     }
-    if(!pdb::forcing_available())igTextUnformatted("Forcing unavailable: guarded hooks or batch capture failed.",nullptr);
-    igTextUnformatted(force && pdb::forcing_available() ? "New batches: forced Miraculous Luck" :
-                     "New batches: natural luck",nullptr);
     if(igButton("Save settings###pdb_save",ImVec2_c{0,0}))pdb::save_preferences({force});
     igTextUnformatted(pdb::preferences_status(),nullptr);
-    pdb::diagnostics();
     igTreePop();
 }
 extern "C" void forge_onImGuiFreeRender() {

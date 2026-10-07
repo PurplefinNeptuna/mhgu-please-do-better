@@ -1,3 +1,4 @@
+#include "log_policy.h"
 #include "runtime.h"
 #include "mode.h"
 #include "attribution.h"
@@ -123,23 +124,26 @@ static void remember_rejection(DrawRejection d) {
 }
 static void reject_draw(uint32_t reason,uint32_t node,uint32_t renderer=0,uint32_t target=0,
                         uint32_t sentinel=0,uint32_t presented=0) {
-    DrawRejection d{};d.reason=reason;d.node_flags=word(node+0x108);
-    d.target=target;d.sentinel=sentinel;d.presented=presented;
-    if(field(renderer,0x1ac,4)) {
-        const uint32_t packet=word(renderer+0x1ac);
-        if(readable(packet,0x5c)) {
-            d.target_flags=word(packet+0x14);d.extent=word(packet+0x58);
-            copy(packet+((d.target_flags&0x200)?0x28:0x18),d.viewport,16);
+    DrawRejection d{};d.reason=reason;
+    if (mod_log::diagnostics) {
+        d.node_flags=word(node+0x108);
+        d.target=target;d.sentinel=sentinel;d.presented=presented;
+        if(field(renderer,0x1ac,4)) {
+            const uint32_t packet=word(renderer+0x1ac);
+            if(readable(packet,0x5c)) {
+                d.target_flags=word(packet+0x14);d.extent=word(packet+0x58);
+                copy(packet+((d.target_flags&0x200)?0x28:0x18),d.viewport,16);
+            }
         }
-    }
-    if(field(renderer,0x1d8,4))d.technique=word(renderer+0x1d8);
-    if(field(renderer,0x1a4,4)) {
-        const uint32_t packet=word(renderer+0x1a4);
-        const uint32_t program=field(packet,8,4)?word(packet+8):0;
-        if(field(program,0x40,8)) {
-            d.uniform_count=word(program+0x44);
-            if(d.uniform_count && d.uniform_count<=9)
-                copy(word(program+0x40),d.uniforms,d.uniform_count*4);
+        if(field(renderer,0x1d8,4))d.technique=word(renderer+0x1d8);
+        if(field(renderer,0x1a4,4)) {
+            const uint32_t packet=word(renderer+0x1a4);
+            const uint32_t program=field(packet,8,4)?word(packet+8):0;
+            if(field(program,0x40,8)) {
+                d.uniform_count=word(program+0x44);
+                if(d.uniform_count && d.uniform_count<=9)
+                    copy(word(program+0x40),d.uniforms,d.uniform_count*4);
+            }
         }
     }
     remember_rejection(d);
@@ -151,7 +155,8 @@ static void report_draw_rejection() {
     // gateway and its live GE contract. One entry per class prevents floods.
     const uint32_t reason=d.reason;
     if(!(__atomic_fetch_or(&rejection_logged,1u<<reason,__ATOMIC_RELAXED)&(1u<<reason))) {
-        forge_log_info("[please-do-better] r15 unsupported reward draw path (%u); its marker is suppressed",reason);
+        static const char* const reasons[]={"unknown", "tiled or perspective geometry", "missing render target", "unsupported surface", "unsupported viewport", "unsupported shader", "unmapped texture", "unsupported clip"};
+        forge_log_warn("[please-do-better] unsupported reward draw path (%u: %s); marker suppressed; restart if persistent", reason, reasons[reason]);
     }
 }
 static uint32_t frame_overflow[2]{},geometry_claims[64]{};
@@ -243,7 +248,7 @@ static bool effective_clip(const int32_t viewport[4],const int32_t raw[4],int32_
     return true;
 }
 static void trace_geometry(unsigned gate,uint32_t node,uint32_t ctx,const Binding& b) {
-    count(geometry_gates[gate]);GeometryTrace t{};
+    count(geometry_gates[gate]);if (!mod_log::diagnostics) return;GeometryTrace t{};
     t.gate=gate;t.node=node;t.ctx=ctx;t.list=b.list;t.index=b.index;
     t.renderer=trace_word(ctx,4);t.cache=trace_word(node,0xc0);t.flags=trace_word(node,0x108);
     t.offset=trace_word(node,0xbc);t.stride=trace_word(t.renderer,0x134);
@@ -272,7 +277,7 @@ static void trace_geometry(unsigned gate,uint32_t node,uint32_t ctx,const Bindin
     geometry_trace.publish(t);
 }
 static void trace_present(unsigned gate,const RawFrame& f) {
-    count(present_gates[gate]);if(!seen(binding_count))return;
+    count(present_gates[gate]);if(!mod_log::diagnostics || !seen(binding_count))return;
     PresentTrace t{};t.gate=gate;t.sr=seen(native_render);
     const uint32_t owner=t.sr+0x34100;
     t.queue=f.r[12];t.window=f.r[1];t.index=f.r[2];
@@ -729,6 +734,12 @@ void request_force(bool value) { mode.set(value); }
 bool requested_force() { return mode.get(); }
 bool forcing_available() { return __atomic_load_n(&pair_ready,__ATOMIC_ACQUIRE) &&
                                  __atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE); }
+template<class ReportType> static void install_failure(const char* feature,const ReportType& r) {
+    static const char* const reasons[]={"unavailable", "wrong game", "unreadable address", "signature or conflicting patch", "write failed", "cache synchronization failed", "readback failed", "external patch changed"};
+    const unsigned reason=unsigned(r.failure);
+    forge_log_warn("[please-do-better] %s unavailable: %s (%s); remove conflicting mods, verify game/Forge, then restart",feature,
+                   reason<8?reasons[reason]:"native resource failure",r.state==State::Unsafe?"unsafe restore; arena retained":"safely disabled");
+}
 void install() {
     static_assert(highlight_rendering_accepted,"Native frame, shader and presentation fixtures required");
     if(initialized) {
@@ -749,19 +760,17 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r15 conditional state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(r.state),r.owned,r.unsafe,unsigned(r.failure),r.site,r.cache);
-    if(r.state!=State::Applied)return;
+    if(r.state!=State::Applied) {install_failure("Luck hooks",r);return;}
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
-    if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
+    if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();forge_log_warn("[please-do-better] Reward capture TLS unavailable; reduce loaded plugins and restart");return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r15 observation state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(v.state),v.owned,v.unsafe,unsigned(v.failure),v.site,v.cache);
-    if(v.state!=State::Applied)return;
+    if(v.state!=State::Applied) {install_failure("Reward capture hooks",v);return;}
     Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
     const auto h=highlight.install(base,rendering,2);
     if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r15 highlights state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(h.state),h.owned,h.unsafe,unsigned(h.failure),h.site,h.cache);
+    else install_failure("Highlight hooks",h);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -898,48 +907,17 @@ void update() {
     __atomic_store_n(&binding_count,bound,__ATOMIC_RELEASE);
 
 }
-void diagnostics() {
-    const auto r=conditional.report(),v=visual.report();
-    const auto tier=__atomic_load_n(&latest_tier,__ATOMIC_ACQUIRE);
-    const char* name=tier==25?"Good Luck":tier==28?"Great Luck":tier==31?"Miraculous Luck":
-                     tier==22?"Normal":tier==16?"Bad Luck":tier==8?"Horrible Luck":tier==UINT32_MAX?"Mixed luck":"Unavailable";
-    const uint32_t status=seen(summary_status);
-    if(!status)igTextUnformatted("No completed reward observation yet; extra slots unavailable.",nullptr);
-    else {
-        if(status==1)igText("Last rewards: %s; %u generated, %u extra slots",name,seen(generated_count),seen(bonus_count));
-        else igTextUnformatted("Extra-slot total unavailable: observation incomplete.",nullptr);
-    }
-    if(seen(highlight_ready))igTextUnformatted("Gold highlights: enabled for verified extra slots.",nullptr);
-    else igTextUnformatted("Gold highlights unavailable: startup rendering checks failed.",nullptr);
-    if(!igTreeNode_Str("Diagnostics###pdb_diagnostics"))return;
-    const char* states[]={"not installed","safe startup checks passed","rejected","rolled back","UNSAFE; residual/changed bytes"};
-    igText("Conditional: %s",states[unsigned(r.state)]);
-    igText("Observation: %s",states[unsigned(v.state)]);
-    if(r.failure!=Failure::None || r.unsafe)igText("Conditional failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(r.failure),r.site,r.cache);
-    if(v.failure!=Failure::None || v.unsafe)igText("Observation failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(v.failure),v.site,v.cache);
-    igTextUnformatted(status==1?"Observation coverage: verified traced routes.":status?"Observation coverage: incomplete.":"Observation coverage: awaiting rewards.",nullptr);
-    igText("Currently highlighted slots: %u; bound extra slots: %u",seen(highlighted_count),seen(binding_count));
-    if(seen(render_faults))igText("Highlight capture faults: %u",seen(render_faults));
-    DrawRejection rejected{};
-    if(seen(unsupported_draws) && draw_rejection.read(rejected) && rejected.fence==seen(live_fence)) {
-        igTextUnformatted("Some highlight draws are suppressed; details are in the emulator log.",nullptr);
-    }
-    const auto h=highlight.report();
-    if(h.failure!=Failure::None || h.unsafe)igText("Highlight failure %u at site %u; full restart required.",unsigned(h.failure),h.site);
-    igText("Capture faults: %u; mapping faults: %u",seen(drops),seen(mapping_faults));
-    CopyFault fault{};
-    if(seen(mapping_faults) && mapping_detail.read(fault)) {
-        const char* routes[]={"display-copy contents","relocation contents","batch-to-relocation contents","relocation input/bounds"};
-        igText("Last mapping fault: %s",fault.route<4?routes[fault.route]:"unknown");
-
-    }
-    igTextUnformatted("Extra slots compare with normal luck; no rare-drop guarantee. Last reward totals remain after collection.",nullptr);
-    igTextUnformatted("Disable the legacy Great Luck cheat. Plugin removal requires a full restart.",nullptr);
-    igTreePop();
+void diagnostics() {} // Kept for source compatibility; settings UI has no diagnostics.
+const char* startup_status() {
+    return forcing_available() ? (seen(highlight_ready) ? "forcing and highlights ready" : "forcing ready; highlights unavailable") : "forcing unavailable";
 }
+
 void render() {
     count(render_gates[REnter]);
     report_draw_rejection();
+    static mod_log::Once failures;
+    if(seen(mapping_faults) && failures.claim(0)) forge_log_warn("[please-do-better] Reward mapping incomplete; uncertain markers suppressed; restart if persistent");
+    if(seen(render_faults) && failures.claim(1)) forge_log_warn("[please-do-better] Highlight capture incomplete; uncertain markers suppressed; restart if persistent");
     __atomic_store_n(&highlighted_count,0,__ATOMIC_RELAXED);
     const uint32_t cycle=__atomic_fetch_add(&draw_cycle,1,__ATOMIC_SEQ_CST);
     Presentation p{};

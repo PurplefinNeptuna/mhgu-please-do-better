@@ -1,3 +1,5 @@
+#include "log_policy.h"
+#include <forge/log.h>
 #include "settings.h"
 #include "preferences.h"
 #include "sdk_fs.h"
@@ -34,7 +36,17 @@ struct Files {
 };
 static PreferenceStore<Files> store;
 bool load_preferences(Preferences& out) { Files files; return store.load(files, out); }
-bool save_preferences(Preferences value) { Files files; return store.save(files, value); }
+bool save_preferences(Preferences value) {
+    Files files;static mod_log::Once failures;
+    static bool have_saved, saved;
+    if (!store.save(files,value)) {
+        const unsigned reason=store.save_failure;
+        if(failures.claim(reason)) forge_log_warn("[please-do-better] %s Load a player save and retry Save settings.",store.status);
+        return false;
+    }
+    if(!have_saved || saved!=value.force) forge_log_info("[please-do-better] Preference saved: forcing %s",value.force?"enabled":"disabled");
+    saved=value.force;have_saved=true;return true;
+}
 void preferences_changed() { store.changed(); }
 bool preferences_pending() { return store.pending; }
 const char* preferences_status() { return store.status; }
