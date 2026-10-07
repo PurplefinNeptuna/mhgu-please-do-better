@@ -75,3 +75,17 @@ is fixed. Check direct and parallel frame ordering, cursor/animation alignment,
 collection refresh and immediate disappearance at village return. Natural luck,
 no luck, forced mode, toggles, persistence, Eden multicore/translation freshness
 and separate Ryujinx compatibility remain pending.
+
+## R11 emulator-log tracing
+
+For a separately authorized gameplay run, identify the exact r11 NRO and launch
+set. Keep the legacy cheat disabled. Reach a populated reward grid without taking
+items and retain the Eden log. The first eight render callbacks and periodic
+samples include bound slots, gateway stage counts, actual presentation frame/
+serial/image, captured geometry size/coordinates and transforms. Keep the panel
+closed for part of the run: its visibility must not control logs or highlights.
+No raw texture/shader/viewport fields should appear in ImGui. A closed screen
+must remove live markers while completed totals remain. The telemetry identifies
+silent exits; r11 alone is not evidence that the visible highlight failure is
+fixed. Natural luck, repeated grids, mode/settings, animation/cursor alignment,
+Eden multicore and Ryujinx compatibility remain pending.

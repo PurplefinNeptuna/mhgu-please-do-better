@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r10 compares captured NVN draw textures with exact acquired presentation images and keeps the first screen rejection readable. R9 user grid/log confirm four bound extras, supported shader and surface guard rejection, with no visible markers. R10 GPU/gameplay alignment, natural luck, Eden multicore/translation and Ryujinx remain pending. Prior candidates, Forge and installed packages preserved; no installation or publication.",
+  "reason": "Local r11 adds bounded emulator-log telemetry for every capture, presentation and render gate, with compact ImGui status. R10 grid confirms four bound extras and zero markers/faults; the exact installed r10 log shows no draw-rejection message, leaving a silent stopping point unknown. No guard is relaxed. Visible highlights and remaining gameplay coverage are pending. Prior candidates, Forge and installed packages preserved; no installation or publication.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

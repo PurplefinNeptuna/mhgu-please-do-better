@@ -84,6 +84,27 @@ static Snapshot<Geometry> geometries[64];
 static Snapshot<Presentation> presentation;
 static uint32_t binding_count, highlight_ready, highlighted_count, render_faults, unsupported_draws;
 static uint32_t live_fence=1, draw_cycle=1, present_pending, native_render;
+// Gameplay producers publish only fixed atomic telemetry. Formatting stays in
+// Forge callbacks, outside gateways and their live register/GE contracts.
+enum GeometryGate { GEnter,GReady,GRegisters,GUnbound,GMatched,GList,GItem,GIdentity,
+    GUncached,GTiled,GRenderer,GFrame,GLayout,GSubmission,GTarget,GTexture,GShader,
+    GViewport,GBuffer,GInputs,GQuad,GClip,GEpoch,GPublished,GConflict,GOverflow,GCount };
+enum PresentGate { PEnter,PDisabled,PContext,PFrame,PMetadata,PImage,PPublished,PConflict,PCount };
+enum RenderGate { REnter,RDisabled,RPending,RSnapshot,RCycle,ROverflow,RIO,RDrawList,RTime,
+    RSample,RFrame,RDimensions,RBinding,REpoch,RImage,RDrawn,RCount };
+static uint32_t geometry_gates[GCount]{},present_gates[PCount]{},render_gates[RCount]{};
+struct GeometryTrace {
+    uint32_t gate,node,ctx,list,index,renderer,cache,flags,offset,stride,renderer_offset,
+        draw_flags,frame,serial,parallel,cycle,fence,target,extent,model,global,buffer;
+    float vertices[24]{},matrix[16]{},projection[4]{};
+};
+struct PresentTrace {
+    uint32_t gate,sr,queue,window,index,expected_queue,expected_index,frame,serial,parallel,
+        resource,cached_index,table,image;
+};
+static Snapshot<GeometryTrace> geometry_trace;
+static Snapshot<PresentTrace> present_trace;
+static uint32_t trace_screen,trace_frame,trace_bundles,trace_total,trace_logger_claim;
 struct DrawRejection {
     uint32_t reason=0,node_flags=0,target=0,sentinel=0,presented=0,technique=0,uniform_count=0;
     uint32_t uniforms[9]{};
@@ -129,12 +150,12 @@ static void report_draw_rejection() {
     // gateway and its live GE contract. One entry per class prevents floods.
     const uint32_t reason=d.reason;
     if(!(__atomic_fetch_or(&rejection_logged,1u<<reason,__ATOMIC_RELAXED)&(1u<<reason))) {
-        forge_log_info("[please-do-better] r10 draw rejected reason=%u flags=%X target=%X sentinel=%X presented=%X technique=%X uniforms=%u [%X %X %X %X %X %X %X %X %X]",
+        forge_log_info("[please-do-better] r11 draw rejected reason=%u flags=%X target=%X sentinel=%X presented=%X technique=%X uniforms=%u [%X %X %X %X %X %X %X %X %X]",
             reason,d.node_flags,d.target,d.sentinel,d.presented,d.technique,d.uniform_count,
             d.uniforms[0],d.uniforms[1],d.uniforms[2],d.uniforms[3],d.uniforms[4],
             d.uniforms[5],d.uniforms[6],d.uniforms[7],d.uniforms[8]);
-        if(reason==3)forge_log_info("[please-do-better] r10 target texture=%X acquired image=%X index=%u",d.texture,d.image,d.index);
-        if(reason==4)forge_log_info("[please-do-better] r10 viewport flags=%X extent=%X selected=[%d %d %d %d]",
+        if(reason==3)forge_log_info("[please-do-better] r11 target texture=%X acquired image=%X index=%u",d.texture,d.image,d.index);
+        if(reason==4)forge_log_info("[please-do-better] r11 viewport flags=%X extent=%X selected=[%d %d %d %d]",
             d.target_flags,d.extent,d.viewport[0],d.viewport[1],d.viewport[2],d.viewport[3]);
     }
 }
@@ -206,53 +227,88 @@ static bool shader_2d(uint32_t renderer) {
     }
     return false;
 }
+static uint32_t trace_word(uint32_t address,unsigned offset) {
+    return field(address,offset,4)?word(address+offset):0;
+}
+static void trace_geometry(unsigned gate,uint32_t node,uint32_t ctx,const Binding& b) {
+    count(geometry_gates[gate]);GeometryTrace t{};
+    t.gate=gate;t.node=node;t.ctx=ctx;t.list=b.list;t.index=b.index;
+    t.renderer=trace_word(ctx,4);t.cache=trace_word(node,0xc0);t.flags=trace_word(node,0x108);
+    t.offset=trace_word(node,0xbc);t.stride=trace_word(t.renderer,0x134);
+    t.renderer_offset=trace_word(t.renderer,0x138);t.draw_flags=trace_word(t.renderer,0x54);
+    const uint32_t sr=seen(native_render);
+    t.frame=trace_word(sr,0x33f4c);t.serial=trace_word(sr,0x33f50);
+    t.parallel=field(sr,0x1f,1)?*reinterpret_cast<volatile const uint8_t*>(sr+0x1f):UINT32_MAX;
+    t.cycle=seen(draw_cycle);t.fence=seen(live_fence);
+    t.target=trace_word(t.renderer,0x1ac);t.extent=trace_word(t.target,0x58);
+    t.model=trace_word(t.renderer,0x18bc);t.global=trace_word(t.renderer,0x18b4);
+    t.buffer=trace_word(trace_word(base,0x212668c),0xb0);
+    if(uint64_t(t.buffer)+t.offset<=UINT32_MAX)copy(t.buffer+t.offset,t.vertices,sizeof(t.vertices));
+    copy(t.model,t.matrix,sizeof(t.matrix));copy(t.global,t.projection,sizeof(t.projection));
+    geometry_trace.publish(t);
+}
+static void trace_present(unsigned gate,const RawFrame& f) {
+    count(present_gates[gate]);if(!seen(binding_count))return;
+    PresentTrace t{};t.gate=gate;t.sr=seen(native_render);
+    const uint32_t owner=t.sr+0x34100;
+    t.queue=f.r[12];t.window=f.r[1];t.index=f.r[2];
+    t.expected_queue=trace_word(owner,0x46f8);t.expected_index=trace_word(owner,0x46fc);
+    t.frame=trace_word(t.sr,0x33f4c);t.serial=trace_word(t.sr,0x33f50);
+    t.parallel=field(t.sr,0x1f,1)?*reinterpret_cast<volatile const uint8_t*>(t.sr+0x1f):UINT32_MAX;
+    t.resource=trace_word(owner,0x48cc);t.cached_index=trace_word(owner,0x48d0);
+    t.table=t.index<3?trace_word(owner,0x48c0+t.index*4):0;t.image=trace_word(t.resource,0x3c);
+    present_trace.publish(t);
+}
 static void capture_geometry(RawFrame& f) {
+    count(geometry_gates[GEnter]);
     if(!seen(highlight_ready) || !seen(binding_count))return;
+    count(geometry_gates[GReady]);
     const uint32_t node=f.r[5],ctx=f.r[4];
-    if(uint64_t(node)+0xcc>UINT32_MAX || f.r[6]!=node+0xcc)return;
+    if(uint64_t(node)+0xcc>UINT32_MAX || f.r[6]!=node+0xcc) {count(geometry_gates[GRegisters]);return;}
     Binding b{};unsigned slot=64;
     const uint32_t fence=seen(live_fence),cycle=seen(draw_cycle);
     for(unsigned i=0;i<seen(binding_count) && i<64;++i)
         if(bindings[i].read(b) && b.node==node && b.fence==fence) {slot=i;break;}
-    if(slot==64)return;
+    if(slot==64) {count(geometry_gates[GUnbound]);return;}
+    count(geometry_gates[GMatched]);
     // Native draw proves the node is alive. Its exact list identity is retained
     // until a UI exit/destructor invalidates the fence BEFORE native freeing.
     if(!field(b.list,0x4c,0x14) || word(b.list+0x4c)!=b.group || b.index>=word(b.list+0x5c) ||
-       !field(b.list,0x60+b.index*4,4))return;
+       !field(b.list,0x60+b.index*4,4)) {trace_geometry(GList,node,ctx,b);return;}
     Reward current{};
     if(!copy(b.list+0x60+b.index*4,&current,4) || !current.item || !current.amount ||
-       !compatible_refresh(b.item,current))return;
+       !compatible_refresh(b.item,current)) {trace_geometry(GItem,node,ctx,b);return;}
     if(!texture_node(node) || word(node+0x50)!=b.id ||
-       !field(ctx,4,4))return;
-    if(!(word(node+0xc0)&0x800000))return;
-    if(word(node+0x108)&0x30) {reject_draw(1,node);return;}
+       !field(ctx,4,4)) {trace_geometry(GIdentity,node,ctx,b);return;}
+    if(!(word(node+0xc0)&0x800000)) {trace_geometry(GUncached,node,ctx,b);return;}
+    if(word(node+0x108)&0x30) {trace_geometry(GTiled,node,ctx,b);reject_draw(1,node);return;}
     const uint32_t renderer=word(ctx+4),sr=seen(native_render);
-    if(!field(renderer,0x18bc,4) || !field(sr,0x389cc,4))return;
+    if(!field(renderer,0x18bc,4) || !field(sr,0x389cc,4)) {trace_geometry(GRenderer,node,ctx,b);return;}
     if(!field(sr,0x1f,1) || !field(sr,0x33f50,4) ||
-       *reinterpret_cast<volatile const uint8_t*>(sr+0x1f)>1 || word(sr+0x33f4c)>1)return;
+       *reinterpret_cast<volatile const uint8_t*>(sr+0x1f)>1 || word(sr+0x33f4c)>1) {trace_geometry(GFrame,node,ctx,b);return;}
     if(!field(renderer,0x138,4) || *reinterpret_cast<volatile const uint8_t*>(renderer+0x134)!=24 ||
-       word(renderer+0x138)!=word(node+0xbc))return;
+       word(renderer+0x138)!=word(node+0xbc)) {trace_geometry(GLayout,node,ctx,b);return;}
     // The native draw-packet helper returns without enqueueing when these
     // renderer flags suppress submission, even though vertex construction
     // itself returns success. Such frames must receive no marker.
     const uint32_t draw_flags=word(renderer+0x54);
-    if(!(draw_flags&0x100) && (draw_flags&0x50))return;
+    if(!(draw_flags&0x100) && (draw_flags&0x50)) {trace_geometry(GSubmission,node,ctx,b);return;}
     const uint32_t target_packet=word(renderer+0x1ac);
     const uint32_t sentinel=indirect(word(sr+0x389c0),0x204);
     const uint32_t presented=indirect(word(sr+0x389cc),0x204);
-    if(!readable(target_packet,0x5c)) {reject_draw(2,node,renderer);return;}
+    if(!readable(target_packet,0x5c)) {trace_geometry(GTarget,node,ctx,b);reject_draw(2,node,renderer);return;}
     const uint32_t surface=word(target_packet);
     // Descriptor identity can change independently of the acquired image.
     // Retain the native texture identity; compare it only at presentation.
     const uint32_t texture=surface==sentinel?0:surface_texture(surface);
     if(!surface || (surface!=sentinel && !texture)) {
-        reject_draw(6,node,renderer,surface,sentinel,presented);return;
+        trace_geometry(GTexture,node,ctx,b);reject_draw(6,node,renderer,surface,sentinel,presented);return;
     }
-    if(!shader_2d(renderer)) {reject_draw(5,node,renderer,surface,sentinel,presented);return;}
+    if(!shader_2d(renderer)) {trace_geometry(GShader,node,ctx,b);reject_draw(5,node,renderer,surface,sentinel,presented);return;}
     int32_t viewport[4]{},clip[4]{};
     const unsigned alternate=(word(target_packet+0x14)&0x200)?0x10:0;
     if(!copy(target_packet+0x18+alternate,viewport,16) ||
-       !copy(target_packet+0x38+alternate,clip,16))return;
+       !copy(target_packet+0x38+alternate,clip,16)) {trace_geometry(GViewport,node,ctx,b);return;}
     // BC0E98 selects these exact two banks, clamps viewport to surface size,
     // then intersects the scissor. Accept only its full, zero-origin result.
     const uint32_t extent=word(target_packet+0x58);
@@ -263,7 +319,7 @@ static void capture_geometry(RawFrame& f) {
     if(viewport[3]>height)viewport[3]=height;
     if(viewport[0] || viewport[1] || viewport[2]!=width || viewport[3]!=height ||
        width<=0 || height<=0 || width>16384 || height>16384) {
-        reject_draw(4,node,renderer,surface,sentinel,presented);return;
+        trace_geometry(GViewport,node,ctx,b);reject_draw(4,node,renderer,surface,sentinel,presented);return;
     }
     if(clip[0]<0)clip[0]=0;
     if(clip[1]<0)clip[1]=0;
@@ -272,19 +328,19 @@ static void capture_geometry(RawFrame& f) {
     // Full viewport is the same NVN viewport as Forge's selected texture.
     // Offset/half-size targets are deliberately unsupported.
     const uint32_t gui=field(base,0x212668c,4)?word(base+0x212668c):0;
-    if(!field(gui,0xb0,4))return;
+    if(!field(gui,0xb0,4)) {trace_geometry(GBuffer,node,ctx,b);return;}
     const uint32_t start=word(gui+0xb0),offset=word(node+0xbc);
-    if(uint64_t(start)+offset+96>0x100000000ull)return;
+    if(uint64_t(start)+offset+96>0x100000000ull) {trace_geometry(GBuffer,node,ctx,b);return;}
     float vertices[24]{},model[16]{},global[4]{};
     if(!copy(start+offset,vertices,96) || !copy(word(renderer+0x18bc),model,64) ||
-       !field(renderer,0x18b4,4) || !copy(word(renderer+0x18b4),global,16))return;
+       !field(renderer,0x18b4,4) || !copy(word(renderer+0x18b4),global,16)) {trace_geometry(GInputs,node,ctx,b);return;}
     Geometry g{};g.binding=b;g.cycle=cycle;g.frame=word(sr+0x33f4c);g.owner=sr+0x34100;g.serial=word(sr+0x33f50);
     g.surface=surface;g.texture=texture;
     g.width=float(viewport[2]);g.height=float(viewport[3]);
-    if(!screen_quad(vertices,model,global,g.width,g.height,g.points))return;
+    if(!screen_quad(vertices,model,global,g.width,g.height,g.points)) {trace_geometry(GQuad,node,ctx,b);return;}
     for(unsigned i=0;i<4;++i)g.clip[i]=float(clip[i]);
-    if(clip[2]<=clip[0] || clip[3]<=clip[1])return;
-    if(seen(live_fence)!=fence || seen(draw_cycle)!=cycle)return;
+    if(clip[2]<=clip[0] || clip[3]<=clip[1]) {trace_geometry(GClip,node,ctx,b);return;}
+    if(seen(live_fence)!=fence || seen(draw_cycle)!=cycle) {trace_geometry(GEpoch,node,ctx,b);return;}
     // Retain current AND previous producer frames for the native ping-pong
     // executor. Sixty-four samples total; competing producers never wait.
     // Prefer updating the same node/frame, then reuse only older samples.
@@ -299,20 +355,22 @@ static void capture_geometry(RawFrame& f) {
         if((pass==0 && same) || (pass==1 && reusable)) {
             const bool published=geometries[i].publish(g);
             __atomic_store_n(&geometry_claims[i],0,__ATOMIC_RELEASE);
+            trace_geometry(published?GPublished:GConflict,node,ctx,b);
             if(!published) {count(render_faults);mark_overflow(g.frame,g.serial);}
             return;
         }
         __atomic_store_n(&geometry_claims[i],0,__ATOMIC_RELEASE);
     }
-    count(render_faults);mark_overflow(g.frame,g.serial);
+    trace_geometry(GOverflow,node,ctx,b);count(render_faults);mark_overflow(g.frame,g.serial);
 }
 static void capture_present(RawFrame& f) {
-    if(!seen(highlight_ready))return;
+    count(present_gates[PEnter]);
+    if(!seen(highlight_ready)) {trace_present(PDisabled,f);return;}
     const uint32_t sr=seen(native_render),owner=sr+0x34100;
     if(!sr || !field(owner,0x46f8,8) || !field(sr,0x33f4c,8) || !field(sr,0x1f,1) ||
-       f.r[1]!=owner+0x4740 || f.r[12]!=word(owner+0x46f8) || f.r[2]!=word(owner+0x46fc))return;
+       f.r[1]!=owner+0x4740 || f.r[12]!=word(owner+0x46f8) || f.r[2]!=word(owner+0x46fc)) {trace_present(PContext,f);return;}
     const uint32_t parallel=*reinterpret_cast<volatile const uint8_t*>(sr+0x1f),frame=word(sr+0x33f4c);
-    if(parallel>1 || frame>1)return;
+    if(parallel>1 || frame>1) {trace_present(PFrame,f);return;}
     // 86A28C records the acquired RESOURCE and index. 869ECC builds the
     // NVN window texture array from each resource+0x3C, not the resource itself.
     const uint32_t index=f.r[2];
@@ -320,17 +378,17 @@ static void capture_present(RawFrame& f) {
        !field(owner,0x48c0+index*4,4) || !word(owner+0x48cc) ||
        word(owner+0x48cc)!=word(owner+0x48c0+index*4)) {
         if(seen(binding_count)) {DrawRejection d{};d.reason=7;d.index=index;remember_rejection(d);}
-        return;
+        trace_present(PMetadata,f);return;
     }
     // beginFrame latches parallel mode and increments the producer serial;
     // executeFrame uses producer index XOR parallel, i.e. one frame behind.
     const uint32_t resource=word(owner+0x48cc);
     const uint32_t image=field(resource,0x3c,4)?word(resource+0x3c):0;
-    if(!image) {DrawRejection d{};d.reason=7;d.index=index;remember_rejection(d);return;}
+    if(!image) {trace_present(PImage,f);DrawRejection d{};d.reason=7;d.index=index;remember_rejection(d);return;}
     Presentation p{seen(draw_cycle),frame^parallel,owner,f.r[12],f.r[1],f.r[2],word(sr+0x33f50)-parallel,
         image,surface_texture(indirect(resource,0x204))};
-    if(presentation.publish(p))__atomic_store_n(&present_pending,1,__ATOMIC_RELEASE);
-    else {count(render_faults);mark_overflow(p.frame,p.serial);}
+    if(presentation.publish(p)) {trace_present(PPublished,f);__atomic_store_n(&present_pending,1,__ATOMIC_RELEASE);}
+    else {trace_present(PConflict,f);count(render_faults);mark_overflow(p.frame,p.serial);}
 }
 static void lost() { __atomic_fetch_add(&drops,1,__ATOMIC_RELAXED); }
 static Context* context() {
@@ -667,19 +725,19 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r10 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
+    forge_log_info("[please-do-better] r11 conditional state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(r.state),r.owned,r.unsafe,unsigned(r.failure),r.site,r.cache);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r10 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    forge_log_info("[please-do-better] r11 observation state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(v.state),v.owned,v.unsafe,unsigned(v.failure),v.site,v.cache);
     if(v.state!=State::Applied)return;
     Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
     const auto h=highlight.install(base,rendering,2);
     if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r10 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
+    forge_log_info("[please-do-better] r11 highlights state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(h.state),h.owned,h.unsafe,unsigned(h.failure),h.site,h.cache);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -840,24 +898,7 @@ void diagnostics() {
     if(seen(render_faults))igText("Highlight capture faults: %u",seen(render_faults));
     DrawRejection rejected{};
     if(seen(unsupported_draws) && draw_rejection.read(rejected) && rejected.fence==seen(live_fence)) {
-        const char* reasons[]={"unknown","tiled texture geometry","unreadable target packet",
-            "draw texture differs from the acquired image","offset, reduced or invalid viewport","unverified shader bindings",
-            "unreadable texture or unsupported texture view","acquired image metadata unavailable"};
-        igText("First suppressed draw this screen: %s",rejected.reason<8?reasons[rejected.reason]:"unknown");
-        if(rejected.reason==1)igText("Texture flags: 0x%X",rejected.node_flags);
-        if(rejected.reason==3)igText("Draw texture 0x%X; acquired image 0x%X; index %u",
-            rejected.texture,rejected.image,rejected.index);
-        if(rejected.reason==6)igText("Surface 0x%X; default 0x%X",rejected.target,rejected.sentinel);
-        if(rejected.reason==4)igText("Viewport %d,%d -> %d,%d; surface %ux%u; flags 0x%X",
-            rejected.viewport[0],rejected.viewport[1],rejected.viewport[2],rejected.viewport[3],
-            rejected.extent&65535,rejected.extent>>16,rejected.target_flags);
-        if(rejected.reason==5) {
-            igText("Technique 0x%X; %u shader bindings",rejected.technique,rejected.uniform_count);
-            if(rejected.uniform_count && rejected.uniform_count<=9)
-                igText("Bindings: %X %X %X %X %X %X %X %X %X",
-                    rejected.uniforms[0],rejected.uniforms[1],rejected.uniforms[2],rejected.uniforms[3],
-                    rejected.uniforms[4],rejected.uniforms[5],rejected.uniforms[6],rejected.uniforms[7],rejected.uniforms[8]);
-        }
+        igTextUnformatted("Some highlight draws are suppressed; details are in the emulator log.",nullptr);
     }
     const auto h=highlight.report();
     if(h.failure!=Failure::None || h.unsafe)igText("Highlight failure %u at site %u; full restart required.",unsigned(h.failure),h.site);
@@ -866,25 +907,93 @@ void diagnostics() {
     if(seen(mapping_faults) && mapping_detail.read(fault)) {
         const char* routes[]={"display-copy contents","relocation contents","batch-to-relocation contents","relocation input/bounds"};
         igText("Last mapping fault: %s",fault.route<4?routes[fault.route]:"unknown");
-        if(fault.route<3)igText("Chunk index %u, item/quantity %u/%u -> %u/%u",fault.index,
-            fault.expected&65535,fault.expected>>16,fault.actual&65535,fault.actual>>16);
+
     }
     igTextUnformatted("Extra slots compare with normal luck; no rare-drop guarantee. Last reward totals remain after collection.",nullptr);
     igTextUnformatted("Disable the legacy Great Luck cheat. Plugin removal requires a full restart.",nullptr);
     igTreePop();
 }
+static void report_render_trace() {
+    const uint32_t bound=seen(binding_count),fence=seen(live_fence);
+    if(!bound)return;
+    uint32_t expected=0;
+    if(!__atomic_compare_exchange_n(&trace_logger_claim,&expected,1,false,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED))return;
+    struct Release { ~Release() {__atomic_store_n(&trace_logger_claim,0,__ATOMIC_RELEASE);} } release;
+    if(trace_total>=128)return;
+    if(trace_screen!=fence) {trace_screen=fence;trace_frame=0;trace_bundles=0;}
+    ++trace_frame;
+    if(trace_bundles>=24 || (trace_frame>8 && trace_frame%120))return;
+    ++trace_bundles;++trace_total;
+    forge_log_info("[please-do-better] r11 render trace screen=%u sample=%u cycle=%u bound=%u drawn=%u sr=%X",
+        fence,trace_frame,seen(draw_cycle)-1,bound,seen(highlighted_count),seen(native_render));
+    forge_log_info("[please-do-better] r11 geometry gates A enter=%u bound=%u registers=%u unbound=%u matched=%u list=%u item=%u identity=%u uncached=%u tiled=%u renderer=%u frame=%u layout=%u submission=%u",
+        seen(geometry_gates[0]),seen(geometry_gates[1]),seen(geometry_gates[2]),seen(geometry_gates[3]),seen(geometry_gates[4]),seen(geometry_gates[5]),seen(geometry_gates[6]),seen(geometry_gates[7]),seen(geometry_gates[8]),seen(geometry_gates[9]),seen(geometry_gates[10]),seen(geometry_gates[11]),seen(geometry_gates[12]),seen(geometry_gates[13]));
+    forge_log_info("[please-do-better] r11 geometry gates B target=%u texture=%u shader=%u viewport=%u buffer=%u inputs=%u quad=%u clip=%u epoch=%u published=%u conflict=%u overflow=%u",
+        seen(geometry_gates[14]),seen(geometry_gates[15]),seen(geometry_gates[16]),seen(geometry_gates[17]),seen(geometry_gates[18]),seen(geometry_gates[19]),seen(geometry_gates[20]),seen(geometry_gates[21]),seen(geometry_gates[22]),seen(geometry_gates[23]),seen(geometry_gates[24]),seen(geometry_gates[25]));
+    forge_log_info("[please-do-better] r11 present gates enter=%u disabled=%u context=%u frame=%u metadata=%u image=%u published=%u conflict=%u",
+        seen(present_gates[0]),seen(present_gates[1]),seen(present_gates[2]),seen(present_gates[3]),seen(present_gates[4]),seen(present_gates[5]),seen(present_gates[6]),seen(present_gates[7]));
+    forge_log_info("[please-do-better] r11 render gates enter=%u disabled=%u pending=%u snapshot=%u cycle=%u overflow=%u io=%u drawlist=%u time=%u sample=%u frame=%u dimensions=%u binding=%u epoch=%u image=%u drawn=%u",
+        seen(render_gates[0]),seen(render_gates[1]),seen(render_gates[2]),seen(render_gates[3]),seen(render_gates[4]),seen(render_gates[5]),seen(render_gates[6]),seen(render_gates[7]),seen(render_gates[8]),seen(render_gates[9]),seen(render_gates[10]),seen(render_gates[11]),seen(render_gates[12]),seen(render_gates[13]),seen(render_gates[14]),seen(render_gates[15]));
+    PresentTrace t{};
+    if(present_trace.read(t))forge_log_info("[please-do-better] r11 native-present gate=%u queue=%X/%X window=%X index=%u/%u cached=%u resource=%X table=%X image=%X frame=%u serial=%u parallel=%u",
+        t.gate,t.queue,t.expected_queue,t.window,t.index,t.expected_index,t.cached_index,t.resource,t.table,t.image,t.frame,t.serial,t.parallel);
+    Presentation p{};const bool present_valid=presentation.read(p);
+    ImGuiIO* io=igGetIO_Nil();
+    forge_log_info("[please-do-better] r11 selected-present valid=%u cycle=%u frame=%u serial=%u image=%X default=%X io=%.6g,%.6g scale=%.6g,%.6g",
+        unsigned(present_valid),p.cycle,p.frame,p.serial,p.texture,p.default_texture,
+        io?double(io->DisplaySize.x):0.,io?double(io->DisplaySize.y):0.,
+        io?double(io->DisplayFramebufferScale.x):0.,io?double(io->DisplayFramebufferScale.y):0.);
+    GeometryTrace g{};
+    if(geometry_trace.read(g)) {
+        forge_log_info("[please-do-better] r11 last-capture gate=%u node=%X ctx=%X list=%X index=%u renderer=%X cache=%X flags=%X offset=%X stride=%X roffset=%X draw_flags=%X frame=%u serial=%u parallel=%u cycle=%u fence=%u target=%X extent=%X buffer=%X model=%X global=%X",
+            g.gate,g.node,g.ctx,g.list,g.index,g.renderer,g.cache,g.flags,g.offset,g.stride,g.renderer_offset,
+            g.draw_flags,g.frame,g.serial,g.parallel,g.cycle,g.fence,g.target,g.extent,g.buffer,g.model,g.global);
+        forge_log_info("[please-do-better] r11 capture vertices [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] global=[%.6g %.6g %.6g %.6g]",
+            double(g.vertices[0]),double(g.vertices[1]),double(g.vertices[2]),double(g.vertices[6]),double(g.vertices[7]),double(g.vertices[8]),
+            double(g.vertices[12]),double(g.vertices[13]),double(g.vertices[14]),double(g.vertices[18]),double(g.vertices[19]),double(g.vertices[20]),
+            double(g.projection[0]),double(g.projection[1]),double(g.projection[2]),double(g.projection[3]));
+        forge_log_info("[please-do-better] r11 model XY [%.6g %.6g %.6g %.6g] [%.6g %.6g %.6g %.6g]",
+            double(g.matrix[0]),double(g.matrix[4]),double(g.matrix[8]),double(g.matrix[12]),
+            double(g.matrix[1]),double(g.matrix[5]),double(g.matrix[9]),double(g.matrix[13]));
+    }
+    CopyFault fault{};
+    if(seen(mapping_faults) && mapping_detail.read(fault))forge_log_info("[please-do-better] r11 copy fault route=%u index=%u expected=%X actual=%X",
+        fault.route,fault.index,fault.expected,fault.actual);
+    unsigned samples=0;
+    for(unsigned i=0;i<64 && samples<8;++i) {
+        Geometry g{};if(!geometries[i].read(g) || g.binding.fence!=fence)continue;
+        forge_log_info("[please-do-better] r11 geometry[%u] node=%X batch=%u index=%u fence=%u cycle=%u frame=%u serial=%u owner=%X surface=%X texture=%X size=%.6g,%.6g",
+            i,g.binding.node,g.binding.batch,g.binding.index,g.binding.fence,g.cycle,g.frame,g.serial,g.owner,g.surface,g.texture,
+            double(g.width),double(g.height));
+        forge_log_info("[please-do-better] r11 perimeter[%u] points=[%.6g %.6g %.6g %.6g %.6g %.6g %.6g %.6g] clip=[%.6g %.6g %.6g %.6g]",
+            i,double(g.points[0]),double(g.points[1]),double(g.points[2]),double(g.points[3]),
+            double(g.points[4]),double(g.points[5]),double(g.points[6]),double(g.points[7]),double(g.clip[0]),double(g.clip[1]),double(g.clip[2]),double(g.clip[3]));
+        ++samples;
+    }
+    if(trace_frame==1)for(unsigned i=0;i<bound && i<8;++i) {
+        Binding b{};if(!bindings[i].read(b))continue;
+        forge_log_info("[please-do-better] r11 binding[%u] fence=%u ui=%X batch=%u list=%X group=%u index=%u node=%X icon=%X id=%u item=%u amount=%u",
+            i,b.fence,b.ui,b.batch,b.list,b.group,b.index,b.node,b.icon,b.id,b.item.item,b.item.amount);
+    }
+}
+struct RenderTraceScope { ~RenderTraceScope() {report_render_trace();} };
 void render() {
+    RenderTraceScope trace_scope;
+    count(render_gates[REnter]);
     report_draw_rejection();
     __atomic_store_n(&highlighted_count,0,__ATOMIC_RELAXED);
     const uint32_t cycle=__atomic_fetch_add(&draw_cycle,1,__ATOMIC_SEQ_CST);
     Presentation p{};
-    if(!seen(highlight_ready) || !__atomic_exchange_n(&present_pending,0,__ATOMIC_ACQ_REL) ||
-       !presentation.read(p) || p.cycle!=cycle || seen(frame_overflow[p.frame])==p.serial+1)return;
+    if(!seen(highlight_ready)) {count(render_gates[RDisabled]);return;}
+    if(!__atomic_exchange_n(&present_pending,0,__ATOMIC_ACQ_REL)) {count(render_gates[RPending]);return;}
+    if(!presentation.read(p)) {count(render_gates[RSnapshot]);return;}
+    if(p.cycle!=cycle) {count(render_gates[RCycle]);return;}
+    if(seen(frame_overflow[p.frame])==p.serial+1) {count(render_gates[ROverflow]);return;}
     ImGuiIO* io=igGetIO_Nil();
-    if(!io || io->DisplaySize.x<=0 || io->DisplaySize.y<=0)return;
-    ImDrawList* draw=igGetBackgroundDrawList_Nil();if(!draw)return;
+    if(!io || io->DisplaySize.x<=0 || io->DisplaySize.y<=0) {count(render_gates[RIO]);return;}
+    ImDrawList* draw=igGetBackgroundDrawList_Nil();if(!draw) {count(render_gates[RDrawList]);return;}
     // Triangle wave: two-second period, 0.45..0.75 alpha, no animation RNG.
-    const float now=float(igGetTime());if(!std::isfinite(now) || now<0 || now>4294967296.f)return;
+    const float now=float(igGetTime());if(!std::isfinite(now) || now<0 || now>4294967296.f) {count(render_gates[RTime]);return;}
     const float phase=now*.5f-float(uint32_t(now*.5f));
     const float alpha=.45f+.30f*float(1-std::fabs(phase*2-1));
     const uint32_t gold=(uint32_t(alpha*255)<<24)|0x0054c5f2u;
@@ -897,15 +1006,20 @@ void render() {
     for(unsigned i=0;i<bound;++i)valid[i]=bindings[i].read(current[i]) && current[i].fence==fence;
     for(unsigned sample=0;sample<64;++sample) {
         Geometry g{};
-        if(!geometries[sample].read(g) || g.frame!=p.frame || g.owner!=p.owner || g.serial!=p.serial ||
-           std::fabs(g.width-io->DisplaySize.x)>.5f || std::fabs(g.height-io->DisplaySize.y)>.5f)continue;
+        if(!geometries[sample].read(g))continue;
+        count(render_gates[RSample]);
+        if(g.frame!=p.frame || g.owner!=p.owner || g.serial!=p.serial) {count(render_gates[RFrame]);continue;}
+        if(std::fabs(g.width-io->DisplaySize.x)>.5f || std::fabs(g.height-io->DisplaySize.y)>.5f) {
+            count(render_gates[RDimensions]);continue;
+        }
         unsigned matched=64;
         for(unsigned i=0;i<bound;++i)if(valid[i] && !drawn[i] && current[i].node==g.binding.node &&
             !std::memcmp(&current[i],&g.binding,sizeof(Binding))) {matched=i;break;}
-        if(matched==64)continue;
-        if(seen(live_fence)!=fence)return;
+        if(matched==64) {count(render_gates[RBinding]);continue;}
+        if(seen(live_fence)!=fence) {count(render_gates[REpoch]);return;}
         const uint32_t texture=g.texture?g.texture:p.default_texture;
         if(!texture || texture!=p.texture) {
+            count(render_gates[RImage]);
             DrawRejection d{};d.reason=3;d.target=g.surface;d.texture=texture;d.image=p.texture;d.index=p.index;
             remember_rejection(d);continue;
         }
@@ -923,7 +1037,7 @@ void render() {
           {anchor.x,anchor.y+radius},{anchor.x-.7f*scale,anchor.y+.7f*scale},
           {anchor.x-radius,anchor.y},{anchor.x-.7f*scale,anchor.y-.7f*scale}};
         for(unsigned k=0;k<8;++k)ImDrawList_AddLine(draw,spark[k],spark[(k+1)%8],gold,scale);
-        ImDrawList_PopClipRect(draw);++rendered;
+        ImDrawList_PopClipRect(draw);++rendered;count(render_gates[RDrawn]);
     }
     __atomic_store_n(&highlighted_count,rendered,__ATOMIC_RELAXED);
 }

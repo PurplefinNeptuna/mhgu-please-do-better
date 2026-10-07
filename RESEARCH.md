@@ -1,4 +1,13 @@
-# Attribution and display research (r10)
+# Attribution and display research (r11)
+
+## Rendering diagnostic update
+
+The r10 screenshot/log expose an unreported rendering stop. See
+[R11_RENDER_LOGGING.md](R11_RENDER_LOGGING.md). Native texture/shader research
+remains in [R10_HIGHLIGHTS.md](R10_HIGHLIGHTS.md); telemetry does not establish
+new gameplay or GPU coverage.
+
+## Existing traces
 
 Current texture identity research and the confirmed R9 rejection are documented in [R10_HIGHLIGHTS.md](R10_HIGHLIGHTS.md).
 R8_HIGHLIGHTS.md records the observation initialization repair.

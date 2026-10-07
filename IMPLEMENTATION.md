@@ -239,3 +239,24 @@ do not make the displayed diagnostic unreadable. Later rejected draws still
 increase the internal counter. New screen fences allow a new diagnostic;
 completed reward totals stay retained. See R10_HIGHLIGHTS.md for exact receipts
 and the remaining GPU/gameplay acceptance gate.
+
+## R11 emulator-only rendering telemetry
+
+The user-authorized verbose logging addresses silent exits exposed by the r10
+grid: four bindings, zero draw count and no recorded rejection. Gate counters
+now distinguish missing geometry gateway activity, unmatched nodes, list/item
+validation, cache/layout/submission checks, transform inputs, degenerate quads,
+clip/epoch checks, publication, native present metadata, missing presentation
+callbacks, cycle/serial mismatches, framebuffer dimensions, binding identity and
+image mismatch. No acceptance guard is relaxed and no RNG/game writes are added.
+
+Native gateways update scalar atomic counters and two bounded immutable
+snapshots. They invoke no logger or formatter. The free-render callback logs
+those records through Forge after attempting rendering, including on every early
+return. Geometry snapshots preserve vertices/model/global inputs for explaining
+failed transformation. Per-screen output uses eight initial callbacks, then one
+per 120 callbacks, capped at 24 bundles per screen and 128 per process. Logging
+uses a nonblocking atomic claim; contention drops telemetry without waiting.
+Snapshot publication failure cannot alter reward results or draw eligibility.
+Detailed render fields and copy values stay out of the compact panel. See
+R11_RENDER_LOGGING.md for labels, limits and evidence distinctions.
