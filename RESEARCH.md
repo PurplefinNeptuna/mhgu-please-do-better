@@ -1,11 +1,13 @@
-# Attribution and display research (r11)
+# Attribution and display research (r12)
 
 ## Rendering diagnostic update
 
-The r10 screenshot/log expose an unreported rendering stop. See
-[R11_RENDER_LOGGING.md](R11_RENDER_LOGGING.md). Native texture/shader research
-remains in [R10_HIGHLIGHTS.md](R10_HIGHLIGHTS.md); telemetry does not establish
-new gameplay or GPU coverage.
+The matching r11 log isolates the current blocker to empty clip rejection.
+Original BC1330..BC1364 has a shared-sentinel viewport substitution omitted by
+earlier plugin/fragment fixtures. See [R12_RENDER_LOGGING.md](R12_RENDER_LOGGING.md)
+for exact indirection and complete native ARM coverage. R11_RENDER_LOGGING.md
+retains the earlier telemetry contract; R10_HIGHLIGHTS.md retains shader/texture
+research. Visible r12 alignment remains pending.
 
 ## Existing traces
 

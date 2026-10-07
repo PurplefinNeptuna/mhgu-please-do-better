@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r11 adds bounded emulator-log telemetry for every capture, presentation and render gate, with compact ImGui status. R10 grid confirms four bound extras and zero markers/faults; the exact installed r10 log shows no draw-rejection message, leaving a silent stopping point unknown. No guard is relaxed. Visible highlights and remaining gameplay coverage are pending. Prior candidates, Forge and installed packages preserved; no installation or publication.",
+  "reason": "Local r12 corrects the omitted native scissor sentinel/viewport substitution. Matching r11 log identifies 16,653 clip rejections with zero geometry publication. Original ARM and compiled rendering fixtures verify exact clipping semantics; visible highlights and gameplay remain pending. Prior candidates, Forge and installed packages preserved; no installation or publication.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

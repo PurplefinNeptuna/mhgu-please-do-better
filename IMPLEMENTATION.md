@@ -260,3 +260,17 @@ uses a nonblocking atomic claim; contention drops telemetry without waiting.
 Snapshot publication failure cannot alter reward results or draw eligibility.
 Detailed render fields and copy values stay out of the compact panel. See
 R11_RENDER_LOGGING.md for labels, limits and evidence distinctions.
+
+## R12 native scissor semantics
+
+Original BC12D8..BC1364 normalizes the selected viewport/scissor intersection,
+compares its complete signed rectangle with a shared sentinel, then substitutes
+the cached viewport on equality. The runtime pointer comes from relocated GOT
+entry main+0x183F2B0 (BC1314 PC-relative indirection); the offline pointer is
+main+0x191EAA0. All pointer/range reads are guarded. R12 reproduces that tail
+instead of treating the default empty rectangle as a zero-area draw. Nonmatching
+empty rectangles and failed sentinel reads remain suppressed. No reward, RNG,
+settings, publication/rollback or resource-allocation behavior changes.
+Original ARM execution is compared with compiled capture/ImGui clip calls for
+both banks and nonzero sentinels; raw/effective values go only to emulator logs.
+See R12_RENDER_LOGGING.md and R12_VALIDATION.md.

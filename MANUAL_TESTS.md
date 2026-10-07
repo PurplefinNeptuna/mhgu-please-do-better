@@ -89,3 +89,16 @@ must remove live markers while completed totals remain. The telemetry identifies
 silent exits; r11 alone is not evidence that the visible highlight failure is
 fixed. Natural luck, repeated grids, mode/settings, animation/cursor alignment,
 Eden multicore and Ryujinx compatibility remain pending.
+
+## R12 clipping correction (pending user run)
+
+- Identify the exact r12 candidate and launch set, with legacy cheat disabled.
+- On a populated untouched reward grid, compare bound extras with visible gold
+  borders/sparkles, with Forge panel open and closed. Preserve Eden's log.
+- Check r12 clip input/effective records against selected geometry, presentation
+  image and displayed borders; CPU log decisions do not prove GPU alignment.
+- Exercise cursor movement, collection/quantity decreases, row/category changes,
+  animation, repeated reward grids and village return. Empty/stale slots must hide.
+- Retain natural positive luck, no luck, forced mode/live toggles, save loading,
+  full-restart persistence, Eden multicore/translation and Ryujinx coverage as
+  pending. R11's observed clip rejection does not establish these behaviors.
