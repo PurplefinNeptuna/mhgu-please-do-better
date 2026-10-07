@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r12 corrects the omitted native scissor sentinel/viewport substitution. Matching r11 log identifies 16,653 clip rejections with zero geometry publication. Original ARM and compiled rendering fixtures verify exact clipping semantics; visible highlights and gameplay remain pending. Prior candidates, Forge and installed packages preserved; no installation or publication.",
+  "reason": "Local r13 observes the verified native same-size whole-texture downsample into the exact acquired image, retaining frame/provenance checks. R12 user log confirms successful clipping and geometry publication but a source/presented-texture mismatch. Original instructions, NVN initializer and compiled gateway/transfer regressions checked; visible highlights and gameplay remain pending. Prior candidates, Forge and installed packages preserved; no installation or publication.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

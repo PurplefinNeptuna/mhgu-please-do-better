@@ -1,13 +1,13 @@
-# Attribution and display research (r12)
+# Attribution and display research (r13)
 
 ## Rendering diagnostic update
 
-The matching r11 log isolates the current blocker to empty clip rejection.
-Original BC1330..BC1364 has a shared-sentinel viewport substitution omitted by
-earlier plugin/fragment fixtures. See [R12_RENDER_LOGGING.md](R12_RENDER_LOGGING.md)
-for exact indirection and complete native ARM coverage. R11_RENDER_LOGGING.md
-retains the earlier telemetry contract; R10_HIGHLIGHTS.md retains shader/texture
-research. Visible r12 alignment remains pending.
+The matching r12 log verifies the scissor fix and isolates a texture mismatch.
+Original same-size NVN downsample and initializer receipts establish a full-texture
+source-to-destination route. See [R13_RENDER_LOGGING.md](R13_RENDER_LOGGING.md).
+R12_RENDER_LOGGING.md retains the clipping contract; R11_RENDER_LOGGING.md
+retains gate telemetry; R10_HIGHLIGHTS.md retains texture/shader research.
+Visible r13 alignment remains pending.
 
 ## Existing traces
 

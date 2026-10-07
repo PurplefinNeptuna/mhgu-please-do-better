@@ -102,3 +102,13 @@ Eden multicore and Ryujinx compatibility remain pending.
 - Retain natural positive luck, no luck, forced mode/live toggles, save loading,
   full-restart persistence, Eden multicore/translation and Ryujinx coverage as
   pending. R11's observed clip rejection does not establish these behaviors.
+
+## R13 native transfer (pending user run)
+
+- Identify r13 payload and launch set; legacy Great Luck cheat disabled.
+- Preserve Eden's r13 transfer records alongside matched geometry/presentation.
+  They must prove exact source-to-acquired-image identity for the same frame.
+- Confirm gold borders and sparkles on verified extras with the panel open and
+  closed. Check cursor/animation alignment, collection, transitions and repeated
+  grids. Keep no-luck, natural positive luck, forced/live toggles, restart
+  persistence, Eden multicore/translation and Ryujinx coverage pending.

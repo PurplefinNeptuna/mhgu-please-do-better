@@ -274,3 +274,19 @@ settings, publication/rollback or resource-allocation behavior changes.
 Original ARM execution is compared with compiled capture/ImGui clip calls for
 both banks and nonzero sentinels; raw/effective values go only to emulator logs.
 See R12_RENDER_LOGGING.md and R12_VALIDATION.md.
+
+## R13 native downsample provenance
+
+Add fixed gateways main+0xBBFB08 and main+0xBBFB44 for equal/differing-format
+branches, replaying MOV r1,r11 / MOV r2,r10. The untouched
+NVN callback load/call executes with original command/source/destination inputs.
+The native initializer and executor both resolve GOT entry main+0x18418F8 to
+nvnCommandBufferDownsample. Two immutable fixed snapshots record the exact
+native execution frame/serial, owner, fence, source, destination and extent.
+Only same-size whole-texture, non-subresource downsample into the acquired image
+is accepted. Rendering matches that route to the exact geometry/presentation;
+unsupported composition and unobserved offscreen sources stay suppressed.
+No additional trampoline/arena, TLS, contexts or heap allocation. Rendering
+installation is a guarded four-hook transaction with ownership-aware rollback;
+forcing and observation remain independent. GPU execution/alignment remain
+pending. See R13_RENDER_LOGGING.md and R13_VALIDATION.md.

@@ -82,6 +82,11 @@ static bool copy(uint32_t a,void* dest,unsigned n) {
 static Snapshot<Binding> bindings[64];
 static Snapshot<Geometry> geometries[64];
 static Snapshot<Presentation> presentation;
+struct Transfer {
+    uint32_t fence=0,frame=0,serial=0,owner=0,source=0,destination=0,extent=0;
+};
+static Snapshot<Transfer> transfers[2];
+static uint32_t transfer_hits,transfer_rejected,transfer_published,transfer_conflicts;
 static uint32_t binding_count, highlight_ready, highlighted_count, render_faults, unsupported_draws;
 static uint32_t live_fence=1, draw_cycle=1, present_pending, native_render;
 // Gameplay producers publish only fixed atomic telemetry. Formatting stays in
@@ -152,12 +157,12 @@ static void report_draw_rejection() {
     // gateway and its live GE contract. One entry per class prevents floods.
     const uint32_t reason=d.reason;
     if(!(__atomic_fetch_or(&rejection_logged,1u<<reason,__ATOMIC_RELAXED)&(1u<<reason))) {
-        forge_log_info("[please-do-better] r12 draw rejected reason=%u flags=%X target=%X sentinel=%X presented=%X technique=%X uniforms=%u [%X %X %X %X %X %X %X %X %X]",
+        forge_log_info("[please-do-better] r13 draw rejected reason=%u flags=%X target=%X sentinel=%X presented=%X technique=%X uniforms=%u [%X %X %X %X %X %X %X %X %X]",
             reason,d.node_flags,d.target,d.sentinel,d.presented,d.technique,d.uniform_count,
             d.uniforms[0],d.uniforms[1],d.uniforms[2],d.uniforms[3],d.uniforms[4],
             d.uniforms[5],d.uniforms[6],d.uniforms[7],d.uniforms[8]);
-        if(reason==3)forge_log_info("[please-do-better] r12 target texture=%X acquired image=%X index=%u",d.texture,d.image,d.index);
-        if(reason==4)forge_log_info("[please-do-better] r12 viewport flags=%X extent=%X selected=[%d %d %d %d]",
+        if(reason==3)forge_log_info("[please-do-better] r13 target texture=%X acquired image=%X index=%u",d.texture,d.image,d.index);
+        if(reason==4)forge_log_info("[please-do-better] r13 viewport flags=%X extent=%X selected=[%d %d %d %d]",
             d.target_flags,d.extent,d.viewport[0],d.viewport[1],d.viewport[2],d.viewport[3]);
     }
 }
@@ -473,7 +478,38 @@ static bool force(Context* c) {
 // Conditional natural returns use separate fixed gateways. The original callee
 // sees untouched argument/working registers and the original stack. Its output
 // registers/flags are preserved; only the LR value created by BL is reconstructed.
+static void capture_downsample(const RawFrame& f,bool converted) {
+    count(transfer_hits);
+    if(!seen(highlight_ready) || !seen(binding_count))return;
+    const uint32_t sr=seen(native_render),source=f.r[5],destination=f.r[7];
+    if(!field(sr,0x94,4) || f.r[8]!=word(sr+0x94) || !field(base,0x18418f8,4) ||
+       f.r[0]!=word(base+0x18418f8) || !field(sr,0x33f4c,8) || !field(sr,0x1f,1) ||
+       !field(source,0x18,16) || !field(destination,0x18,16) ||
+       surface_texture(source)!=f.r[11] || surface_texture(destination)!=f.r[10]) {
+        count(transfer_rejected);return;
+    }
+    const uint32_t extent=word(source+0x18)&0x7fffffff,gpu=word(source+0x10);
+    const uint32_t mode=*reinterpret_cast<volatile const uint8_t*>(sr+0x1f),frame=word(sr+0x33f4c);
+    const uint32_t acquired=trace_word(sr+0x34100,0x48cc);
+    // Only the native whole-texture, same-size downsample into the exact
+    // acquired image is supported. Never adopt arbitrary offscreen textures.
+    if(mode>1 || frame>1 || (word(destination+0x18)&0x7fffffff)!=extent ||
+       (word(source+0x24)!=word(destination+0x24))!=converted || !field(gpu,0x24,2) ||
+       (((*reinterpret_cast<volatile const uint16_t*>(gpu+0x24)>>11)&14)|1)!=9 ||
+       !extent || !(extent&65535) || !(extent>>16) || (extent&65535)>16384 ||
+       (extent>>16)>16384 || !f.r[11] || !f.r[10] || f.r[10]!=trace_word(acquired,0x3c)) {
+        count(transfer_rejected);return;
+    }
+    Transfer t{seen(live_fence),frame^mode,word(sr+0x33f50)-mode,sr+0x34100,
+               f.r[11],f.r[10],extent};
+    if(transfers[t.frame].publish(t))count(transfer_published);
+    else {count(transfer_conflicts);mark_overflow(t.frame,t.serial);}
+}
 extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
+    if(kind==28 || kind==29) {
+        capture_downsample(*f,kind==29);f->r[1]=f->r[11];f->r[2]=f->r[10];
+        return base+(kind==28?0xbbfb10:0xbbfb4c);
+    }
     if(kind==26) {
         capture_geometry(*f);
         f->r[0]=word(f->r[6])&15;
@@ -756,19 +792,19 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r12 conditional state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(r.state),r.owned,r.unsafe,unsigned(r.failure),r.site,r.cache);
+    forge_log_info("[please-do-better] r13 conditional state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(r.state),r.owned,r.unsafe,unsigned(r.failure),r.site,r.cache);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r12 observation state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(v.state),v.owned,v.unsafe,unsigned(v.failure),v.site,v.cache);
+    forge_log_info("[please-do-better] r13 observation state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(v.state),v.owned,v.unsafe,unsigned(v.failure),v.site,v.cache);
     if(v.state!=State::Applied)return;
-    Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
-    const auto h=highlight.install(base,rendering,2);
+    Hook rendering[4]={highlight_boundary_recipe(),presentation_recipe(),downsample_recipe(),converted_downsample_recipe()};
+    const auto h=highlight.install(base,rendering,4);
     if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r12 highlights state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(h.state),h.owned,h.unsafe,unsigned(h.failure),h.site,h.cache);
+    forge_log_info("[please-do-better] r13 highlights state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(h.state),h.owned,h.unsafe,unsigned(h.failure),h.site,h.cache);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -955,61 +991,67 @@ static void report_render_trace() {
     ++trace_frame;
     if(trace_bundles>=24 || (trace_frame>8 && trace_frame%120))return;
     ++trace_bundles;++trace_total;
-    forge_log_info("[please-do-better] r12 render trace screen=%u sample=%u cycle=%u bound=%u drawn=%u sr=%X",
+    forge_log_info("[please-do-better] r13 render trace screen=%u sample=%u cycle=%u bound=%u drawn=%u sr=%X",
         fence,trace_frame,seen(draw_cycle)-1,bound,seen(highlighted_count),seen(native_render));
-    forge_log_info("[please-do-better] r12 geometry gates A enter=%u bound=%u registers=%u unbound=%u matched=%u list=%u item=%u identity=%u uncached=%u tiled=%u renderer=%u frame=%u layout=%u submission=%u",
+    forge_log_info("[please-do-better] r13 geometry gates A enter=%u bound=%u registers=%u unbound=%u matched=%u list=%u item=%u identity=%u uncached=%u tiled=%u renderer=%u frame=%u layout=%u submission=%u",
         seen(geometry_gates[0]),seen(geometry_gates[1]),seen(geometry_gates[2]),seen(geometry_gates[3]),seen(geometry_gates[4]),seen(geometry_gates[5]),seen(geometry_gates[6]),seen(geometry_gates[7]),seen(geometry_gates[8]),seen(geometry_gates[9]),seen(geometry_gates[10]),seen(geometry_gates[11]),seen(geometry_gates[12]),seen(geometry_gates[13]));
-    forge_log_info("[please-do-better] r12 geometry gates B target=%u texture=%u shader=%u viewport=%u buffer=%u inputs=%u quad=%u clip=%u epoch=%u published=%u conflict=%u overflow=%u",
+    forge_log_info("[please-do-better] r13 geometry gates B target=%u texture=%u shader=%u viewport=%u buffer=%u inputs=%u quad=%u clip=%u epoch=%u published=%u conflict=%u overflow=%u",
         seen(geometry_gates[14]),seen(geometry_gates[15]),seen(geometry_gates[16]),seen(geometry_gates[17]),seen(geometry_gates[18]),seen(geometry_gates[19]),seen(geometry_gates[20]),seen(geometry_gates[21]),seen(geometry_gates[22]),seen(geometry_gates[23]),seen(geometry_gates[24]),seen(geometry_gates[25]));
-    forge_log_info("[please-do-better] r12 present gates enter=%u disabled=%u context=%u frame=%u metadata=%u image=%u published=%u conflict=%u",
+    forge_log_info("[please-do-better] r13 present gates enter=%u disabled=%u context=%u frame=%u metadata=%u image=%u published=%u conflict=%u",
         seen(present_gates[0]),seen(present_gates[1]),seen(present_gates[2]),seen(present_gates[3]),seen(present_gates[4]),seen(present_gates[5]),seen(present_gates[6]),seen(present_gates[7]));
-    forge_log_info("[please-do-better] r12 render gates enter=%u disabled=%u pending=%u snapshot=%u cycle=%u overflow=%u io=%u drawlist=%u time=%u sample=%u frame=%u dimensions=%u binding=%u epoch=%u image=%u drawn=%u",
+    forge_log_info("[please-do-better] r13 render gates enter=%u disabled=%u pending=%u snapshot=%u cycle=%u overflow=%u io=%u drawlist=%u time=%u sample=%u frame=%u dimensions=%u binding=%u epoch=%u image=%u drawn=%u",
         seen(render_gates[0]),seen(render_gates[1]),seen(render_gates[2]),seen(render_gates[3]),seen(render_gates[4]),seen(render_gates[5]),seen(render_gates[6]),seen(render_gates[7]),seen(render_gates[8]),seen(render_gates[9]),seen(render_gates[10]),seen(render_gates[11]),seen(render_gates[12]),seen(render_gates[13]),seen(render_gates[14]),seen(render_gates[15]));
     PresentTrace t{};
-    if(present_trace.read(t))forge_log_info("[please-do-better] r12 native-present gate=%u queue=%X/%X window=%X index=%u/%u cached=%u resource=%X table=%X image=%X frame=%u serial=%u parallel=%u",
+    if(present_trace.read(t))forge_log_info("[please-do-better] r13 native-present gate=%u queue=%X/%X window=%X index=%u/%u cached=%u resource=%X table=%X image=%X frame=%u serial=%u parallel=%u",
         t.gate,t.queue,t.expected_queue,t.window,t.index,t.expected_index,t.cached_index,t.resource,t.table,t.image,t.frame,t.serial,t.parallel);
+    for(unsigned i=0;i<2;++i) {
+        Transfer t{};const bool valid=transfers[i].read(t);
+        forge_log_info("[please-do-better] r13 transfer valid=%u frame=%u serial=%u fence=%u source=%X destination=%X extent=%X hits=%u rejected=%u published=%u conflicts=%u",
+            unsigned(valid),t.frame,t.serial,t.fence,t.source,t.destination,t.extent,
+            seen(transfer_hits),seen(transfer_rejected),seen(transfer_published),seen(transfer_conflicts));
+    }
     Presentation p{};const bool present_valid=presentation.read(p);
     ImGuiIO* io=igGetIO_Nil();
-    forge_log_info("[please-do-better] r12 selected-present valid=%u cycle=%u frame=%u serial=%u image=%X default=%X io=%.6g,%.6g scale=%.6g,%.6g",
+    forge_log_info("[please-do-better] r13 selected-present valid=%u cycle=%u frame=%u serial=%u image=%X default=%X io=%.6g,%.6g scale=%.6g,%.6g",
         unsigned(present_valid),p.cycle,p.frame,p.serial,p.texture,p.default_texture,
         io?double(io->DisplaySize.x):0.,io?double(io->DisplaySize.y):0.,
         io?double(io->DisplayFramebufferScale.x):0.,io?double(io->DisplayFramebufferScale.y):0.);
     GeometryTrace g{};
     if(geometry_trace.read(g)) {
-        forge_log_info("[please-do-better] r12 last-capture gate=%u node=%X ctx=%X list=%X index=%u renderer=%X cache=%X flags=%X offset=%X stride=%X roffset=%X draw_flags=%X frame=%u serial=%u parallel=%u cycle=%u fence=%u target=%X extent=%X buffer=%X model=%X global=%X",
+        forge_log_info("[please-do-better] r13 last-capture gate=%u node=%X ctx=%X list=%X index=%u renderer=%X cache=%X flags=%X offset=%X stride=%X roffset=%X draw_flags=%X frame=%u serial=%u parallel=%u cycle=%u fence=%u target=%X extent=%X buffer=%X model=%X global=%X",
             g.gate,g.node,g.ctx,g.list,g.index,g.renderer,g.cache,g.flags,g.offset,g.stride,g.renderer_offset,
             g.draw_flags,g.frame,g.serial,g.parallel,g.cycle,g.fence,g.target,g.extent,g.buffer,g.model,g.global);
-        forge_log_info("[please-do-better] r12 capture vertices [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] global=[%.6g %.6g %.6g %.6g]",
+        forge_log_info("[please-do-better] r13 capture vertices [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] global=[%.6g %.6g %.6g %.6g]",
             double(g.vertices[0]),double(g.vertices[1]),double(g.vertices[2]),double(g.vertices[6]),double(g.vertices[7]),double(g.vertices[8]),
             double(g.vertices[12]),double(g.vertices[13]),double(g.vertices[14]),double(g.vertices[18]),double(g.vertices[19]),double(g.vertices[20]),
             double(g.projection[0]),double(g.projection[1]),double(g.projection[2]),double(g.projection[3]));
-        forge_log_info("[please-do-better] r12 model XY [%.6g %.6g %.6g %.6g] [%.6g %.6g %.6g %.6g]",
+        forge_log_info("[please-do-better] r13 model XY [%.6g %.6g %.6g %.6g] [%.6g %.6g %.6g %.6g]",
             double(g.matrix[0]),double(g.matrix[4]),double(g.matrix[8]),double(g.matrix[12]),
             double(g.matrix[1]),double(g.matrix[5]),double(g.matrix[9]),double(g.matrix[13]));
-        forge_log_info("[please-do-better] r12 clip input flags=%X viewport=[%d %d %d %d] raw=[%d %d %d %d] sentinel=%X [%d %d %d %d]",
+        forge_log_info("[please-do-better] r13 clip input flags=%X viewport=[%d %d %d %d] raw=[%d %d %d %d] sentinel=%X [%d %d %d %d]",
             g.target_flags,g.viewport[0],g.viewport[1],g.viewport[2],g.viewport[3],
             g.raw_clip[0],g.raw_clip[1],g.raw_clip[2],g.raw_clip[3],g.clip_sentinel,
             g.sentinel_clip[0],g.sentinel_clip[1],g.sentinel_clip[2],g.sentinel_clip[3]);
-        forge_log_info("[please-do-better] r12 clip effective valid=%u [%d %d %d %d]",
+        forge_log_info("[please-do-better] r13 clip effective valid=%u [%d %d %d %d]",
             g.clip_valid,g.effective_clip[0],g.effective_clip[1],g.effective_clip[2],g.effective_clip[3]);
     }
     CopyFault fault{};
-    if(seen(mapping_faults) && mapping_detail.read(fault))forge_log_info("[please-do-better] r12 copy fault route=%u index=%u expected=%X actual=%X",
+    if(seen(mapping_faults) && mapping_detail.read(fault))forge_log_info("[please-do-better] r13 copy fault route=%u index=%u expected=%X actual=%X",
         fault.route,fault.index,fault.expected,fault.actual);
     unsigned samples=0;
     for(unsigned i=0;i<64 && samples<8;++i) {
         Geometry g{};if(!geometries[i].read(g) || g.binding.fence!=fence)continue;
-        forge_log_info("[please-do-better] r12 geometry[%u] node=%X batch=%u index=%u fence=%u cycle=%u frame=%u serial=%u owner=%X surface=%X texture=%X size=%.6g,%.6g",
+        forge_log_info("[please-do-better] r13 geometry[%u] node=%X batch=%u index=%u fence=%u cycle=%u frame=%u serial=%u owner=%X surface=%X texture=%X size=%.6g,%.6g",
             i,g.binding.node,g.binding.batch,g.binding.index,g.binding.fence,g.cycle,g.frame,g.serial,g.owner,g.surface,g.texture,
             double(g.width),double(g.height));
-        forge_log_info("[please-do-better] r12 perimeter[%u] points=[%.6g %.6g %.6g %.6g %.6g %.6g %.6g %.6g] clip=[%.6g %.6g %.6g %.6g]",
+        forge_log_info("[please-do-better] r13 perimeter[%u] points=[%.6g %.6g %.6g %.6g %.6g %.6g %.6g %.6g] clip=[%.6g %.6g %.6g %.6g]",
             i,double(g.points[0]),double(g.points[1]),double(g.points[2]),double(g.points[3]),
             double(g.points[4]),double(g.points[5]),double(g.points[6]),double(g.points[7]),double(g.clip[0]),double(g.clip[1]),double(g.clip[2]),double(g.clip[3]));
         ++samples;
     }
     if(trace_frame==1)for(unsigned i=0;i<bound && i<8;++i) {
         Binding b{};if(!bindings[i].read(b))continue;
-        forge_log_info("[please-do-better] r12 binding[%u] fence=%u ui=%X batch=%u list=%X group=%u index=%u node=%X icon=%X id=%u item=%u amount=%u",
+        forge_log_info("[please-do-better] r13 binding[%u] fence=%u ui=%X batch=%u list=%X group=%u index=%u node=%X icon=%X id=%u item=%u amount=%u",
             i,b.fence,b.ui,b.batch,b.list,b.group,b.index,b.node,b.icon,b.id,b.item.item,b.item.amount);
     }
 }
@@ -1055,7 +1097,12 @@ void render() {
         if(matched==64) {count(render_gates[RBinding]);continue;}
         if(seen(live_fence)!=fence) {count(render_gates[REpoch]);return;}
         const uint32_t texture=g.texture?g.texture:p.default_texture;
-        if(!texture || texture!=p.texture) {
+        Transfer transfer{};
+        const bool copied=transfers[p.frame].read(transfer) && transfer.fence==fence &&
+            transfer.owner==p.owner && transfer.frame==p.frame && transfer.serial==p.serial &&
+            transfer.source==texture && transfer.destination==p.texture &&
+            float(transfer.extent&65535)==g.width && float(transfer.extent>>16)==g.height;
+        if(!texture || (texture!=p.texture && !copied)) {
             count(render_gates[RImage]);
             DrawRejection d{};d.reason=3;d.target=g.surface;d.texture=texture;d.image=p.texture;d.index=p.index;
             remember_rejection(d);continue;
