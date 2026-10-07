@@ -23,7 +23,7 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-R6 retains r4's twenty-two detours and adds two fixed rendering detours in a
+R7 retains r4's twenty-two detours and adds two fixed rendering detours in a
 separate transaction: `0xA4FE50` (LDR/AND) and `0x86A330` (MOV/BX tail call).
 The twenty-four eight-byte detours journal 48 words (192 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
@@ -159,6 +159,13 @@ only then publish a batch-tagged old/new index mapping. The old allocation is
 never read after native return. Count limits remain 48. No allocator/free is
 intercepted. See [R5_OBSERVATIONS.md](R5_OBSERVATIONS.md).
 
+R7 snapshots list-copy contents at native return in at most six eight-entry
+mailbox records, tagged with the current batch serial. The first chunk clears
+only that exact list; capture failure publishes a clearing record. Delayed reads
+never compare earlier copy mappings with later native destination bytes. The
+renderer accepts the two verified base/Festa texture vtables with inherited
+layout and draw methods; other classes stay rejected.
+
 List refresh accepts same-index quantity decreases or fully empty pairs verified
 against generation snapshots. Empty slots lose live eligibility. Other IDs,
 increased quantities, malformed pairs and read failures report mapping faults.
@@ -188,7 +195,8 @@ bindings and full viewport determine the perimeter. It pushes native clipping,
 draws four gold lines at 1.5px scaled from 720p plus eight lines for a four-point
 sparkle, then pops clipping. Alpha follows a deterministic two-second pulse.
 No fill covers icons or quantities. Unsupported geometry produces no draw.
-The detailed shader and direct presentation route are in [R6_HIGHLIGHTS.md](R6_HIGHLIGHTS.md).
+The shader/presentation proof is in [R6_HIGHLIGHTS.md](R6_HIGHLIGHTS.md);
+[R7_HIGHLIGHTS.md](R7_HIGHLIGHTS.md) documents the texture/copy repairs.
 
 Repeat initialization checks every installed transaction without republishing.
 A lost conditional/observation owner disables forcing, capture and highlighting

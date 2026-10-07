@@ -24,6 +24,8 @@ static Hooks<NativePlatform> conditional(platform), visual(platform), highlight(
 static Mode mode;
 static uint32_t base, initialized, pair_ready, capture_ready, drops;
 static uint32_t expected_refreshes, remapped_arrays, mapping_faults;
+struct CopyFault { uint32_t index,expected,actual; };
+static Snapshot<CopyFault> mapping_detail;
 // Execution evidence is distinct from successful instruction publication.
 // Only scalar atomics cross from gameplay producers to the ImGui reader.
 static uint32_t gateway_hits[26]{}, forced_checks[2]{}, natural_checks[2]{};
@@ -111,6 +113,13 @@ static uint32_t gui_node(uint32_t holder,unsigned root_index,unsigned node_index
     if(!field(table,node_index*4,4))return 0;
     return word(table+node_index*4);
 }
+static bool texture_node(uint32_t node) {
+    if(!readable(node,0x130))return false;
+    const uint32_t vft=word(node);
+    // Festa's subclass inherits the texture layout and draw/vertex methods.
+    // Both exact vtables are verified against the pinned original executable.
+    return vft==base+0x178fcc8 || vft==base+0x176c7c4;
+}
 static bool shader_2d(uint32_t renderer) {
     if(!field(renderer,0x1d8,4) || word(renderer+0x1d8)!=0xd7376b18 || !field(renderer,0x1a4,4))return false;
     const uint32_t packet=word(renderer+0x1a4);
@@ -152,7 +161,7 @@ static void capture_geometry(RawFrame& f) {
     Reward current{};
     if(!copy(b.list+0x60+b.index*4,&current,4) || !current.item || !current.amount ||
        !compatible_refresh(b.item,current))return;
-    if(!readable(node,0x130) || word(node)!=base+0x178fcc8 || word(node+0x50)!=b.id ||
+    if(!texture_node(node) || word(node+0x50)!=b.id ||
        !field(ctx,4,4))return;
     if(!(word(node+0xc0)&0x800000))return;
     if(word(node+0x108)&0x30) {count(unsupported_draws);return;}
@@ -464,11 +473,24 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
     } else if(s.kind==14 && s.ui && s.array && field(s.subject,0x5c,4)) {
         // Native 0x623c08 copies source[i] to list.buffer[i], up to capacity.
         // The consumer follows that index mapping only after checking contents.
-        Record r{};r.kind=5;r.ui=s.ui;r.epoch=s.array;r.tier=s.subject;
-        r.rewards.array=s.subject+0x60;
-        r.rewards.count=s.count<word(s.subject+0x5c)?s.count:word(s.subject+0x5c);
-        if(r.rewards.count<=48 && uint64_t(s.subject)+0x60+r.rewards.count*4<=0x100000000ull &&
-           readable(r.rewards.array,r.rewards.count*4))c->records.publish(r);else lost();
+        const auto clear_copy=[&]() {
+            Record r{};r.kind=5;r.ui=s.ui;r.tier=s.subject;r.coverage=1;
+            r.rewards.epoch=c->serial;c->records.publish(r);
+        };
+        const unsigned total=s.count<word(s.subject+0x5c)?s.count:word(s.subject+0x5c);
+        if(total<=48 && uint64_t(s.subject)+0x60+total*4<=0x100000000ull &&
+           uint64_t(s.array)+total*4<=0x100000000ull) {
+            // Immutable eight-entry chunks fit the existing mailbox payload.
+            // Capture now, before a later list refresh or a render-thread drain.
+            for(unsigned start=0;start<total || !start;start+=8) {
+                Record r{};r.kind=5;r.ui=s.ui;r.epoch=s.array+start*4;r.tier=s.subject;
+                r.coverage=start==0;r.rewards.epoch=c->serial;r.rewards.array=s.subject+0x60+start*4;
+                r.rewards.count=total-start<8?total-start:8;
+                if(copy(r.rewards.array,r.rewards.items,r.rewards.count*4))c->records.publish(r);
+                else {clear_copy();lost();break;}
+                if(!total)break;
+            }
+        } else {clear_copy();lost();}
     } else if(s.kind==15) {
         if(s.array && s.pending_count) {
             bool valid=!s.incomplete && field(s.subject,0x5c,8);
@@ -530,19 +552,19 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r6 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
+    forge_log_info("[please-do-better] r7 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r6 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    forge_log_info("[please-do-better] r7 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
     if(v.state!=State::Applied)return;
     Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
     const auto h=highlight.install(base,rendering,2);
     if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r6 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
+    forge_log_info("[please-do-better] r7 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -599,8 +621,9 @@ void update() {
                     if(same)source.rewards.array=r.rewards.array+offset;
                     else {source={};lost();count(mapping_faults);}
                 }
-            } else if(r.kind==5 && r.ui==owners[thread]) {
-                for(auto& record:displayed[thread])record={};
+            } else if(r.kind==5 && r.ui==owners[thread] && r.rewards.epoch==epochs[thread]) {
+                if(r.coverage)for(auto& record:displayed[thread])
+                    if(record.generated==r.tier)record={};
                 for(unsigned i=0;i<8;++i) {
                     const auto& source=observed[thread][i];
                     if(!source.kind || source.rewards.array<r.epoch)continue;
@@ -608,15 +631,26 @@ void update() {
                     if((offset&3) || uint64_t(offset)+source.rewards.count*4>uint64_t(r.rewards.count)*4 ||
                        uint64_t(r.rewards.array)+offset+source.rewards.count*4>0x100000000ull)continue;
                     Record target=source;target.generated=r.tier;target.rewards.array=r.rewards.array+offset;
-                    Reward contents[8]{};bool same=copy(target.rewards.array,contents,target.rewards.count*4);
+                    Reward contents[8]{};bool same=true;
+                    for(unsigned j=0;j<target.rewards.count;++j)contents[j]=r.rewards.items[offset/4+j];
                     bool changed=false;
                     for(unsigned j=0;j<target.rewards.count;++j) {
-                        same=same && compatible_refresh(target.rewards.items[j],contents[j]);
+                        if(!compatible_refresh(target.rewards.items[j],contents[j])) {
+                            same=false;
+                            mapping_detail.publish({offset/4+j,
+                                uint32_t(target.rewards.items[j].item)|(uint32_t(target.rewards.items[j].amount)<<16),
+                                uint32_t(contents[j].item)|(uint32_t(contents[j].amount)<<16)});
+                        }
                         changed=changed || contents[j].item!=target.rewards.items[j].item ||
                             contents[j].amount!=target.rewards.items[j].amount;
                         if(!contents[j].item)target.rewards.mask&=~(1u<<j);
                     }
-                    if(same) {displayed[thread][i]=target;if(changed)count(expected_refreshes);}
+                    if(same) {
+                        bool stored=false;
+                        for(auto& record:displayed[thread])if(!record.kind) {record=target;stored=true;break;}
+                        if(!stored)lost();
+                        if(changed)count(expected_refreshes);
+                    }
                     else {lost();count(mapping_faults);}
                 }
             }
@@ -644,8 +678,7 @@ void update() {
             const unsigned icon_index=word(ids+index*4);unsigned frame_index=0,id=0;
             if(!frame_layout(group,ir,br,index,icon_index,frame_index,id))continue;
             const uint32_t icon=gui_node(holder,ir,icon_index),node=gui_node(holder,br,frame_index);
-            if(!readable(icon,0x130) || !readable(node,0x130) || word(node)!=base+0x178fcc8 ||
-               word(icon)!=base+0x178fcc8 || word(node+0x50)!=id)continue;
+            if(!texture_node(icon) || !texture_node(node) || word(node+0x50)!=id)continue;
             if(bound==64) {count(render_faults);const uint32_t sr=seen(native_render);
                 if(sr)for(unsigned frame=0;frame<2;++frame) {
                     const uint32_t serial=word(sr+0x33f50)-(word(sr+0x33f4c)!=frame);
@@ -670,7 +703,7 @@ void diagnostics() {
         if(status==1)igText("Last rewards: %s; %u generated, %u extra slots",name,seen(generated_count),seen(bonus_count));
         else igTextUnformatted("Extra-slot total unavailable: observation incomplete.",nullptr);
     }
-    if(seen(highlight_ready))igTextUnformatted("Gold highlights: verified extra reward frames.",nullptr);
+    if(seen(highlight_ready))igTextUnformatted("Gold highlights: enabled for verified extra slots.",nullptr);
     else igTextUnformatted("Gold highlights unavailable: startup rendering checks failed.",nullptr);
     if(!igTreeNode_Str("Diagnostics###pdb_diagnostics"))return;
     const char* states[]={"not installed","safe startup checks passed","rejected","rolled back","UNSAFE; residual/changed bytes"};
@@ -679,12 +712,15 @@ void diagnostics() {
     if(r.failure!=Failure::None || r.unsafe)igText("Conditional failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(r.failure),r.site,r.cache);
     if(v.failure!=Failure::None || v.unsafe)igText("Observation failure %u at site %u; cache result 0x%X. Full restart required.",unsigned(v.failure),v.site,v.cache);
     igTextUnformatted(status==1?"Observation coverage: verified traced routes.":status?"Observation coverage: incomplete.":"Observation coverage: awaiting rewards.",nullptr);
-    igText("Currently highlighted slots: %u",seen(highlighted_count));
+    igText("Currently highlighted slots: %u; bound extra slots: %u",seen(highlighted_count),seen(binding_count));
     if(seen(render_faults))igText("Highlight capture faults: %u",seen(render_faults));
     if(seen(unsupported_draws))igTextUnformatted("Some draw paths are unsupported; their markers are suppressed.",nullptr);
     const auto h=highlight.report();
     if(h.failure!=Failure::None || h.unsafe)igText("Highlight failure %u at site %u; full restart required.",unsigned(h.failure),h.site);
     igText("Capture faults: %u; incompatible display copies: %u",seen(drops),seen(mapping_faults));
+    CopyFault fault{};
+    if(seen(mapping_faults) && mapping_detail.read(fault))igText("Last copy mismatch: index %u, item/quantity %u/%u -> %u/%u",
+        fault.index,fault.expected&65535,fault.expected>>16,fault.actual&65535,fault.actual>>16);
     igTextUnformatted("Extra slots compare with normal luck; no rare-drop guarantee. Last reward totals remain after collection.",nullptr);
     igTextUnformatted("Disable the legacy Great Luck cheat. Plugin removal requires a full restart.",nullptr);
     igTreePop();

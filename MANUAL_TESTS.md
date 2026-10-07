@@ -3,11 +3,11 @@
 The user accepted r4 forced observation on Eden: eight generated slots and four
 luck extras on the reward grid, with totals retained in the village. This is
 limited to the reported session, installed r4 hash and retained launch log.
-**R6 gameplay is NOT RUN.** Check last completed tier, generated/extra totals,
-coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md and R6_HIGHLIGHTS.md.
+**R6 user-run highlights failed; R7 gameplay is pending.** Check last completed tier, generated/extra totals,
+coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md and R7_HIGHLIGHTS.md.
 
 This checklist authorizes no installation, activation, launch, save edit or
-emulator setting change. R6 implements gold highlights on the verified direct and native parallel
+emulator setting change. R7 implements gold highlights on the verified direct and native parallel
 presentation paths. The local fixtures establish CPU code behavior and shader
 dataflow; actual GPU alignment and emulator frame timing remain pending.
 

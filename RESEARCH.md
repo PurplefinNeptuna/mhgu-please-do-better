@@ -1,5 +1,6 @@
-# Attribution and display research (r6)
+# Attribution and display research (r7)
 
+Current repairs and the failed R6 runtime test are documented in [R7_HIGHLIGHTS.md](R7_HIGHLIGHTS.md).
 These are static traces and executable fixtures, not gameplay coverage.
 R6 implements rendering for the verified normal-vertex, 2D-shader, full-viewport
 and direct/native parallel presentation routes. See [R6_HIGHLIGHTS.md](R6_HIGHLIGHTS.md).
@@ -111,8 +112,9 @@ subordinate to original instructions.
 - Then implement the subtle gold pulse/procedural marker and fixture scaling,
   row changes, cursor/icons, clipping, empty entries and screen close.
 
-Free-render currently polls preferences and draws nothing. Screen placement,
-border rendering and cursor coverage are not reported as passing.
+The preceding unresolved geometry notes describe the historical R5 gate. R6
+implemented the renderer with static proofs; its first user-run grid failed to
+draw. R7 repairs the binding/copy defects; gameplay alignment remains pending.
 
 ## Historical R5 placement trace and acceptance decision
 
