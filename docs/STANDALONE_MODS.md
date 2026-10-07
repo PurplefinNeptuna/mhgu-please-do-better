@@ -16,9 +16,12 @@ record and complete matching evidence. Commands never install or publish.
 
 Ready and published release artifacts use a strictly user-facing `README.md`.
 Point `DISTRIBUTION.json`'s `readme` at a dedicated player guide when the source
-README includes development instructions. Keep build/research/validation details
-in developer documents; release readers need features, requirements, installation,
-settings, compatibility and actionable known issues.
+README includes development instructions. Release readers need features,
+actual requirements, direct installation steps, settings and actionable known
+issues. Keep testing confirmations, version history, backup procedures, notice
+sharing duties and implementation details out of the release README. Mention
+other mods only for required dependencies or relevant conflicts; omit statements
+about what the mod does not need or do.
 
 Configure copied main/SDK/Forge and resource inputs in ignored `build.local.json`.
 The example file describes the configuration. Keep original inputs intact.

@@ -43,14 +43,17 @@ package names may be preserved for update compatibility.
 
 README, combined notices, manifest and checksums always sit beside the ZIP.
 Every ready or published release's `README.md` must be strictly user-facing.
-Cover what the mod does, requirements, installation/update/removal, controls or
-settings, compatibility and actionable known issues. State testing limits briefly
-when they affect compatibility; keep build commands, research, offsets, ABI/hook
-details, test counts, internal evidence, approval history and workspace paths in
-developer documents or the manifest. Use a dedicated release README source when
-the source repository's README also covers development. Review the release
-README for this audience before claiming readiness; a checksum check alone does
-not establish that its prose is user-facing.
+Describe the mod, actual requirements, direct installation steps, controls or
+settings, and actionable known issues. Mention other mods only when they are
+required dependencies or directly relevant conflicts. Exclude version history,
+testing confirmations/coverage, backup procedures, redistribution/notice duties,
+vague instructions to restart after "changing the package", and statements about
+what the mod does not need or do. Build commands, research, offsets, ABI/hook
+details, evidence and approval history belong in developer documents or the
+manifest. Notice distribution is the maintainer's responsibility. Use a dedicated
+release README source when the source README covers development. Review the
+release README for this audience before claiming readiness; checksum validation
+alone does not establish that its prose is user-facing.
 Additional support files, such as `COMPATIBILITY.md`, must be declared. Share
 the ZIP with its notices. `SHA256SUMS` covers every file in the delivery except
 itself. The manifest records identity, target, approval, publication, exact
