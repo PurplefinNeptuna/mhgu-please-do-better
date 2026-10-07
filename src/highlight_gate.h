@@ -2,8 +2,6 @@
 #include "hooks.h"
 extern "C" void pdb_gateway_26();
 extern "C" void pdb_gateway_27();
-extern "C" void pdb_gateway_28();
-extern "C" void pdb_gateway_29();
 namespace pdb {
 // R6 fixtures trace resource node ordinals, all pinned GUI position programs,
 // and the native producer/executor/present routes. Unsupported paths fail closed.
@@ -29,18 +27,5 @@ inline Hook presentation_recipe() {
     return {0x0086a330,0x0086a31c,uint32_t(uintptr_t(pdb_gateway_27)),
         {0xe3041740,0xe0801001,0xe59f000c,0xe79f0000,
          0xe5903000,0xe1a0000c,0xe12fff13,0x00fd7000},false};
-}
-inline Hook downsample_recipe() {
-    // Same-size native resolve path; replay both argument moves and resume
-    // at the untouched callback load/call. No trampoline or original call here.
-    return {0x00bbfb08,0x00bbfafc,uint32_t(uintptr_t(pdb_gateway_28)),
-        {0xe3500009,0x1a00013e,0xe59d003c,0xe1a0100b,
-         0xe1a0200a,0xe5903000,0xe1a00008,0xe12fff33},false};
-}
-inline Hook converted_downsample_recipe() {
-    // Alternate native surface-format branch; same whole-texture NVN API.
-    return {0x00bbfb44,0x00bbfb38,uint32_t(uintptr_t(pdb_gateway_29)),
-        {0xe3500009,0x1a000028,0xe59d005c,0xe1a0100b,
-         0xe1a0200a,0xe5903000,0xe1a00008,0xe12fff33},false};
 }
 }

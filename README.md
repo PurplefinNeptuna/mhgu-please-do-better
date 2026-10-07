@@ -1,19 +1,22 @@
 # Please do Better
 
-Current local recipe builds **r13 gold luck highlights and compact diagnostics**
+Current local recipe builds **r14 gold luck highlights and compact diagnostics**
 for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
 subtle pulsing gold border and tiny procedural sparkle, independently of whether
 the panel is open. Native frame geometry, clipping and exact slot provenance
 control placement. Unknown shader, target or execution paths remain unmarked.
-See [highlight implementation](R13_RENDER_LOGGING.md) and [validation](R13_VALIDATION.md).
+See [highlight implementation](R14_OVERLAY.md) and [validation](R14_VALIDATION.md).
 
 The accepted r4 run observed eight generated slots and four luck extras, retained
-in the village. The latest r12 reward grid has eight bound extras and zero
-highlights. Its matching log confirms 15,360 geometry publications with clipping
-fixed, then a source/presentation texture mismatch. R13 observes the native
-full-texture downsample and accepts only an exact same-frame source-to-acquired
-image route. Detailed transfer evidence stays in the emulator log.
-**Visible r13 highlights remain unconfirmed.** Status is **DEVELOPMENT**.
+in the village. The latest r13 reward grid has four bound extras and zero
+highlights. Its matching log shows 6,720 valid geometry publications, zero hits
+at either added downsample hook and continued texture-gate suppression. R14
+uses an independent Forge overlay, like Damage Numbers: render our procedural
+border and sparkle from exact native projected slot geometry. Intermediate
+texture equality and the two unused copy hooks are removed. Batch, node, frame,
+full-viewport, clipping and screen-lifetime checks remain. Verbose evidence stays
+in the emulator log.
+**Visible r14 highlights remain unconfirmed.** Status is **DEVELOPMENT**.
 
 Fresh installs use natural luck. With **Force Miraculous Luck** off, both original
 checks run and equipped skills determine rewards. Turning it on reproduces the
@@ -51,7 +54,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r13/please-do-better-r13-candidate.zip`.
+`build/please-do-better/candidates/r14/please-do-better-r14-candidate.zip`.
 Its only member is:
 
 ```text

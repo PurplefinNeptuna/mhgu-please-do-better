@@ -290,3 +290,24 @@ No additional trampoline/arena, TLS, contexts or heap allocation. Rendering
 installation is a guarded four-hook transaction with ownership-aware rollback;
 forcing and observation remain independent. GPU execution/alignment remain
 pending. See R13_RENDER_LOGGING.md and R13_VALIDATION.md.
+
+## R14 independent overlay
+
+Use the existing Forge free-render callback/background draw list to submit our
+own gold border and procedural sparkle to Forge's acquired image. Damage Numbers
+uses the same callbacks and draw list, with projected coordinates rather than
+texture identity. The r13 user run confirms valid reward geometry but zero hits
+at either downsample hook. R14 removes those two fixed gateways, transfer snapshots
+and texture-equality/copy-route acceptance from rendering. The guarded rendering
+transaction returns to two fixed hooks: geometry and native presentation.
+
+Native full-viewport shader math, exact slot/batch/array/node binding, owner,
+executed serial/index, per-boundary authorization, clip, screen fence, bounded
+snapshots and overflow guards remain. Surface/view and successful native draw
+validation still protect capture; a nondefault view, reduced viewport, unknown
+shader or missing/changed/empty item remains unsupported. This changes overlay
+eligibility intentionally: an intermediate offscreen UI image does not suppress
+our primitive when its exact projected geometry is valid for the presented frame.
+No native texture/sprite asset, game draw-packet edit, new API, heap, arena or TLS
+is needed. Visible output/alignment requires a user-run r14 check; local draw-call
+fixtures do not prove GPU success. See R14_OVERLAY.md and R14_VALIDATION.md.

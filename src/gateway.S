@@ -74,8 +74,6 @@ ENTRY 24, pdb_gateway_dispatch
 ENTRY 25, pdb_gateway_dispatch
 ENTRY 26, pdb_gateway_dispatch
 ENTRY 27, pdb_gateway_dispatch
-ENTRY 28, pdb_gateway_dispatch
-ENTRY 29, pdb_gateway_dispatch
 .section .text.pdb_gateway_after,"ax",%progbits
 .balign 4
 .global pdb_gateway_after

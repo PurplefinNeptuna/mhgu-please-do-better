@@ -112,3 +112,15 @@ Eden multicore and Ryujinx compatibility remain pending.
   closed. Check cursor/animation alignment, collection, transitions and repeated
   grids. Keep no-luck, natural positive luck, forced/live toggles, restart
   persistence, Eden multicore/translation and Ryujinx coverage pending.
+
+## R14 independent overlay (pending user run)
+
+- Identify r14 payload and launch set, with legacy Great Luck disabled.
+- On an untouched populated reward grid, compare verified extras and visible
+  gold borders/sparkles. Preserve the r14 log, including drawn counts, perimeters
+  and selected frame. An intermediate source/presented image mismatch is allowed.
+- Check panel open/closed, duplicate rewards, cursor/animation alignment,
+  alternating presentation frames, collection/quantity decreases, empty slots,
+  repeated grids, transitions/destruction and village return.
+- Keep natural positive luck/no luck, forced mode/live toggles, restart preference
+  persistence, Eden multicore/translation and separate Ryujinx coverage pending.

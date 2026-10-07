@@ -1,13 +1,16 @@
-# Attribution and display research (r13)
+# Attribution and display research (r14)
 
 ## Rendering diagnostic update
 
-The matching r12 log verifies the scissor fix and isolates a texture mismatch.
-Original same-size NVN downsample and initializer receipts establish a full-texture
-source-to-destination route. See [R13_RENDER_LOGGING.md](R13_RENDER_LOGGING.md).
-R12_RENDER_LOGGING.md retains the clipping contract; R11_RENDER_LOGGING.md
-retains gate telemetry; R10_HIGHLIGHTS.md retains texture/shader research.
-Visible r13 alignment remains pending.
+The matching r13 log has valid projected slot geometry but zero execution of
+both downsample hooks. Its intermediate texture differs from the presentation
+image. R14 uses Forge's independent overlay submission, as Damage Numbers does;
+our primitives require verified full-viewport slot coordinates and exact frame/
+provenance, rather than the game's source texture being Forge's destination.
+See [R14_OVERLAY.md](R14_OVERLAY.md). R13's copy-route fixtures remain historical
+CPU evidence; the user run establishes that those paths did not execute here.
+R12_RENDER_LOGGING.md retains clipping evidence; R11_RENDER_LOGGING.md retains
+bounded gate telemetry. Visible r14 alignment remains pending.
 
 ## Existing traces
 
