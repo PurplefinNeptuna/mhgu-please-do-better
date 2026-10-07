@@ -1,6 +1,6 @@
-# Attribution and display research (r9)
+# Attribution and display research (r10)
 
-Current target/viewport corrections and the R8 runtime rejection are documented in [R9_HIGHLIGHTS.md](R9_HIGHLIGHTS.md).
+Current texture identity research and the confirmed R9 rejection are documented in [R10_HIGHLIGHTS.md](R10_HIGHLIGHTS.md).
 R8_HIGHLIGHTS.md records the observation initialization repair.
 These are static traces and executable fixtures, not gameplay coverage.
 R6 implements rendering for the verified normal-vertex, 2D-shader, full-viewport

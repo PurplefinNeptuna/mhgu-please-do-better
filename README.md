@@ -1,19 +1,20 @@
 # Please do Better
 
-Current local recipe builds **r9 gold luck highlights and compact diagnostics**
+Current local recipe builds **r10 gold luck highlights and compact diagnostics**
 for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
 subtle pulsing gold border and tiny procedural sparkle, independently of whether
 the panel is open. Native frame geometry, clipping and exact slot provenance
 control placement. Unknown shader, target or execution paths remain unmarked.
-See [highlight implementation](R9_HIGHLIGHTS.md) and [validation](R9_VALIDATION.md).
+See [highlight implementation](R10_HIGHLIGHTS.md) and [validation](R10_VALIDATION.md).
 
 The accepted r4 run observed eight generated slots and four luck extras, retained
-in the village. The latest R8 user grid confirms one bound extra and zero capture/
-mapping faults, but no visible highlights. R9 corrects the sentinel-only target
-check to accept the native resolved presentation surface, reads the selected
-full native viewport/clip bank, and reports precise
-draw rejection reasons. **R9 visible alignment remains untested.** The exact
-rejection in the R8 screenshot is not yet established. Status is **DEVELOPMENT**.
+in the village. The latest r9 grid reports sixteen generated slots, four bound
+extras, zero capture/mapping faults and zero visible markers. Its log confirms
+that the supported shader reached the surface-identity rejection. R10 compares
+the underlying native draw texture with the exact acquired presentation image,
+rather than a changing global surface descriptor. The first suppressed draw per
+screen stays readable. **Visible r10 highlights remain unconfirmed.** Status is
+**DEVELOPMENT**.
 
 Fresh installs use natural luck. With **Force Miraculous Luck** off, both original
 checks run and equipped skills determine rewards. Turning it on reproduces the
@@ -51,7 +52,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r9/please-do-better-r9-candidate.zip`.
+`build/please-do-better/candidates/r10/please-do-better-r10-candidate.zip`.
 Its only member is:
 
 ```text
@@ -76,7 +77,7 @@ stays disabled if batch capture cannot be installed.
 
 Readback, checked cache calls and barriers do not establish Eden translation
 freshness. R4 has user evidence of successful forced reward observation on Eden.
-R5 gameplay, natural-luck observation, broader reward coverage and multicore
+R10 visible alignment, natural-luck observation, broader reward coverage and multicore
 behavior remain unverified. Ryujinx compatibility is untested.
 Native Switch support is not claimed. Crafting, equipment unlocks, inventory edits
 and global skill-query hooks remain outside scope.

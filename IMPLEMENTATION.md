@@ -23,7 +23,7 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-R9 retains r4's twenty-two detours and adds two fixed rendering detours in a
+R10 retains r4's twenty-two detours and adds two fixed rendering detours in a
 separate transaction: `0xA4FE50` (LDR/AND) and `0x86A330` (MOV/BX tail call).
 The twenty-four eight-byte detours journal 48 words (192 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
@@ -219,3 +219,23 @@ either only when clamping gives the full surface. Capture the matching clip from
 the immutable packet rather than assuming the renderer's normal clip bank.
 R9_HIGHLIGHTS.md records original offsets, reflected shader-list verification
 and precise, bounded rejection diagnostics. No target coordinates are guessed.
+
+## R10 native texture identity
+
+The r9 user log identifies rejection class 3 for the verified XY shader, with
+four bound extras. Surface descriptors differ and the sampled current surface
+alternates. Comparing descriptor addresses against that transient global state
+cannot establish the presented image. R10 records the native draw image
+(`surface+0x10 -> wrapper+0x3C`) and compares it at the existing presentation
+boundary with the acquired resource
+(`owner+0x48CC`) converted to its NVN texture at resource+0x3C. The original acquire
+fragment verifies the three-entry table and cached index. Sentinel draws resolve
+through the native default surface at presentation. Nondefault texture views
+remain unsupported. Immutable snapshots keep the captured identity across a
+producer frame change. No new hooks, arena, TLS slot or game writes were added.
+
+The first rejection for a live screen fence is retained, so alternating images
+do not make the displayed diagnostic unreadable. Later rejected draws still
+increase the internal counter. New screen fences allow a new diagnostic;
+completed reward totals stay retained. See R10_HIGHLIGHTS.md for exact receipts
+and the remaining GPU/gameplay acceptance gate.

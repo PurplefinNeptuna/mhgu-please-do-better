@@ -33,8 +33,9 @@ struct Geometry {
     Binding binding{};
     uint32_t cycle=0,frame=0,owner=0,serial=0;
     float width=0,height=0,points[8]{},clip[4]{};
+    uint32_t surface=0,texture=0; // Zero texture denotes the default sentinel.
 };
-struct Presentation { uint32_t cycle=0,frame=0,owner=0,queue=0,window=0,index=0,serial=0; };
+struct Presentation { uint32_t cycle=0,frame=0,owner=0,queue=0,window=0,index=0,serial=0,texture=0,default_texture=0; };
 inline bool frame_layout(uint32_t group,uint32_t icon_root,uint32_t background_root,
                          unsigned index,unsigned icon_index,unsigned& frame_index,unsigned& frame_id) {
     if(index>=48)return false;

@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r9 accepts the verified resolved presentation surface and reports precise draw rejection reasons. R8 user grid confirms binding with zero capture/mapping faults but no visible highlights. Exact runtime rejection and R9 alignment, natural luck, Eden multicore/translation and Ryujinx remain pending. Prior candidates/Forge/installed packages preserved; no installation or publication.",
+  "reason": "Local r10 compares captured NVN draw textures with exact acquired presentation images and keeps the first screen rejection readable. R9 user grid/log confirm four bound extras, supported shader and surface guard rejection, with no visible markers. R10 GPU/gameplay alignment, natural luck, Eden multicore/translation and Ryujinx remain pending. Prior candidates, Forge and installed packages preserved; no installation or publication.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

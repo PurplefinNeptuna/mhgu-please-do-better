@@ -3,11 +3,11 @@
 The user accepted r4 forced observation on Eden: eight generated slots and four
 luck extras on the reward grid, with totals retained in the village. This is
 limited to the reported session, installed r4 hash and retained launch log.
-**R8 binds the reported extra slot with zero mapping faults; visible highlights failed. R9 gameplay is pending.** Check last completed tier, generated/extra totals,
-coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md and R9_HIGHLIGHTS.md.
+**R9 binds four extras with zero capture/mapping faults; its target guard rejects the supported shader. R10 gameplay is pending.** Check last completed tier, generated/extra totals,
+coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md and R10_HIGHLIGHTS.md.
 
 This checklist authorizes no installation, activation, launch, save edit or
-emulator setting change. R9 implements gold highlights on the verified direct and native parallel
+emulator setting change. R10 implements gold highlights on the verified direct and native parallel
 presentation paths. The local fixtures establish CPU code behavior and shader
 dataflow; actual GPU alignment and emulator frame timing remain pending.
 
@@ -61,3 +61,17 @@ surface identities or shader binding values and the matching Eden log. A generic
 unsupported message cannot identify the failed gate. Check natural positive luck,
 no luck, forcing/toggles, repeated grids, collection, animation/cursor overlap,
 village return, Eden multicore and separate Ryujinx behavior.
+
+## R10 acquired-image gate
+
+Identify the exact candidate hash and launch set before a separately authorized
+run. On an untouched reward grid, confirm actual gold borders and sparkles,
+with the Forge panel closed as well as open. Compare highlighted and bound counts
+across repeated frames and both acquired images. Any suppression must include
+the stable first-rejection text; image mismatches report draw texture, acquired
+texture and index. Unsupported texture views remain suppressed. Alternating
+presentation is expected to be tested, not assumed to prove the original failure
+is fixed. Check direct and parallel frame ordering, cursor/animation alignment,
+collection refresh and immediate disappearance at village return. Natural luck,
+no luck, forced mode, toggles, persistence, Eden multicore/translation freshness
+and separate Ryujinx compatibility remain pending.
