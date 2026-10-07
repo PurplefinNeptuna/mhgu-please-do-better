@@ -83,6 +83,51 @@ static Snapshot<Binding> bindings[64];
 static Snapshot<Geometry> geometries[64];
 static Snapshot<Presentation> presentation;
 static uint32_t binding_count, highlight_ready, highlighted_count, render_faults, unsupported_draws;
+struct DrawRejection {
+    uint32_t reason=0,node_flags=0,target=0,sentinel=0,presented=0,technique=0,uniform_count=0;
+    uint32_t uniforms[9]{};
+    uint32_t target_flags=0,extent=0;int32_t viewport[4]{};
+};
+static Snapshot<DrawRejection> draw_rejection;
+static uint32_t rejection_logged;
+static void reject_draw(uint32_t reason,uint32_t node,uint32_t renderer=0,uint32_t target=0,
+                        uint32_t sentinel=0,uint32_t presented=0) {
+    DrawRejection d{};d.reason=reason;d.node_flags=word(node+0x108);
+    d.target=target;d.sentinel=sentinel;d.presented=presented;
+    if(field(renderer,0x1ac,4)) {
+        const uint32_t packet=word(renderer+0x1ac);
+        if(readable(packet,0x5c)) {
+            d.target_flags=word(packet+0x14);d.extent=word(packet+0x58);
+            copy(packet+((d.target_flags&0x200)?0x28:0x18),d.viewport,16);
+        }
+    }
+    if(field(renderer,0x1d8,4))d.technique=word(renderer+0x1d8);
+    if(field(renderer,0x1a4,4)) {
+        const uint32_t packet=word(renderer+0x1a4);
+        const uint32_t program=field(packet,8,4)?word(packet+8):0;
+        if(field(program,0x40,8)) {
+            d.uniform_count=word(program+0x44);
+            if(d.uniform_count && d.uniform_count<=9)
+                copy(word(program+0x40),d.uniforms,d.uniform_count*4);
+        }
+    }
+    draw_rejection.publish(d);count(unsupported_draws);
+}
+static void report_draw_rejection() {
+    DrawRejection d{};
+    if(!draw_rejection.read(d) || !d.reason || d.reason>5)return;
+    // Formatting/logging runs only in Forge callbacks, outside the geometry
+    // gateway and its live GE contract. One entry per class prevents floods.
+    const uint32_t reason=d.reason;
+    if(!(__atomic_fetch_or(&rejection_logged,1u<<reason,__ATOMIC_RELAXED)&(1u<<reason))) {
+        forge_log_info("[please-do-better] r9 draw rejected reason=%u flags=%X target=%X sentinel=%X presented=%X technique=%X uniforms=%u [%X %X %X %X %X %X %X %X %X]",
+            reason,d.node_flags,d.target,d.sentinel,d.presented,d.technique,d.uniform_count,
+            d.uniforms[0],d.uniforms[1],d.uniforms[2],d.uniforms[3],d.uniforms[4],
+            d.uniforms[5],d.uniforms[6],d.uniforms[7],d.uniforms[8]);
+        if(reason==4)forge_log_info("[please-do-better] r9 viewport flags=%X extent=%X selected=[%d %d %d %d]",
+            d.target_flags,d.extent,d.viewport[0],d.viewport[1],d.viewport[2],d.viewport[3]);
+    }
+}
 static uint32_t live_fence=1, draw_cycle=1, present_pending, native_render;
 static uint32_t frame_overflow[2]{},geometry_claims[64]{};
 static void mark_overflow(unsigned frame,uint32_t serial) {
@@ -164,7 +209,7 @@ static void capture_geometry(RawFrame& f) {
     if(!texture_node(node) || word(node+0x50)!=b.id ||
        !field(ctx,4,4))return;
     if(!(word(node+0xc0)&0x800000))return;
-    if(word(node+0x108)&0x30) {count(unsupported_draws);return;}
+    if(word(node+0x108)&0x30) {reject_draw(1,node);return;}
     const uint32_t renderer=word(ctx+4),sr=seen(native_render);
     if(!field(renderer,0x18bc,4) || !field(sr,0x389cc,4))return;
     if(!field(sr,0x1f,1) || !field(sr,0x33f50,4) ||
@@ -177,12 +222,37 @@ static void capture_geometry(RawFrame& f) {
     const uint32_t draw_flags=word(renderer+0x54);
     if(!(draw_flags&0x100) && (draw_flags&0x50))return;
     const uint32_t target_packet=word(renderer+0x1ac);
-    if(!readable(target_packet,0x5c) || word(target_packet)!=indirect(word(sr+0x389c0),0x204) ||
-       (word(target_packet+0x14)&0x200) || !shader_2d(renderer)) {count(unsupported_draws);return;}
+    const uint32_t sentinel=indirect(word(sr+0x389c0),0x204);
+    const uint32_t presented=indirect(word(sr+0x389cc),0x204);
+    if(!readable(target_packet,0x5c)) {reject_draw(2,node,renderer);return;}
+    const uint32_t surface=word(target_packet);
+    // BC0E98 resolves the default sentinel to this same presented surface.
+    // A packet already naming that surface follows the identical native path.
+    // Neither a null surface nor an unrelated offscreen target is accepted.
+    if(!surface || (surface!=sentinel && surface!=presented)) {
+        reject_draw(3,node,renderer,surface,sentinel,presented);return;
+    }
+    if(!shader_2d(renderer)) {reject_draw(5,node,renderer,surface,sentinel,presented);return;}
     int32_t viewport[4]{},clip[4]{};
-    if(!copy(target_packet+0x18,viewport,16) || !copy(renderer+0xe4,clip,16) ||
-       viewport[0] || viewport[1] || viewport[2]<=0 || viewport[3]<=0 ||
-       viewport[2]>16384 || viewport[3]>16384)return;
+    const unsigned alternate=(word(target_packet+0x14)&0x200)?0x10:0;
+    if(!copy(target_packet+0x18+alternate,viewport,16) ||
+       !copy(target_packet+0x38+alternate,clip,16))return;
+    // BC0E98 selects these exact two banks, clamps viewport to surface size,
+    // then intersects the scissor. Accept only its full, zero-origin result.
+    const uint32_t extent=word(target_packet+0x58);
+    const int32_t width=extent&65535,height=extent>>16;
+    if(viewport[0]<0)viewport[0]=0;
+    if(viewport[1]<0)viewport[1]=0;
+    if(viewport[2]>width)viewport[2]=width;
+    if(viewport[3]>height)viewport[3]=height;
+    if(viewport[0] || viewport[1] || viewport[2]!=width || viewport[3]!=height ||
+       width<=0 || height<=0 || width>16384 || height>16384) {
+        reject_draw(4,node,renderer,surface,sentinel,presented);return;
+    }
+    if(clip[0]<0)clip[0]=0;
+    if(clip[1]<0)clip[1]=0;
+    if(clip[2]>width)clip[2]=width;
+    if(clip[3]>height)clip[3]=height;
     // Full viewport is the same NVN viewport as Forge's selected texture.
     // Offset/half-size targets are deliberately unsupported.
     const uint32_t gui=field(base,0x212668c,4)?word(base+0x212668c):0;
@@ -567,19 +637,19 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r8 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
+    forge_log_info("[please-do-better] r9 conditional state=%u owned=%llx unsafe=%llx",unsigned(r.state),r.owned,r.unsafe);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r8 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
+    forge_log_info("[please-do-better] r9 observation state=%u owned=%llx unsafe=%llx",unsigned(v.state),v.owned,v.unsafe);
     if(v.state!=State::Applied)return;
     Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
     const auto h=highlight.install(base,rendering,2);
     if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r8 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
+    forge_log_info("[please-do-better] r9 highlights state=%u owned=%llx unsafe=%llx",unsigned(h.state),h.owned,h.unsafe);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -738,7 +808,25 @@ void diagnostics() {
     igTextUnformatted(status==1?"Observation coverage: verified traced routes.":status?"Observation coverage: incomplete.":"Observation coverage: awaiting rewards.",nullptr);
     igText("Currently highlighted slots: %u; bound extra slots: %u",seen(highlighted_count),seen(binding_count));
     if(seen(render_faults))igText("Highlight capture faults: %u",seen(render_faults));
-    if(seen(unsupported_draws))igTextUnformatted("Some draw paths are unsupported; their markers are suppressed.",nullptr);
+    DrawRejection rejected{};
+    if(seen(unsupported_draws) && draw_rejection.read(rejected)) {
+        const char* reasons[]={"unknown","tiled texture geometry","unreadable target packet",
+            "target is not the presented surface","offset, reduced or invalid viewport","unverified shader bindings"};
+        igText("Last suppressed draw: %s",rejected.reason<6?reasons[rejected.reason]:"unknown");
+        if(rejected.reason==1)igText("Texture flags: 0x%X",rejected.node_flags);
+        if(rejected.reason==3)igText("Surface 0x%X; default 0x%X; presented 0x%X",
+            rejected.target,rejected.sentinel,rejected.presented);
+        if(rejected.reason==4)igText("Viewport %d,%d -> %d,%d; surface %ux%u; flags 0x%X",
+            rejected.viewport[0],rejected.viewport[1],rejected.viewport[2],rejected.viewport[3],
+            rejected.extent&65535,rejected.extent>>16,rejected.target_flags);
+        if(rejected.reason==5) {
+            igText("Technique 0x%X; %u shader bindings",rejected.technique,rejected.uniform_count);
+            if(rejected.uniform_count && rejected.uniform_count<=9)
+                igText("Bindings: %X %X %X %X %X %X %X %X %X",
+                    rejected.uniforms[0],rejected.uniforms[1],rejected.uniforms[2],rejected.uniforms[3],
+                    rejected.uniforms[4],rejected.uniforms[5],rejected.uniforms[6],rejected.uniforms[7],rejected.uniforms[8]);
+        }
+    }
     const auto h=highlight.report();
     if(h.failure!=Failure::None || h.unsafe)igText("Highlight failure %u at site %u; full restart required.",unsigned(h.failure),h.site);
     igText("Capture faults: %u; mapping faults: %u",seen(drops),seen(mapping_faults));
@@ -754,6 +842,7 @@ void diagnostics() {
     igTreePop();
 }
 void render() {
+    report_draw_rejection();
     __atomic_store_n(&highlighted_count,0,__ATOMIC_RELAXED);
     const uint32_t cycle=__atomic_fetch_add(&draw_cycle,1,__ATOMIC_SEQ_CST);
     Presentation p{};

@@ -23,7 +23,7 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-R8 retains r4's twenty-two detours and adds two fixed rendering detours in a
+R9 retains r4's twenty-two detours and adds two fixed rendering detours in a
 separate transaction: `0xA4FE50` (LDR/AND) and `0x86A330` (MOV/BX tail call).
 The twenty-four eight-byte detours journal 48 words (192 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
@@ -210,3 +210,12 @@ Repeat initialization checks every installed transaction without republishing.
 A lost conditional/observation owner disables forcing, capture and highlighting
 and invalidates the live binding fence. External bytes stay untouched; unsafe
 transaction status remains explicit. There is no live unpatching or enforcement.
+
+## R9 target and viewport correction
+
+The native target resolver accepts the default sentinel and resolved presentation
+surface. The native viewport flag selects one of two rectangle banks; accept
+either only when clamping gives the full surface. Capture the matching clip from
+the immutable packet rather than assuming the renderer's normal clip bank.
+R9_HIGHLIGHTS.md records original offsets, reflected shader-list verification
+and precise, bounded rejection diagnostics. No target coordinates are guessed.

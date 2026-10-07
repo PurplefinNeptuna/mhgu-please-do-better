@@ -3,11 +3,11 @@
 The user accepted r4 forced observation on Eden: eight generated slots and four
 luck extras on the reward grid, with totals retained in the village. This is
 limited to the reported session, installed r4 hash and retained launch log.
-**R6/R7 user-run highlights failed; R8 gameplay is pending.** Check last completed tier, generated/extra totals,
-coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md and R8_HIGHLIGHTS.md.
+**R8 binds the reported extra slot with zero mapping faults; visible highlights failed. R9 gameplay is pending.** Check last completed tier, generated/extra totals,
+coverage and genuine capture faults on repeated screens. See R5_OBSERVATIONS.md and R9_HIGHLIGHTS.md.
 
 This checklist authorizes no installation, activation, launch, save edit or
-emulator setting change. R8 implements gold highlights on the verified direct and native parallel
+emulator setting change. R9 implements gold highlights on the verified direct and native parallel
 presentation paths. The local fixtures establish CPU code behavior and shader
 dataflow; actual GPU alignment and emulator frame timing remain pending.
 
@@ -51,3 +51,13 @@ dataflow; actual GPU alignment and emulator frame timing remain pending.
 Normal collection is outside attribution and may persist through ordinary game
 saving. No collection tracker is planned. Crafting, equipment unlocks and
 inventory editing remain outside scope.
+
+## R9 target and shader coverage
+
+R8 user screenshot: one bound extra, zero highlights, zero capture/mapping faults.
+R9 runtime remains pending. On a populated reward grid, record visible marker
+count/alignment. If suppressed, retain the exact Last suppressed draw reason,
+surface identities or shader binding values and the matching Eden log. A generic
+unsupported message cannot identify the failed gate. Check natural positive luck,
+no luck, forcing/toggles, repeated grids, collection, animation/cursor overlap,
+village return, Eden multicore and separate Ryujinx behavior.

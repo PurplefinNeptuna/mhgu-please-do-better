@@ -5,7 +5,7 @@
     "published": false,
     "url": null
   },
-  "reason": "Local r8 native reward-initialization repair after R7 runtime showed zero bindings and one mapping fault. Corrected call-order fixture reproduces R7 clearing new rewards as an old-array mismatch. R8 gameplay alignment, natural luck, Eden multicore/translation and Ryujinx remain pending. Prior candidates and Forge preserved; no installation or publication.",
+  "reason": "Local r9 accepts the verified resolved presentation surface and reports precise draw rejection reasons. R8 user grid confirms binding with zero capture/mapping faults but no visible highlights. Exact runtime rejection and R9 alignment, natural luck, Eden multicore/translation and Ryujinx remain pending. Prior candidates/Forge/installed packages preserved; no installation or publication.",
   "schema_version": 1,
   "status": "DEVELOPMENT"
 }

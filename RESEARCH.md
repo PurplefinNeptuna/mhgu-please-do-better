@@ -1,6 +1,7 @@
-# Attribution and display research (r8)
+# Attribution and display research (r9)
 
-Current repair and the failed R7 runtime test are documented in [R8_HIGHLIGHTS.md](R8_HIGHLIGHTS.md).
+Current target/viewport corrections and the R8 runtime rejection are documented in [R9_HIGHLIGHTS.md](R9_HIGHLIGHTS.md).
+R8_HIGHLIGHTS.md records the observation initialization repair.
 These are static traces and executable fixtures, not gameplay coverage.
 R6 implements rendering for the verified normal-vertex, 2D-shader, full-viewport
 and direct/native parallel presentation routes. See [R6_HIGHLIGHTS.md](R6_HIGHLIGHTS.md).
