@@ -311,3 +311,19 @@ our primitive when its exact projected geometry is valid for the presented frame
 No native texture/sprite asset, game draw-packet edit, new API, heap, arena or TLS
 is needed. Visible output/alignment requires a user-run r14 check; local draw-call
 fixtures do not prove GPU success. See R14_OVERLAY.md and R14_VALIDATION.md.
+
+## R15 quiet release logging
+
+Remove the automatic render trace scope and periodic address/matrix/perimeter/
+shader/binding dumps. Retain three startup safety records and one concise
+suppression-code record per class per reward screen. No normal capture/present/
+render frame logs. Capture counters and immutable safety evidence remain internal;
+no gateway logs or formats text. Reward/geometry/hook/mode/settings code retains
+r14 behavior. Regression fixtures verify log-free rendering over 240 boundaries,
+with the existing complete native/compiled regression suites.
+
+R14 visible Eden acceptance is recorded in RUNTIME.md. R15's separate gameplay
+coverage remains pending. Known Forge menu/background-list corruption is external
+to this change and remains disclosed. Source commit and all accepted r14 package
+bytes are preserved. Shared delivery uses mods/please-do-better/DISTRIBUTION.json
+and scripts/mod_distribution.py; no installation or publication.

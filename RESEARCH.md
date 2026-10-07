@@ -1,4 +1,4 @@
-# Attribution and display research (r14)
+# Attribution and display research (r15)
 
 ## Rendering diagnostic update
 
@@ -10,7 +10,8 @@ provenance, rather than the game's source texture being Forge's destination.
 See [R14_OVERLAY.md](R14_OVERLAY.md). R13's copy-route fixtures remain historical
 CPU evidence; the user run establishes that those paths did not execute here.
 R12_RENDER_LOGGING.md retains clipping evidence; R11_RENDER_LOGGING.md retains
-bounded gate telemetry. Visible r14 alignment remains pending.
+bounded gate telemetry. The user subsequently confirmed a visible r14 marker on Eden. R15 cleans up
+logging only; current coverage is in RUNTIME.md and R15_VALIDATION.md.
 
 ## Existing traces
 

@@ -1,22 +1,22 @@
 # Please do Better
 
-Current local recipe builds **r14 gold luck highlights and compact diagnostics**
+Current local recipe builds **r15 with quiet release logging**
 for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
 subtle pulsing gold border and tiny procedural sparkle, independently of whether
 the panel is open. Native frame geometry, clipping and exact slot provenance
 control placement. Unknown shader, target or execution paths remain unmarked.
-See [highlight implementation](R14_OVERLAY.md) and [validation](R14_VALIDATION.md).
+See [highlight implementation](R15_RELEASE.md) and [validation](R15_VALIDATION.md).
 
-The accepted r4 run observed eight generated slots and four luck extras, retained
-in the village. The latest r13 reward grid has four bound extras and zero
-highlights. Its matching log shows 6,720 valid geometry publications, zero hits
-at either added downsample hook and continued texture-gate suppression. R14
-uses an independent Forge overlay, like Damage Numbers: render our procedural
-border and sparkle from exact native projected slot geometry. Intermediate
-texture equality and the two unused copy hooks are removed. Batch, node, frame,
-full-viewport, clipping and screen-lifetime checks remain. Verbose evidence stays
-in the emulator log.
-**Visible r14 highlights remain unconfirmed.** Status is **DEVELOPMENT**.
+The user confirmed visible r14 gold highlighting on Eden and approved local
+distribution on 2026-10-07. R15 removes verbose render-log bundles while preserving
+rendering, attribution, optional live forcing and preferences. R14's accepted
+candidate and commit 1888454 remain unchanged. See [runtime acceptance](RUNTIME.md)
+and [release notes](R15_RELEASE.md). R15 gameplay has not been repeated.
+
+Forge's unresolved multi-list renderer issue can corrupt the settings menu while
+background overlays are active. The user excluded repairing Forge from this task.
+See [handoff](../../docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md). Adjust settings
+outside active highlighting and close Forge while viewing marked rewards.
 
 Fresh installs use natural luck. With **Force Miraculous Luck** off, both original
 checks run and equipped skills determine rewards. Turning it on reproduces the
@@ -48,13 +48,14 @@ tracking and item-ID-only matching are absent.
 python3 scripts/please_do_better.py test
 python3 scripts/please_do_better.py build
 python3 scripts/please_do_better.py verify
+python3 scripts/mod_distribution.py package please-do-better
 python3 scripts/mod_distribution.py check
 ```
 
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r14/please-do-better-r14-candidate.zip`.
+`build/please-do-better/candidates/r15/please-do-better-r15-candidate.zip`.
 Its only member is:
 
 ```text
@@ -63,8 +64,9 @@ Please do Better/romfs/nativeNX/plugins/please_do_better.nro
 
 Documentation, notices, manifest and checksums sit beside the ZIP. The original
 r1 candidate/source commit `d01c9c3`, r2/r3 and accepted r4 commit `f789cbb` and
-candidate bytes are preserved, including r5 commit `fe87ff1`. These
-candidates are not approved for distribution. Maintained Forge and Better Input are unchanged
+candidate bytes are preserved, including r5 commit `fe87ff1`. The earlier
+candidates remain historical inputs; the approved release uses the shared
+packager and the authoritative DISTRIBUTION.json record. Maintained Forge and Better Input are unchanged
 dependencies and are not bundled.
 
 Disable the legacy Great Luck cheat for a separately authorized gameplay test,

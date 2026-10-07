@@ -106,7 +106,6 @@ struct PresentTrace {
 };
 static Snapshot<GeometryTrace> geometry_trace;
 static Snapshot<PresentTrace> present_trace;
-static uint32_t trace_screen,trace_frame,trace_bundles,trace_total,trace_logger_claim;
 struct DrawRejection {
     uint32_t reason=0,node_flags=0,target=0,sentinel=0,presented=0,technique=0,uniform_count=0;
     uint32_t uniforms[9]{};
@@ -152,12 +151,7 @@ static void report_draw_rejection() {
     // gateway and its live GE contract. One entry per class prevents floods.
     const uint32_t reason=d.reason;
     if(!(__atomic_fetch_or(&rejection_logged,1u<<reason,__ATOMIC_RELAXED)&(1u<<reason))) {
-        forge_log_info("[please-do-better] r14 draw rejected reason=%u flags=%X target=%X sentinel=%X presented=%X technique=%X uniforms=%u [%X %X %X %X %X %X %X %X %X]",
-            reason,d.node_flags,d.target,d.sentinel,d.presented,d.technique,d.uniform_count,
-            d.uniforms[0],d.uniforms[1],d.uniforms[2],d.uniforms[3],d.uniforms[4],
-            d.uniforms[5],d.uniforms[6],d.uniforms[7],d.uniforms[8]);
-        if(reason==4)forge_log_info("[please-do-better] r14 viewport flags=%X extent=%X selected=[%d %d %d %d]",
-            d.target_flags,d.extent,d.viewport[0],d.viewport[1],d.viewport[2],d.viewport[3]);
+        forge_log_info("[please-do-better] r15 unsupported reward draw path (%u); its marker is suppressed",reason);
     }
 }
 static uint32_t frame_overflow[2]{},geometry_claims[64]{};
@@ -755,19 +749,19 @@ void install() {
     initialized=1;base=forge_mem_getMainTextAddr();
     Hook pair[2]={hook(0),hook(1)};
     const auto r=conditional.install(base,pair,2);
-    forge_log_info("[please-do-better] r14 conditional state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(r.state),r.owned,r.unsafe,unsigned(r.failure),r.site,r.cache);
+    forge_log_info("[please-do-better] r15 conditional state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(r.state),r.owned,r.unsafe,unsigned(r.failure),r.site,r.cache);
     if(r.state!=State::Applied)return;
     __atomic_store_n(&pair_ready,1,__ATOMIC_RELEASE);
     if(nnosAllocateTlsSlot(&tls,nullptr) || tls<0) {tls=-1;lost();return;}
     Hook taps[20];for(unsigned i=0;i<20;++i)taps[i]=hook(i+2);
     const auto v=visual.install(base,taps,20);
     if(v.state==State::Applied)__atomic_store_n(&capture_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r14 observation state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(v.state),v.owned,v.unsafe,unsigned(v.failure),v.site,v.cache);
+    forge_log_info("[please-do-better] r15 observation state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(v.state),v.owned,v.unsafe,unsigned(v.failure),v.site,v.cache);
     if(v.state!=State::Applied)return;
     Hook rendering[2]={highlight_boundary_recipe(),presentation_recipe()};
     const auto h=highlight.install(base,rendering,2);
     if(h.state==State::Applied)__atomic_store_n(&highlight_ready,1,__ATOMIC_RELEASE);
-    forge_log_info("[please-do-better] r14 highlights state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(h.state),h.owned,h.unsafe,unsigned(h.failure),h.site,h.cache);
+    forge_log_info("[please-do-better] r15 highlights state=%u owned=%llx unsafe=%llx failure=%u site=%u cache=%X",unsigned(h.state),h.owned,h.unsafe,unsigned(h.failure),h.site,h.cache);
 }
 static Record observed[8][8]{};
 static Record displayed[8][8]{};
@@ -943,78 +937,7 @@ void diagnostics() {
     igTextUnformatted("Disable the legacy Great Luck cheat. Plugin removal requires a full restart.",nullptr);
     igTreePop();
 }
-static void report_render_trace() {
-    const uint32_t bound=seen(binding_count),fence=seen(live_fence);
-    if(!bound)return;
-    uint32_t expected=0;
-    if(!__atomic_compare_exchange_n(&trace_logger_claim,&expected,1,false,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED))return;
-    struct Release { ~Release() {__atomic_store_n(&trace_logger_claim,0,__ATOMIC_RELEASE);} } release;
-    if(trace_total>=128)return;
-    if(trace_screen!=fence) {trace_screen=fence;trace_frame=0;trace_bundles=0;}
-    ++trace_frame;
-    if(trace_bundles>=24 || (trace_frame>8 && trace_frame%120))return;
-    ++trace_bundles;++trace_total;
-    forge_log_info("[please-do-better] r14 render trace screen=%u sample=%u cycle=%u bound=%u drawn=%u sr=%X",
-        fence,trace_frame,seen(draw_cycle)-1,bound,seen(highlighted_count),seen(native_render));
-    forge_log_info("[please-do-better] r14 geometry gates A enter=%u bound=%u registers=%u unbound=%u matched=%u list=%u item=%u identity=%u uncached=%u tiled=%u renderer=%u frame=%u layout=%u submission=%u",
-        seen(geometry_gates[0]),seen(geometry_gates[1]),seen(geometry_gates[2]),seen(geometry_gates[3]),seen(geometry_gates[4]),seen(geometry_gates[5]),seen(geometry_gates[6]),seen(geometry_gates[7]),seen(geometry_gates[8]),seen(geometry_gates[9]),seen(geometry_gates[10]),seen(geometry_gates[11]),seen(geometry_gates[12]),seen(geometry_gates[13]));
-    forge_log_info("[please-do-better] r14 geometry gates B target=%u texture=%u shader=%u viewport=%u buffer=%u inputs=%u quad=%u clip=%u epoch=%u published=%u conflict=%u overflow=%u",
-        seen(geometry_gates[14]),seen(geometry_gates[15]),seen(geometry_gates[16]),seen(geometry_gates[17]),seen(geometry_gates[18]),seen(geometry_gates[19]),seen(geometry_gates[20]),seen(geometry_gates[21]),seen(geometry_gates[22]),seen(geometry_gates[23]),seen(geometry_gates[24]),seen(geometry_gates[25]));
-    forge_log_info("[please-do-better] r14 present gates enter=%u disabled=%u context=%u frame=%u metadata=%u image=%u published=%u conflict=%u",
-        seen(present_gates[0]),seen(present_gates[1]),seen(present_gates[2]),seen(present_gates[3]),seen(present_gates[4]),seen(present_gates[5]),seen(present_gates[6]),seen(present_gates[7]));
-    forge_log_info("[please-do-better] r14 render gates enter=%u disabled=%u pending=%u snapshot=%u cycle=%u overflow=%u io=%u drawlist=%u time=%u sample=%u frame=%u dimensions=%u binding=%u epoch=%u drawn=%u",
-        seen(render_gates[0]),seen(render_gates[1]),seen(render_gates[2]),seen(render_gates[3]),seen(render_gates[4]),seen(render_gates[5]),seen(render_gates[6]),seen(render_gates[7]),seen(render_gates[8]),seen(render_gates[9]),seen(render_gates[10]),seen(render_gates[11]),seen(render_gates[12]),seen(render_gates[13]),seen(render_gates[14]));
-    PresentTrace t{};
-    if(present_trace.read(t))forge_log_info("[please-do-better] r14 native-present gate=%u queue=%X/%X window=%X index=%u/%u cached=%u resource=%X table=%X image=%X frame=%u serial=%u parallel=%u",
-        t.gate,t.queue,t.expected_queue,t.window,t.index,t.expected_index,t.cached_index,t.resource,t.table,t.image,t.frame,t.serial,t.parallel);
-    Presentation p{};const bool present_valid=presentation.read(p);
-    ImGuiIO* io=igGetIO_Nil();
-    forge_log_info("[please-do-better] r14 selected-present valid=%u cycle=%u frame=%u serial=%u image=%X default=%X io=%.6g,%.6g scale=%.6g,%.6g",
-        unsigned(present_valid),p.cycle,p.frame,p.serial,p.texture,p.default_texture,
-        io?double(io->DisplaySize.x):0.,io?double(io->DisplaySize.y):0.,
-        io?double(io->DisplayFramebufferScale.x):0.,io?double(io->DisplayFramebufferScale.y):0.);
-    GeometryTrace g{};
-    if(geometry_trace.read(g)) {
-        forge_log_info("[please-do-better] r14 last-capture gate=%u node=%X ctx=%X list=%X index=%u renderer=%X cache=%X flags=%X offset=%X stride=%X roffset=%X draw_flags=%X frame=%u serial=%u parallel=%u cycle=%u fence=%u target=%X extent=%X buffer=%X model=%X global=%X",
-            g.gate,g.node,g.ctx,g.list,g.index,g.renderer,g.cache,g.flags,g.offset,g.stride,g.renderer_offset,
-            g.draw_flags,g.frame,g.serial,g.parallel,g.cycle,g.fence,g.target,g.extent,g.buffer,g.model,g.global);
-        forge_log_info("[please-do-better] r14 capture vertices [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] [%.6g %.6g %.6g] global=[%.6g %.6g %.6g %.6g]",
-            double(g.vertices[0]),double(g.vertices[1]),double(g.vertices[2]),double(g.vertices[6]),double(g.vertices[7]),double(g.vertices[8]),
-            double(g.vertices[12]),double(g.vertices[13]),double(g.vertices[14]),double(g.vertices[18]),double(g.vertices[19]),double(g.vertices[20]),
-            double(g.projection[0]),double(g.projection[1]),double(g.projection[2]),double(g.projection[3]));
-        forge_log_info("[please-do-better] r14 model XY [%.6g %.6g %.6g %.6g] [%.6g %.6g %.6g %.6g]",
-            double(g.matrix[0]),double(g.matrix[4]),double(g.matrix[8]),double(g.matrix[12]),
-            double(g.matrix[1]),double(g.matrix[5]),double(g.matrix[9]),double(g.matrix[13]));
-        forge_log_info("[please-do-better] r14 clip input flags=%X viewport=[%d %d %d %d] raw=[%d %d %d %d] sentinel=%X [%d %d %d %d]",
-            g.target_flags,g.viewport[0],g.viewport[1],g.viewport[2],g.viewport[3],
-            g.raw_clip[0],g.raw_clip[1],g.raw_clip[2],g.raw_clip[3],g.clip_sentinel,
-            g.sentinel_clip[0],g.sentinel_clip[1],g.sentinel_clip[2],g.sentinel_clip[3]);
-        forge_log_info("[please-do-better] r14 clip effective valid=%u [%d %d %d %d]",
-            g.clip_valid,g.effective_clip[0],g.effective_clip[1],g.effective_clip[2],g.effective_clip[3]);
-    }
-    CopyFault fault{};
-    if(seen(mapping_faults) && mapping_detail.read(fault))forge_log_info("[please-do-better] r14 copy fault route=%u index=%u expected=%X actual=%X",
-        fault.route,fault.index,fault.expected,fault.actual);
-    unsigned samples=0;
-    for(unsigned i=0;i<64 && samples<8;++i) {
-        Geometry g{};if(!geometries[i].read(g) || g.binding.fence!=fence)continue;
-        forge_log_info("[please-do-better] r14 geometry[%u] node=%X batch=%u index=%u fence=%u cycle=%u frame=%u serial=%u owner=%X surface=%X texture=%X size=%.6g,%.6g",
-            i,g.binding.node,g.binding.batch,g.binding.index,g.binding.fence,g.cycle,g.frame,g.serial,g.owner,g.surface,g.texture,
-            double(g.width),double(g.height));
-        forge_log_info("[please-do-better] r14 perimeter[%u] points=[%.6g %.6g %.6g %.6g %.6g %.6g %.6g %.6g] clip=[%.6g %.6g %.6g %.6g]",
-            i,double(g.points[0]),double(g.points[1]),double(g.points[2]),double(g.points[3]),
-            double(g.points[4]),double(g.points[5]),double(g.points[6]),double(g.points[7]),double(g.clip[0]),double(g.clip[1]),double(g.clip[2]),double(g.clip[3]));
-        ++samples;
-    }
-    if(trace_frame==1)for(unsigned i=0;i<bound && i<8;++i) {
-        Binding b{};if(!bindings[i].read(b))continue;
-        forge_log_info("[please-do-better] r14 binding[%u] fence=%u ui=%X batch=%u list=%X group=%u index=%u node=%X icon=%X id=%u item=%u amount=%u",
-            i,b.fence,b.ui,b.batch,b.list,b.group,b.index,b.node,b.icon,b.id,b.item.item,b.item.amount);
-    }
-}
-struct RenderTraceScope { ~RenderTraceScope() {report_render_trace();} };
 void render() {
-    RenderTraceScope trace_scope;
     count(render_gates[REnter]);
     report_draw_rejection();
     __atomic_store_n(&highlighted_count,0,__ATOMIC_RELAXED);

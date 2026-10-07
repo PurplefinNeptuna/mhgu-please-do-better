@@ -124,3 +124,16 @@ Eden multicore and Ryujinx compatibility remain pending.
   repeated grids, transitions/destruction and village return.
 - Keep natural positive luck/no luck, forced mode/live toggles, restart preference
   persistence, Eden multicore/translation and separate Ryujinx coverage pending.
+
+## R15 release coverage
+
+User-confirmed: visible r14 gold marker on the tested Eden reward grid, with
+matching installed hash/log/screenshot. User approved logging-only cleanup and
+local distribution. R15 has compiled/static verification and no fresh gameplay
+run claimed. Verify quiet normal logging in any future gameplay session.
+
+Known Forge menu corruption with background overlays is unresolved and excluded
+from this release task. Use settings outside active highlighting; fixing Forge
+requires its own work under docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md.
+All broader natural/no-luck, mode/settings/restart, collection/transition,
+repeated-grid/animation, multicore and Ryujinx checks above remain pending.
