@@ -14,6 +14,12 @@ Use `mods/NAME/build.sh doctor`, `prepare`, `build`, `test --host`, `test`,
 `build --diagnostics` is for development. `package --release` uses the approved
 record and complete matching evidence. Commands never install or publish.
 
+Ready and published release artifacts use a strictly user-facing `README.md`.
+Point `DISTRIBUTION.json`'s `readme` at a dedicated player guide when the source
+README includes development instructions. Keep build/research/validation details
+in developer documents; release readers need features, requirements, installation,
+settings, compatibility and actionable known issues.
+
 Configure copied main/SDK/Forge and resource inputs in ignored `build.local.json`.
 The example file describes the configuration. Keep original inputs intact.
 Plugin templates carry no hooks or settings until implemented; other kinds
