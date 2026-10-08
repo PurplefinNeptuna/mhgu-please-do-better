@@ -33,6 +33,6 @@ player save and retry **Save settings**.
 
 ## Known issue
 
-Forge's menu can show visual corruption while reward highlighting is active.
-Adjust settings outside the reward screen and close Forge's menu when viewing
-marked rewards.
+Opening a dropdown or displaying gameplay overlays can make Forge's entire
+ImGui window blank. If this happens, click random places inside that ImGui
+window until the menu reappears.
