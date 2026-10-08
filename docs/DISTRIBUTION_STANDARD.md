@@ -35,11 +35,22 @@ build/<mod>/releases/<version>/
     SHA256SUMS
 ```
 
-Only the applicable runtime directories are present. The ZIP contains exactly
-one named emulator package folder, with only declared runtime files. No extra
-title-ID/dump nesting, readmes, notices, manifests or tests go inside that folder.
-Its unpacked bytes must match the ZIP and pinned payload hashes. Existing
-package names may be preserved for update compatibility.
+Only the applicable runtime directories are present. The ZIP contains one named
+emulator package folder with only declared runtime files, plus `README.md` at
+the archive root beside that folder. The archived README must match the adjacent
+release README byte for byte. No extra title-ID/dump nesting, readmes, notices,
+manifests or tests go inside the package folder. Its unpacked runtime bytes must
+match the ZIP and pinned payload hashes. Existing package names may be preserved
+for update compatibility.
+
+```text
+<mod>-<version>[-variant].zip
+    README.md
+    <package-name>/
+        romfs/...
+        exefs/...
+        cheats/...
+```
 
 README, combined notices, manifest and checksums always sit beside the ZIP.
 Every ready or published release's `README.md` must be strictly user-facing.
@@ -59,10 +70,13 @@ the ZIP with its notices. `SHA256SUMS` covers every file in the delivery except
 itself. The manifest records identity, target, approval, publication, exact
 runtime inventory, support hashes, evidence hashes and coverage limits.
 
-Runtime bytes and ZIP bytes are immutable within a version. A changed runtime
-requires a new version. Documentation, evidence references and publication
-metadata can be refreshed with `--refresh-support` only after the runtime and
-archive match; the packager first copies and verifies the old delivery under
+Runtime bytes are immutable within a version. A changed runtime requires a new
+version. Documentation, evidence references and publication metadata can be
+refreshed with `--refresh-support` after verifying the existing runtime and ZIP.
+Updating the README also updates its root-level ZIP copy; the runtime members
+remain byte-identical. Adding the root README to an older runtime-only ZIP uses
+the same refresh command. Other support changes preserve ZIP bytes. Before any
+refresh, the packager copies and verifies the old delivery under
 `backups/<mod>/distribution-support/`. Unknown files and symlinks are rejected.
 
 Keep only the current registered version under `releases/`. Archive superseded
@@ -82,7 +96,7 @@ python3 scripts/mod_distribution.py init new-mod --kind plugin
 # Run that mod's own build/static checks first, then package approved pinned inputs.
 python3 scripts/mod_distribution.py package new-mod
 
-# Refresh support files while preserving this version's runtime and ZIP bytes.
+# Refresh support files and the archived README, preserving runtime bytes.
 python3 scripts/mod_distribution.py package new-mod --refresh-support
 
 # Required before claiming readiness, committing distribution work or sharing.
