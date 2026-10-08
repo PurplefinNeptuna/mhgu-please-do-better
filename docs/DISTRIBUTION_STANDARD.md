@@ -31,6 +31,7 @@ build/<mod>/releases/<version>/
         cheats/...
     README.md
     NOTICES.txt
+    NOTICES.html
     release-manifest.json
     SHA256SUMS
 ```
@@ -52,7 +53,12 @@ for update compatibility.
         cheats/...
 ```
 
-README, combined notices, manifest and checksums always sit beside the ZIP.
+README, combined notices/licenses, manifest and checksums always sit beside
+the ZIP. `NOTICES.txt` and its `NOTICES.html` alternative remain outside the
+archive. `NOTICES.html` contains notices/licenses only, formatted as a paste-ready
+GameBanana HTML fragment. It uses basic headings, paragraphs, line breaks, code
+and public links, with no page wrappers, CSS or scripts. Preserve license wording
+and copyright statements in both formats.
 Every ready or published release's `README.md` must be strictly user-facing.
 Describe the mod, actual requirements, direct installation steps, controls or
 settings, and actionable known issues. Mention other mods only when they are
