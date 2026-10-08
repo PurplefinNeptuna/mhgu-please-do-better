@@ -30,9 +30,3 @@ beside Better Input's config in player save storage.
 
 If saving fails, the current choice remains active for the session. Load a
 player save and retry **Save settings**.
-
-## Known issue
-
-Opening a dropdown or displaying gameplay overlays can make Forge's entire
-ImGui window blank. If this happens, click random places inside that ImGui
-window until the menu reappears.
