@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-08",
+  "approval_quote": "all works well, except forge-patched which is LOCAL_ONLY; promote the others to ready to distribute",
+  "scope": "User-confirmed tested Eden setup; screenshot shows visible Forge menu alongside PDB reward highlights. No exhaustive feature, save-restart, clean-shutdown, new Ryujinx or native Switch claim.",
+  "eden_build": "master-10bcd2d849-master",
+  "eden_log_sha256": "750e9899e86257c4819cb55ecc1ec08d48ae024a428fc3acff6dd9a8adfd6090",
+  "screenshot_sha256": "df53148a92be053e4f6706cd6f9b3000a6f06f1d5e4eaa297c2702a31f361155",
+  "snapshots": "backups/release-promotion-20261008/SHA256.json",
+  "forge_status": "LOCAL_ONLY",
+  "forge_version": "1.4.1-render1",
+  "forge_sha256": "f22f4be84163deba14a2bd086d76065a4baa0b3943aba78b5c1aac15f2f94eee",
+  "mods": {
+    "damage-numbers": {
+      "version": "r22-config1",
+      "nro_sha256": "c9e1f0740e12bb2806926ef985f575221aa2785384be6a064fd8181b47567f70",
+      "installed_package": "damage-number",
+      "installed_bytes_match": true,
+      "user_confirmed": true
+    },
+    "please-do-better": {
+      "version": "r17-config1",
+      "nro_sha256": "bf2263640192b4b6bdb33b0cb507ea7dfe8a65fc86e27f3b90a91fee860eacbe",
+      "installed_package": "Please do Better",
+      "installed_bytes_match": true,
+      "user_confirmed": true
+    }
+  },
+  "prior_ryujinx": {
+    "log_sha256": "02f4fb825a0cf3fa47d02cd04ce8d25532f1ef2bedcba915f8cc9f6069bccec9",
+    "forge_version": "1.4.1-originalbi1",
+    "please_do_better_version": "r16",
+    "scope": "Older payloads; not fresh confirmation of the promoted plugin bytes."
+  },
+  "log_limits": "Eden contains existing Maxwell macro assertions; snapshot does not establish clean shutdown. Damage Numbers retains a stale r20 startup string, so installed NRO hash establishes its release identity."
+}

@@ -1,35 +1,43 @@
 {
   "approval": {
-    "date": "2026-10-07",
-    "basis": "Explicit user instruction: implement the approved standalone/settings/logging plan and prepare local deliveries after required gates pass."
+    "date": "2026-10-08",
+    "basis": "all works well, except forge-patched which is LOCAL_ONLY; promote the others to ready to distribute"
   },
-  "archive": "please-do-better-r16.zip",
+  "archive": "please-do-better-r17-config1.zip",
   "dependencies": [
     {
-      "name": "Forge loader",
-      "scope": "External maintained dependency, unchanged and unbundled; known menu renderer issue disclosed.",
-      "sha256": "9d472d56f81f834f366171426dbd0131af19c7697e132c731c3fd3f335af53d0"
+      "name": "forge-patched 1.4.1-render1",
+      "sha256": "f22f4be84163deba14a2bd086d76065a4baa0b3943aba78b5c1aac15f2f94eee",
+      "scope": "External LOCAL_ONLY loader used in the tested Eden setup; not bundled. Its renderer fix permits menu/dropdowns and gameplay overlays together."
+    },
+    {
+      "name": "Forge 1.4.1 compiler/import baseline",
+      "sha256": "9d472d56f81f834f366171426dbd0131af19c7697e132c731c3fd3f335af53d0",
+      "scope": "Unchanged pinned build/import-validation input; runtime also resolves against render1."
     }
   ],
   "evidence": {
     "manual": [
-      "mods/please-do-better/RUNTIME.md"
+      "mods/please-do-better/RUNTIME.md",
+      "mods/please-do-better/docs/CONFIG_RELEASE_RUNTIME.json"
     ],
-    "manual_summary": "Historical r15 evidence: User-confirmed visible r14 gold marker on the tested Eden reward grid, matching installed hash/log/screenshot. Earlier forced reward observation accepted. R15 logging-only cleanup not gameplay retested; Forge menu/background-list corruption remains unresolved. r16: no new manual/gameplay test.",
+    "manual_summary": "User-confirmed tested Eden setup; screenshot shows visible Forge menu alongside PDB reward highlights. No exhaustive feature, save-restart, clean-shutdown, new Ryujinx or native Switch claim.",
     "static": [
-      "build/please-do-better/input-validation.json",
-      "build/please-do-better/binary-validation.json",
-      "build/please-do-better/host-tests.json",
-      "build/please-do-better/arm-tests.json",
-      "build/please-do-better/runtime-tests.json",
-      "build/please-do-better/native-tests.json",
-      "build/please-do-better/observation-tests.json",
-      "build/please-do-better/display-tests.json",
-      "build/please-do-better/highlight-tests.json",
-      "build/please-do-better/log-tests.json",
-      "build/please-do-better/highlight-research.json",
-      "build/please-do-better/standalone-tests.json",
-      "build/please-do-better/runtime-policy.json"
+      "build/please-do-better/candidates/r17-config1/input-validation.json",
+      "build/please-do-better/candidates/r17-config1/binary-validation.json",
+      "build/please-do-better/candidates/r17-config1/host-tests.json",
+      "build/please-do-better/candidates/r17-config1/arm-tests.json",
+      "build/please-do-better/candidates/r17-config1/runtime-tests.json",
+      "build/please-do-better/candidates/r17-config1/native-tests.json",
+      "build/please-do-better/candidates/r17-config1/observation-tests.json",
+      "build/please-do-better/candidates/r17-config1/display-tests.json",
+      "build/please-do-better/candidates/r17-config1/highlight-tests.json",
+      "build/please-do-better/candidates/r17-config1/log-tests.json",
+      "build/please-do-better/candidates/r17-config1/highlight-research.json",
+      "build/please-do-better/candidates/r17-config1/standalone-build.json",
+      "build/please-do-better/candidates/r17-config1/runtime-policy.json",
+      "mods/please-do-better/docs/PRIMARY_ONLY_CONFIG_VALIDATION.json",
+      "mods/please-do-better/docs/FORGE_RENDERER_VALIDATION.json"
     ],
     "prior_runtime_confirmation": {
       "date": "2026-10-07",
@@ -40,18 +48,20 @@
       "scope": "One reported Eden reward-grid result; not exhaustive coverage or a clean-shutdown claim."
     },
     "runtime_confirmation": {
-      "version": "r16",
-      "fresh_gameplay_test": false,
-      "scope": "Fresh host/ARM/static cleanup checks only; earlier runtime reports remain scoped to their original payloads."
+      "version": "r17-config1",
+      "date": "2026-10-08",
+      "fresh_gameplay_test": true,
+      "user_confirmed": true,
+      "eden": true,
+      "nro_sha256": "bf2263640192b4b6bdb33b0cb507ea7dfe8a65fc86e27f3b90a91fee860eacbe",
+      "scope": "User-confirmed tested Eden setup; screenshot shows visible Forge menu alongside PDB reward highlights. No exhaustive feature, save-restart, clean-shutdown, new Ryujinx or native Switch claim."
     }
   },
   "limitations": [
-    "r16 settings/log cleanup is statically and computationally validated; no separate Eden, Ryujinx or Switch gameplay run was performed.",
-    "Forge multi-draw-list renderer can corrupt the menu while background overlays are active; no Forge fix is included.",
-    "R14 visible Eden marker accepted; r15 logging-only cleanup has compiled/static verification, without a separate gameplay run.",
-    "Natural positive luck/no luck, broader mode/settings/restart/collection/transition/repeated-grid/animation and Eden multicore coverage remain pending.",
-    "Ryujinx compatibility is untested; no native Switch or universal emulator claim.",
-    "Successful cache calls do not establish CPU translation freshness; the second forced check's broader role remains incompletely traced."
+    "User confirmation is scoped to the tested Eden setup; not exhaustive feature, persistence-restart, clean-shutdown, new Ryujinx or native Switch validation.",
+    "Standard Forge builds without the multi-list renderer fix can blank/corrupt menus while dropdowns or overlays are active; the tested render1 loader stays LOCAL_ONLY.",
+    "Unknown reward shader, target or execution paths suppress markers.",
+    "Successful cache calls do not establish CPU translation freshness; the second forced check broader role remains incompletely traced."
   ],
   "mod": "please-do-better",
   "notices": [
@@ -61,8 +71,8 @@
   "package_name": "please-do-better",
   "payloads": {
     "romfs/nativeNX/plugins/please_do_better.nro": {
-      "sha256": "b4f27d001d5bb1444f055622b8eede36e0d9b462b0793e4f5f5eb32afda3bcb7",
-      "source": "build/please-do-better/candidates/r16/Please do Better/romfs/nativeNX/plugins/please_do_better.nro"
+      "source": "build/please-do-better/candidates/r17-config1/delivery/Please do Better/romfs/nativeNX/plugins/please_do_better.nro",
+      "sha256": "bf2263640192b4b6bdb33b0cb507ea7dfe8a65fc86e27f3b90a91fee860eacbe"
     }
   },
   "publication": {
@@ -71,18 +81,10 @@
     "url": null
   },
   "readme": "mods/please-do-better/DISTRIBUTION_README.md",
-  "reason": "User requested standalone development and settings-only/quiet logging cleanup of ready plugins. r16 has fresh compiled/static validation; no new gameplay run.",
+  "reason": "User confirmed the tested plugins work and requested ready-to-distribute promotion. Tested candidate runtime bytes are preserved.",
   "schema_version": 1,
   "status": "READY_TO_DISTRIBUTE",
-  "support": {
-    "CHANGELOG.md": "mods/please-do-better/R16_RELEASE.md",
-    "FORGE_MENU_LIMITATION.md": "mods/please-do-better/docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md",
-    "MANUAL_TESTS.md": "mods/please-do-better/MANUAL_TESTS.md",
-    "RUNTIME.md": "mods/please-do-better/RUNTIME.md",
-    "VALIDATION.md": "mods/please-do-better/R16_VALIDATION.md",
-    "CLEANUP_VALIDATION.json": "mods/please-do-better/CLEANUP_VALIDATION.json",
-    "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md"
-  },
-  "target": "MHGU Nintendo Switch 1.4.0; Forge 1.4.1 on the tested Eden/Linux baseline.",
-  "version": "r16"
+  "support": {},
+  "target": "MHGU Nintendo Switch 1.4.0; Forge 1.4.1 on the user-confirmed Eden/Linux setup.",
+  "version": "r17-config1"
 }

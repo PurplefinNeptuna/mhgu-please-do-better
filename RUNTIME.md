@@ -35,3 +35,20 @@ rare-drop guarantee, native Switch or universal emulator compatibility claim.
 ## r16 standalone/settings/log cleanup
 
 This binary has its own fresh compiled/static checks, recorded in CLEANUP_VALIDATION.json. No new gameplay test was run; the preceding observations retain their original version and scope. Forge remains unchanged.
+
+## 2026-10-08: primary-only config release acceptance
+
+The user reported "all works well" and requested promotion to ready to
+distribute, keeping Forge LOCAL_ONLY. The tested Eden installation matches
+r17-config1 NRO SHA-256 `bf2263640192b4b6bdb33b0cb507ea7dfe8a65fc86e27f3b90a91fee860eacbe`. The supplied reward-screen screenshot
+shows the Forge menu and PDB gold highlights visible together. Eden's retained
+log records Forge 1.4.1-render1, PDB r17-config1 and successful Damage Numbers
+settings saves. Damage Numbers still prints its older r20 startup label; its
+installed file hash identifies the tested r22-config1 bytes.
+
+[Release runtime evidence](docs/CONFIG_RELEASE_RUNTIME.json) records the
+log/screenshot hashes and scope. This is the user's confirmation of the tested
+setup, not exhaustive dropdown/transition/save-restart coverage or a clean
+shutdown claim. The newest Ryujinx log used older plugin bytes and is not
+confirmation of this release. Distribution preparation rebuilds no runtime,
+installs nothing and publishes nothing. Earlier entries remain historical.

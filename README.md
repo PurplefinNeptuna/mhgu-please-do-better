@@ -1,6 +1,9 @@
 # Please do Better
 
-Current cleanup release: **r16**. New host/ARM/static checks passed; no new gameplay test was run. Earlier manual reports retain their original version. See [cleanup evidence](CLEANUP_VALIDATION.json) and [development workflow](DEVELOPMENT.md).
+Current release: **r17-config1**, with primary-only configs. The user confirmed
+the tested Eden setup on 2026-10-08. [Release details](R17_RELEASE.md) and
+[installation guide](DISTRIBUTION_README.md). Earlier reports retain their
+original version; Forge remains LOCAL_ONLY.
 
 ## Build this mod
 
@@ -21,8 +24,8 @@ independent checkout uses its own ignored `build/` and `work/` directories.
 The author keeps all rights to owned code; third-party and font licenses remain separate.
 
 
-Current source candidate: **r17-config1**, using only the primary config.
-See [config candidate](CONFIG_CANDIDATE.md). The accepted r16 delivery is preserved.
+Current source release: **r17-config1**, using only the primary config.
+See [config candidate](CONFIG_CANDIDATE.md). The preceding r16 delivery is archived with verified hashes.
 
 The recipe retains **the settings-only panel and quiet release logging**
 for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
@@ -38,8 +41,8 @@ candidate and commit 1888454 remain unchanged. See [runtime acceptance](RUNTIME.
 and [release notes](R16_RELEASE.md). R15 gameplay has not been repeated.
 
 The isolated Forge `1.4.1-render1` candidate corrects concatenated draw-list
-offsets. Its host regression passes; menu/dropdown and overlay gameplay
-acceptance remains pending. The accepted Forge runtime is preserved.
+offsets. Its host regression passes, and the user confirmed the tested Eden setup.
+The runtime report records the scope; Forge remains LOCAL_ONLY.
 
 Fresh installs use natural luck. With **Force Miraculous Luck** off, both original
 checks run and equipped skills determine rewards. Turning it on reproduces the
@@ -63,7 +66,7 @@ enabled by positive luck compared with normal luck using the observed rolls.
 It cannot predict the items a separate unmodified run would produce. Collection
 tracking and item-ID-only matching are absent.
 
-## Local candidate
+## Versioned build and release
 
 ```bash
 python3 scripts/please_do_better.py test
