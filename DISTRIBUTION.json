@@ -123,5 +123,38 @@
   "status": "READY_TO_DISTRIBUTE",
   "support": {},
   "target": "MHGU Nintendo Switch 1.4.0; Forge 1.4.1 on the user-confirmed Eden/Linux setup.",
-  "version": "r19-savehint"
+  "version": "r19-savehint",
+  "gamebanana": {
+    "ai_code": {
+      "used": true,
+      "software": [
+        {
+          "name": "OpenAI Codex",
+          "url": "https://openai.com/codex/"
+        }
+      ],
+      "scope": "writing, modifying and debugging this mod's code."
+    },
+    "ai_assets": [],
+    "credits": [
+      {
+        "name": "Forge",
+        "author": "Jeffi",
+        "url": "https://github.com/jeffi6375/forge",
+        "scope": "Plugin loading and rendering."
+      },
+      {
+        "name": "libnx",
+        "author": "Hydrosphere Developers",
+        "url": "https://github.com/switchbrew/libnx",
+        "scope": "MIT-licensed ARM32 system-call code."
+      },
+      {
+        "name": "Great Luck patch",
+        "author": "\u82b1\u82b1\u82b1\u82b1\u82b1\u6930\u83dc",
+        "url": "https://github.com/RTHKKona/MHGU-Modding/wiki/Cheat-Codes",
+        "scope": "Original Great Luck patch."
+      }
+    ]
+  }
 }
