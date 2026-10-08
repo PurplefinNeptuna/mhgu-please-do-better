@@ -30,6 +30,7 @@ build/<mod>/releases/<version>/
         exefs/...
         cheats/...
     README.md
+    README.html
     NOTICES.txt
     NOTICES.html
     release-manifest.json
@@ -53,8 +54,8 @@ for update compatibility.
         cheats/...
 ```
 
-README, combined notices/licenses, manifest and checksums always sit beside
-the ZIP. `NOTICES.txt` and its `NOTICES.html` alternative remain outside the
+The README in Markdown and HTML, notices/licenses, manifest and checksums sit
+beside the ZIP. `NOTICES.txt` and its `NOTICES.html` alternative remain outside the
 archive. `NOTICES.html` contains notices/licenses only, formatted as a paste-ready
 GameBanana HTML fragment. It uses basic headings, paragraphs, line breaks, code
 and public links, with no page wrappers, CSS or scripts. Preserve license wording
@@ -66,6 +67,14 @@ references and previous-license commentary. Keep development provenance in
 `THIRD_PARTY.md`; use dedicated `DISTRIBUTION_NOTICES.md` for release credits and
 component notices, alongside current license files. Notices must be usable
 without a source checkout.
+
+For every current and future mod, supply `README.html` beside the ZIP as a
+paste-ready GameBanana HTML fragment generated from the release README. Preserve
+its installation/use content, headings, lists, controls/settings tables, public
+links and code examples. Keep HTML alternatives outside the ZIP; archive only
+`README.md` beside the runtime folder. Keep README content user-facing and
+notices limited to current package contents and applicable credits.
+
 Every ready or published release's `README.md` must be strictly user-facing.
 Describe the mod, actual requirements, direct installation steps, controls or
 settings, and actionable known issues. Mention other mods only when they are
