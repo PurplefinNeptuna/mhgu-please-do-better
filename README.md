@@ -21,7 +21,10 @@ independent checkout uses its own ignored `build/` and `work/` directories.
 The author keeps all rights to owned code; third-party and font licenses remain separate.
 
 
-Current local recipe builds **r16 with a settings-only panel and quiet release logging**
+Current source candidate: **r17-config1**, using only the primary config.
+See [config candidate](CONFIG_CANDIDATE.md). The accepted r16 delivery is preserved.
+
+The recipe retains **the settings-only panel and quiet release logging**
 for MHGU Nintendo Switch 1.4.0 and Forge 1.4.1. Verified extra reward frames get a
 subtle pulsing gold border and tiny procedural sparkle, independently of whether
 the panel is open. Native frame geometry, clipping and exact slot provenance
@@ -34,10 +37,9 @@ rendering, attribution, optional live forcing and preferences. R14's accepted
 candidate and commit 1888454 remain unchanged. See [runtime acceptance](RUNTIME.md)
 and [release notes](R16_RELEASE.md). R15 gameplay has not been repeated.
 
-Forge's unresolved multi-list renderer issue can corrupt the settings menu while
-background overlays are active. The user excluded repairing Forge from this task.
-See [handoff](docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md). Adjust settings
-outside active highlighting and close Forge while viewing marked rewards.
+The isolated Forge `1.4.1-render1` candidate corrects concatenated draw-list
+offsets. Its host regression passes; menu/dropdown and overlay gameplay
+acceptance remains pending. The accepted Forge runtime is preserved.
 
 Fresh installs use natural luck. With **Force Miraculous Luck** off, both original
 checks run and equipped skills determine rewards. Turning it on reproduces the
@@ -49,8 +51,10 @@ second site's broader role remains incompletely traced.
 Open the closed-by-default **Please do Better** tree under Forge's **Plugin UI**.
 The checkbox changes the request immediately; each observed batch retains its
 entry mode. Existing rewards stay unchanged. **Save settings** remembers the
-request in `please_do_better.ini` with its plugin-specific recovery copy through
-Forge's counted player save mount. Editing the checkbox cancels delayed loading.
+request only in `savedata:/please_do_better.ini` through Forge's counted player
+save mount. Existing `_backup.ini` files are ignored and untouched. Writes are
+flushed and verified before commit; failures retain the session choice but may
+have changed the primary file. Missing or invalid primary files use defaults. Editing the checkbox cancels delayed loading.
 Closing the panel leaves highlighting, observation and storage polling active.
 
 The row contains the forcing preference, Save settings and brief edit/save feedback. Runtime status, counters and reward summaries are absent. Actionable failures go to concise, deduplicated Forge logs.
@@ -72,7 +76,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r16/please-do-better-r16-candidate.zip`.
+`build/please-do-better/candidates/r17-config1/delivery/please-do-better-r17-config1-candidate.zip`.
 Its only member is:
 
 ```text

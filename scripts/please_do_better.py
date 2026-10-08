@@ -1,6 +1,6 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
+from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path, BUILD_ROOT, WORK_ROOT, MOD_CONFIG
 #!/usr/bin/env python3
-"""Build/check the r16 gold highlight candidate. Never install or launch."""
+"""Build/check the primary-config gold highlight candidate. Never install or launch."""
 import argparse
 import hashlib
 import json
@@ -15,16 +15,17 @@ import zipfile
 import mhgu_binary as binary
 from native_support import snapshot
 
-from paths import ROOT, MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
+from paths import ROOT, MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path, BUILD_ROOT, WORK_ROOT, MOD_CONFIG
 RECIPE = MOD
-WORK = ROOT / 'work/please-do-better'
-OUT = ROOT / 'build/please-do-better'
-CANDIDATE = OUT / 'candidates/r16'
+WORK = WORK_ROOT
+OUT = BUILD_ROOT
+VERSION = MOD_CONFIG['version']
+CANDIDATE = OUT / 'delivery' if MOD_CONFIG.get('candidate') else OUT / 'candidates' / VERSION
 MEMBER = 'Please do Better/romfs/nativeNX/plugins/please_do_better.nro'
-ARCHIVE = 'please-do-better-r16-candidate.zip'
+ARCHIVE = 'please-do-better-' + VERSION + '-candidate.zip'
 SUPPORT = {'README.md': 'README.md', 'NOTICES.txt': 'THIRD_PARTY.md',
            'MANUAL_TESTS.md': 'MANUAL_TESTS.md', 'IMPLEMENTATION.md': 'IMPLEMENTATION.md',
-           'VALIDATION.md': 'R16_VALIDATION.md', 'RESEARCH.md':'RESEARCH.md',
+           'VALIDATION.md': 'CONFIG_CANDIDATE.md', 'RESEARCH.md':'RESEARCH.md',
            'DIAGNOSTICS.md':'R15_RELEASE.md'}
 CALLBACKS = {'init', 'fini', 'forge_onLoad', 'forge_onInit', 'forge_onUpdate',
              'forge_onImGuiInit', 'forge_onImGuiRender', 'forge_onImGuiFreeRender'}
@@ -120,10 +121,15 @@ def host_tests():
     results = []
     destination = WORK / 'tests'
     destination.mkdir(parents=True, exist_ok=True)
-    for name in ('transaction', 'native_platform', 'preferences', 'attribution', 'hooks', 'highlight'):
+    for name in ('transaction', 'native_platform', 'preferences', 'attribution', 'hooks', 'highlight', 'settings_storage'):
         inputs = [RECIPE / f'tests/{name}.cpp']
         flags = ['-std=c++17', '-O1', '-g', '-Wall', '-Wextra', '-Werror',
                  '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie']
+        if name == 'settings_storage':
+            mock=destination/'mock/forge';mock.mkdir(parents=True,exist_ok=True)
+            (mock/'fs.h').write_text('#pragma once\nbool forge_fs_mountSaveData();\nvoid forge_fs_unmountSaveData();\n')
+            (mock/'log.h').write_text('#pragma once\nvoid forge_log_warn(const char*,...);\nvoid forge_log_info(const char*,...);\n')
+            flags += ['-I',str(mock.parent)]
         if name == 'native_platform':
             flags += ['-DPDB_HOST_PLATFORM_TEST']
             inputs += [RECIPE / 'src/native_platform.cpp']
@@ -213,10 +219,14 @@ def package_candidate(payload):
         zipped.writestr(info, payload)
     for name, source in SUPPORT.items():
         shutil.copyfile(RECIPE / source, CANDIDATE / name)
+    (CANDIDATE/'VALIDATION.md').write_text((RECIPE/'CONFIG_CANDIDATE.md').read_text()+
+        '\nNRO SHA-256: '+sha(payload)+'\nZIP SHA-256: '+sha(archive.read_bytes())+'\n')
     if os.environ.get('MHGU_DIAGNOSTICS','0')=='1':
         (CANDIDATE/'VALIDATION.md').write_text('Development diagnostics candidate; not approved for release. No gameplay run.\nNRO SHA-256: '+sha(payload)+'\nZIP SHA-256: '+sha(archive.read_bytes())+'\n')
-    report = {'mod': 'please-do-better', 'version': 'r16', 'diagnostics':os.environ.get('MHGU_DIAGNOSTICS','0')=='1', 'status': 'DEVELOPMENT',
+    report = {'mod': 'please-do-better', 'version': VERSION, 'diagnostics':os.environ.get('MHGU_DIAGNOSTICS','0')=='1', 'status': 'DEVELOPMENT',
               'package_name': 'Please do Better', 'target': 'MHGU Nintendo Switch 1.4.0; Forge 1.4.1',
+              'settings_save_paths':['savedata:/please_do_better.ini'],
+              'settings_backup_access':False, 'settings_save_policy':'validate, write, flush, readback verification, commit; session retained on failure',
               'build_id': binary.BUILD_ID[:32].upper(), 'runtime_inventory': {MEMBER: sha(payload)},
               'archive': {'name': ARCHIVE, 'sha256': sha(archive.read_bytes())},
               'sources': sources(), 'evidence': {

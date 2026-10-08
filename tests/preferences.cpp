@@ -5,14 +5,15 @@
 #include <initializer_list>
 using namespace pdb;
 struct Files {
-    PreferencesText files[2]{};
-    bool available=true;
-    unsigned mounts=0,writes=0,commits=0,fail_write=0,fail_commit=0;
+    PreferencesText primary{};
+    const char* legacy_backup="legacy backup stays untouched";
+    bool available=true,fail_write=false,fail_commit=false,fail_verify=false;
+    unsigned mounts=0,writes=0,commits=0,reads=0;
     bool mount(){if(!available)return false;++mounts;return true;}
     void unmount(){assert(mounts==1);--mounts;}
-    bool read(unsigned n,PreferencesText& out){out=files[n];return out.size!=0;}
-    bool write(unsigned n,PreferencesText p){if(++writes==fail_write)return false;files[n]=p;return true;}
-    bool commit(){return ++commits!=fail_commit;}
+    bool read(unsigned n,PreferencesText& out){assert(n==0);++reads;out=primary;return out.size!=0;}
+    bool write(unsigned n,PreferencesText p){assert(n==0);++writes;if(fail_write){primary.size=1;primary.bytes[0]='!';return false;}primary=p;return !fail_verify;}
+    bool commit(){++commits;return !fail_commit;}
 };
 int main(){
     unsigned checks=0;
@@ -22,24 +23,23 @@ int main(){
         for(unsigned i=0;i<t.size;++i){t.bytes[i]^=2;assert(!decode_preferences(t.bytes,t.size,p));t.bytes[i]^=2;++checks;}
         assert(!decode_preferences(t.bytes,t.size-1,p));++checks;
     }
-    {Files f;PreferenceStore<Files>s;Preferences p{};assert(!s.load(f,p)&&!p.force&&!s.pending&&!f.mounts);++checks;}
+    {Files f;PreferenceStore<Files>s;Preferences p{};assert(!s.load(f,p)&&!p.force&&!s.pending&&!f.mounts);assert(f.writes==0);++checks;}
     {Files f;f.available=false;PreferenceStore<Files>s;Preferences p{};
-     assert(!s.load(f,p)&&s.pending);s.changed();f.available=true;f.files[0]=encode_preferences({true});
+     assert(!s.load(f,p)&&s.pending);s.changed();f.available=true;f.primary=encode_preferences({true});
      assert(!s.load(f,p)&&!p.force);++checks;}
-    for(unsigned source=0;source<2;++source){Files f;f.files[source]=encode_preferences({true});PreferenceStore<Files>s;Preferences p{};
+    {Files f;f.primary=encode_preferences({true});PreferenceStore<Files>s;Preferences p{};
      assert(s.load(f,p)&&p.force&&!s.pending&&!f.mounts);++checks;}
-    for(unsigned failure=0;failure<5;++failure){Files f;f.files[0]=encode_preferences({false});PreferenceStore<Files>s;
+    {Files f;f.primary.size=1;f.primary.bytes[0]='!';PreferenceStore<Files>s;Preferences p{};
+     assert(!s.load(f,p)&&!p.force&&f.reads==1&&f.writes==0);++checks;}
+    for(unsigned failure=0;failure<5;++failure){Files f;f.primary=encode_preferences({false});PreferenceStore<Files>s;
      if(failure==1)f.available=false;
-     if(failure==2)f.fail_write=1;
-     if(failure==3)f.fail_write=2;
-     if(failure==4)f.fail_commit=2;
+     if(failure==2)f.fail_write=true;
+     if(failure==3)f.fail_verify=true;
+     if(failure==4)f.fail_commit=true;
      const bool ok=s.save(f,{true});assert(ok==(failure==0));assert(!f.mounts&&!s.pending);
-     Preferences p{};assert(decode_preferences(f.files[0].bytes,f.files[0].size,p)&&p.force==ok);++checks;}
-    {Files f;PreferenceStore<Files>s;assert(s.save(f,{true}));Preferences p{};
-     assert(decode_preferences(f.files[1].bytes,f.files[1].size,p)&&!p.force&&f.commits==2);++checks;}
-    {Files f;f.files[1]=encode_preferences({true});PreferenceStore<Files>s;f.fail_write=2;
-     assert(!s.save(f,{false}));Preferences p{};assert(decode_preferences(f.files[0].bytes,f.files[0].size,p)&&p.force);++checks;}
-    {Files f;f.files[0]=encode_preferences({false});PreferenceStore<Files>s;f.fail_commit=2;f.fail_write=3;
-     assert(!s.save(f,{true})&&!f.mounts);assert(strstr(s.status,"recovery uncertain"));++checks;}
-    printf("PASS: %u settings format, delayed-load and recovery checks\n",checks);
+     assert(f.writes==(failure==1?0:1));assert(strcmp(f.legacy_backup,"legacy backup stays untouched")==0);
+     assert(ok||strstr(s.status,"session choice retained"));++checks;}
+    {Files f;PreferenceStore<Files>s;assert(s.save(f,{true})&&s.save(f,{false}));Preferences p{};
+     assert(decode_preferences(f.primary.bytes,f.primary.size,p)&&!p.force&&f.commits==2&&f.writes==2);++checks;}
+    printf("PASS: %u primary-only format, delayed-load and failure checks\n",checks);
 }

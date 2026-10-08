@@ -14,6 +14,14 @@ filesystem helpers. Preferences use its counted save mount/release, following
 the active Eden user. Each plugin has its own config beside `better_inputs.ini`.
 Balance mounts/handles and preserve other configs/game saves.
 
+Configs use one plugin-specific primary INI only. Do not create, read, recover
+from or delete `_backup` configs, and do not imitate the game's save backups.
+Validate before writing, flush and verify the primary, then commit through
+Forge's counted save mount. Balance handles and mounts on every failure path.
+Keep session settings on failure; previous disk contents are not guaranteed.
+Missing or invalid primary files use defaults. Save controls remain explicit.
+
+
 When Forge lacks a needed operation or a verified ABI, threading or allocation
 limit prevents using its wrapper, record that limitation in the plugin's research
 or implementation notes. Use a native SDK binding or private implementation only

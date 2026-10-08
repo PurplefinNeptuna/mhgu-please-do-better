@@ -5,24 +5,24 @@
 #include "sdk_fs.h"
 #include <forge/fs.h>
 namespace pdb {
-static constexpr const char* paths[] = {"savedata:/please_do_better.ini", "savedata:/please_do_better_backup.ini"};
+static constexpr const char* path = "savedata:/please_do_better.ini";
 struct Files {
     FsAbortGuard abort;
     bool mount() { return forge_fs_mountSaveData(); }
     void unmount() { forge_fs_unmountSaveData(); }
     bool read(unsigned slot, PreferencesText& text) {
         uint32_t handle = 0;
-        if (slot > 1 || pdb_fs_open(&handle, paths[slot], 1)) return false;
+        if (slot != 0 || pdb_fs_open(&handle, path, 1)) return false;
         int64_t size = 0;
         bool ok = !pdb_fs_size(&size, handle) && size > 0 && size < int64_t(sizeof(text.bytes));
         if (ok) { text.size = unsigned(size); ok = !pdb_fs_read(handle, 0, text.bytes, text.size); }
         pdb_fs_close(handle); return ok;
     }
     bool write(unsigned slot, const PreferencesText& text) {
-        if (slot > 1 || !text.size || text.size >= sizeof(text.bytes)) return false;
+        if (slot != 0 || !text.size || text.size >= sizeof(text.bytes)) return false;
         uint32_t handle = 0;
-        if (pdb_fs_open(&handle, paths[slot], 2) &&
-            (pdb_fs_create(paths[slot], text.size) || pdb_fs_open(&handle, paths[slot], 2))) return false;
+        if (pdb_fs_open(&handle, path, 2) &&
+            (pdb_fs_create(path, text.size) || pdb_fs_open(&handle, path, 2))) return false;
         const uint32_t flush = 1;
         const bool wrote = !pdb_fs_resize(handle, text.size) &&
             !pdb_fs_write(handle, 0, text.bytes, text.size, &flush) && !pdb_fs_flush(handle);

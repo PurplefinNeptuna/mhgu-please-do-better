@@ -179,7 +179,7 @@ class Probe:
                 self.commits+=1;self.ret(int(self.commits==self.fail_commit))
             elif name=='_ZN2nn2fs8OpenFileEPNS0_10FileHandleEPKci':
                 path=self.string(r[1]);self.paths.append(path)
-                assert path in ('savedata:/please_do_better.ini','savedata:/please_do_better_backup.ini')
+                assert path == 'savedata:/please_do_better.ini'
                 if path not in self.files:self.ret(1)
                 else:
                     handle=len(self.handles)+1;self.handles[handle]=(path,r[2]);self.write(r[0],handle);self.ret()
@@ -189,7 +189,7 @@ class Probe:
                 buffer,length=struct.unpack('<2I',u.mem_read(u.reg_read(a.UC_ARM_REG_SP),8))
                 assert r[2:4]==[0,0] and 0<length<128
                 path=self.handles[r[0]][0];data=self.files[path][:length]
-                if self.read_corrupt and self.writes==2 and path.endswith('/please_do_better.ini'):
+                if self.read_corrupt and self.writes==1 and path.endswith('/please_do_better.ini'):
                     data=bytes([data[0]^1])+data[1:];self.read_corrupt=False
                 u.mem_write(buffer,data);self.ret()
             elif name=='_ZN2nn2fs9WriteFileENS0_10FileHandleExPKvjRKNS0_11WriteOptionE':
@@ -203,7 +203,7 @@ class Probe:
                 path,mode=self.handles[r[0]];assert mode==2
                 self.files[path]=self.files[path][:r[2]].ljust(r[2],b'\0');self.ret()
             elif name=='_ZN2nn2fs10CreateFileEPKcx':
-                path=self.string(r[0]);assert path in ('savedata:/please_do_better.ini','savedata:/please_do_better_backup.ini')
+                path=self.string(r[0]);assert path == 'savedata:/please_do_better.ini'
                 assert 0<r[2]<128 and not r[3] and path not in self.files
                 self.files[path]=bytes(r[2]);self.ret()
             elif name=='_ZN2nn2fs9FlushFileENS0_10FileHandleE':self.ret()
@@ -445,38 +445,40 @@ def main():
     p.call('_ZN3pdb13request_forceEb',[1]);pc,f=p.frame(0,[ui,251])
     check(pc==MAIN+0xe0da0,'Exhausted thread pool remains natural when batch latching is unavailable')
     # Plugin preference I/O operates only on in-memory fake files. Verify the
-    # compiled SDK argument layout, counted mount and recovery commit paths.
+    # compiled SDK argument layout, counted mount and primary-only commit paths.
     primary='savedata:/please_do_better.ini';backup='savedata:/please_do_better_backup.ini'
     off=b'version=2\nforce_miraculous=0\n';on=off.replace(b'=0\n',b'=1\n')
-    for fail_write,fail_commit in ((0,0),(1,0),(2,0),(0,1),(0,2)):
-        p=Probe(image,payload);p.call('forge_onInit');p.save_available=True;p.files[primary]=off
+    for fail_write,fail_commit in ((0,0),(1,0),(0,1)):
+        p=Probe(image,payload);p.call('forge_onInit');p.save_available=True;p.files[primary]=off;p.files[backup]=on
         p.call('forge_onImGuiFreeRender');check(p.read(p.private('mode'))==0,'Valid saved natural mode loads')
         p.tree=True;p.edits['Force Miraculous Luck###pdb_force']=True;p.call('forge_onImGuiRender')
         p.fail_write=fail_write;p.fail_commit=fail_commit;p.button=True;p.call('forge_onImGuiRender')
-        check(not p.mounts and not p.handles and not p.guard,'Checked preference path releases counted mount and handles')
-        check(p.files[primary]==(on if not fail_write and not fail_commit else off),'Save succeeds or previous preference recovers')
+        check(not p.mounts and not p.handles and not p.guard,'Preference failure releases counted mount, handles and SDK guard')
+        check(p.files[backup]==on and set(p.paths)=={primary},'Only primary accessed; legacy backup left unused')
         check(p.read(p.private('mode'))==1,'Save failure retains live session choice')
-        check(set(p.paths)<=set((primary,backup)),'Settings never accesses another file')
-    for original,recovery,expected in ((b'invalid',on,1),(on,None,1),(None,None,0)):
+        if not fail_write and not fail_commit:check(p.files[primary]==on,'Primary save verified and committed')
+    for original,recovery,expected in ((b'invalid',on,0),(on,None,1),(None,on,0)):
         p=Probe(image,payload);p.call('forge_onInit');p.call('forge_onImGuiFreeRender');check(p.fs_calls==1,'Storage unavailable leaves delayed load pending')
         p.save_available=True
         if original is not None:p.files[primary]=original
         if recovery is not None:p.files[backup]=recovery
+        before=p.files.copy()
         for frame in range(60):p.call('forge_onImGuiFreeRender')
-        check(p.read(p.private('mode'))==expected,'Delayed load validates primary or recovery preference')
+        check(p.read(p.private('mode'))==expected and p.files==before,'Delayed load uses primary only or defaults; never recovers backup')
     for fresh,corrupt in ((True,False),(False,True)):
-        p=Probe(image,payload);p.call('forge_onInit');p.save_available=True
+        p=Probe(image,payload);p.call('forge_onInit');p.save_available=True;p.files[backup]=on
         if not fresh:p.files[primary]=off
         p.tree=True;p.edits['Force Miraculous Luck###pdb_force']=True;p.call('forge_onImGuiRender')
         p.read_corrupt=corrupt;p.button=True;p.call('forge_onImGuiRender')
-        check(p.files[backup]==off and p.files[primary]==(off if corrupt else on),'Fresh saves establish natural recovery; bad readback restores prior preference')
-        check(not p.mounts and not p.handles and not p.guard,'Fresh/readback recovery balances mount and handles')
+        check(p.files[backup]==on and set(p.paths)=={primary},'Fresh save/readback failure never writes or reads legacy backup')
+        check(not p.mounts and not p.handles and not p.guard,'Primary readback paths balance mounts, handles and guard')
+        if corrupt:check(any('Save failed' in str(args) for fmt,args in p.log_records),'Corrupt readback explicitly reports save failure')
     p=Probe(image,payload);p.call('forge_onInit');p.write(MAIN+0x3822dc,0xe1a00000)
     flushes=p.flushes;p.call('forge_onInit')
     check(p.read(p.private('capture_ready'))==p.read(p.private('pair_ready'))==0 and p.flushes==flushes and
           p.read(MAIN+0x3822dc)==0xe1a00000,'Repeated init detects external change without rewriting it')
     report={'checks':checks,'gateway_cases':8192,'native_rng_cases':rng_cases,'nro_sha256':recipe.sha(payload),'runtime':'NOT RUN',
-            'scope':'Compiled startup, native SDK TLS, natural hasSkill, conditional and comparison gateways, batch toggles, scopes, attribution/copies, preference ABI/recovery and UI fixtures',
+            'scope':'Compiled startup, native SDK TLS, natural hasSkill, conditional and comparison gateways, batch toggles, scopes, attribution/copies, primary-only preference ABI/failures and UI fixtures',
             'limits':['Fake kernel and ImGui; not emulator cache/multicore or gameplay evidence','Visual geometry still requires independent native binding fixtures']}
     recipe.write_json(recipe.OUT/'runtime-tests.json',report)
     print(f'PASS: {checks} compiled runtime/gateway checks')

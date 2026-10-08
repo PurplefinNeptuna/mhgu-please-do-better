@@ -3,12 +3,12 @@ from paths import NAME
 """Build one owned mod; never install, activate or publish."""
 import argparse, ast, hashlib, importlib, json, os, shutil, subprocess, sys, zipfile
 from pathlib import Path
-from paths import ROOT, MOD, SCRIPTS, WORKSPACE, CONFIG, PYTHON, FORGE, DEPS, CONTAINER_STORAGE, input_path, check_dependencies
+from paths import ROOT, MOD, SCRIPTS, WORKSPACE, CONFIG, PYTHON, FORGE, DEPS, CONTAINER_STORAGE, input_path, check_dependencies, BUILD_ROOT, WORK_ROOT
 
 def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest()
 def run(args, **kwargs): return subprocess.run(list(map(str,args)),check=True,**kwargs)
 def record(name,data):
- p=ROOT/'build'/NAME/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(data,indent=2)+'\n')
+ p=BUILD_ROOT/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(data,indent=2)+'\n')
 def config(): return json.loads((MOD/'mod.json').read_text())
 def script(name,*args): run([PYTHON,SCRIPTS/(name+'.py'),*args])
 def doctor():
@@ -48,7 +48,7 @@ def prepare(fetch=False):
  if source:
   source=(MOD/source).resolve()
   if not source.is_dir():raise ValueError('Missing supplied input directory: '+str(source))
-  dest=ROOT/'work'/NAME/'inputs'
+  dest=WORK_ROOT/'inputs'
   if source==dest.resolve():raise ValueError('Input source overlaps copied destination')
   for p in sorted(source.rglob('*')):
    if p.is_symlink():raise ValueError('Input symlink: '+str(p))
@@ -75,7 +75,7 @@ def build(diagnostics=False):
  elif name=='key_quest_markers':
   m=importlib.import_module(name);m.build()
  elif name=='build_damage_numbers_capture':
-  p=ROOT/'work/damage-numbers/inputs/main';p.parent.mkdir(parents=True,exist_ok=True)
+  p=WORK_ROOT/'inputs/main';p.parent.mkdir(parents=True,exist_ok=True)
   if p.exists() and digest(p)!=digest(input_path('main')):raise ValueError('Preserving differing main input')
   shutil.copy2(input_path('main'),p)
   script(name)
@@ -92,7 +92,7 @@ def host():
  elif name=='key_quest_markers':
   # Markers' complete inventory suite needs supplied game resources. The other
   # suites simulate the kernel/transaction contracts without any game input.
-  w=ROOT/'work'/NAME/'host';w.mkdir(parents=True,exist_ok=True)
+  w=WORK_ROOT/'host';w.mkdir(parents=True,exist_ok=True)
   for n in ('memory_reader','transaction','native_platform'):
    sources=[MOD/'tests'/f'{n}.cpp'];flags=['-std=c++17','-O1','-g','-Wall','-Wextra','-Werror','-pthread','-fsanitize=address,undefined','-fno-pie','-no-pie']
    if n=='native_platform':sources+=[MOD/'src/native_platform.cpp'];flags+=['-DKQM_HOST_PLATFORM_TEST']
@@ -115,17 +115,17 @@ def tests(host_only=False):
  elif name=='please_do_better':
   for n in ('please_do_better_arm_probe','please_do_better_runtime_probe','please_do_better_native_probe','please_do_better_observation_probe','please_do_better_display_probe','please_do_better_highlight_probe','please_do_better_log_probe'):script(n)
  verify()
- record('standalone-tests.json',{'status':'PASSED','build_record_sha256':digest(ROOT/'build'/NAME/'standalone-build.json'),'runtime_test':'NOT RUN'})
+ record('standalone-tests.json',{'status':'PASSED','build_record_sha256':digest(BUILD_ROOT/'standalone-build.json'),'runtime_test':'NOT RUN'})
 def payload():
  name=config().get('recipe')
- paths={'modern_weapon_controls':'controls-candidate-package/romfs/nativeNX/plugins/modern_weapon_controls.nro','key_quest_markers':'package/romfs/nativeNX/plugins/key_quest_markers.nro','build_damage_numbers_capture':'open-assets/candidate-package/romfs/nativeNX/plugins/damage_numbers_capture.nro','please_do_better':f"candidates/{config()['version']}/Please do Better/romfs/nativeNX/plugins/please_do_better.nro"}
- return ROOT/'build'/NAME/paths[name] if name else ROOT/'build'/NAME/'package'
+ paths={'modern_weapon_controls':'controls-candidate-package/romfs/nativeNX/plugins/modern_weapon_controls.nro','key_quest_markers':'package/romfs/nativeNX/plugins/key_quest_markers.nro','build_damage_numbers_capture':'open-assets/candidate-package/romfs/nativeNX/plugins/damage_numbers_capture.nro','please_do_better':('delivery' if config().get('candidate') else f"candidates/{config()['version']}")+'/Please do Better/romfs/nativeNX/plugins/please_do_better.nro'}
+ return BUILD_ROOT/paths[name] if name else BUILD_ROOT/'package'
 def payload_hashes():
  p=payload()
  return {str(p.relative_to(ROOT)):digest(p)} if p.is_file() else {str(f.relative_to(ROOT)):digest(f) for f in sorted(p.rglob('*')) if f.is_file()}
 def verify():
  check_dependencies() if (MOD/'dependencies.lock.json').exists() else None
- p=ROOT/'build'/NAME/'standalone-build.json'
+ p=BUILD_ROOT/'standalone-build.json'
  if not p.exists():raise ValueError('Build first: missing current build receipt')
  d=json.loads(p.read_text())
  if d.get('payload_files')!=payload_hashes():raise ValueError('Built payload changed; rebuild and validate')
@@ -137,7 +137,7 @@ def verify():
   n=Nro(payload().read_bytes());imports={s[0].decode() for s in n.symbols if s[0] and not s[1][5]}
   exports=nso_exports(input_path('forge'))|nso_exports(input_path('sdk'))|nso_exports(input_path('main'))
   if imports-exports:raise ValueError('Unresolved imports: '+str(sorted(imports-exports)))
-  native=ROOT/'work'/NAME/('open-assets' if NAME=='damage-numbers' else 'native')
+  native=WORK_ROOT/('open-assets' if NAME=='damage-numbers' else 'native')
   dis=(native/'disassembly.txt').read_text() if (native/'disassembly.txt').exists() else ''
   import re
   if not dis:raise ValueError('Missing emitted instruction audit; rebuild')
@@ -156,7 +156,7 @@ def verify():
     if imports-available:raise ValueError('Unresolved plugin imports: '+str(sorted(imports-available)))
  print('PASS: current source/dependency fingerprints, NRO structure, imports and emitted flag restoration')
 def package(release=False):
- verify();out=ROOT/'build'/NAME
+ verify();out=BUILD_ROOT
  build_record=json.loads((out/'standalone-build.json').read_text())
  if build_record.get('diagnostics') and release:raise ValueError('Diagnostic builds cannot become approved releases')
  if release:
@@ -192,7 +192,7 @@ def help_assets():
  from stage_hd_project import stage
  required=('hd','library','romfs')
  if any(not CONFIG.get(n) for n in required):raise ValueError('help needs hd, library and romfs in build.local.json')
- out=ROOT/'build'/NAME/'help'/config()['version'];work=ROOT/'work'/NAME/'help'/config()['version']
+ out=BUILD_ROOT/'help'/config()['version'];work=WORK_ROOT/'help'/config()['version']
  stage(out,work,hd=(MOD/CONFIG['hd']).resolve(),library=(MOD/CONFIG['library']).resolve(),vanilla=(MOD/CONFIG['romfs']).resolve()/'nativeNX',controls=payload())
  from package_modern_weapon_controls import main as bundle
  bundle(validate=False,visual_root=out)
@@ -200,12 +200,12 @@ def help_assets():
 def scaffold_build(cfg):
  if cfg['kind']=='plugin':
   from mhgu_binary import elf_to_nro
-  native=ROOT/'work'/NAME/'native';native.mkdir(parents=True,exist_ok=True)
+  native=WORK_ROOT/'native';native.mkdir(parents=True,exist_ok=True)
   args=['podman','--root',CONTAINER_STORAGE,'--runroot',f'/tmp/mhgu-forge-container-{os.getuid()}','--storage-driver','vfs','run','--pull=never','--rm','--network=none','-v',f'{MOD}:/mod:ro','-v',f'{native}:/output:rw',cfg['compiler_image'],'bash','-lc',"set -eu; export PATH=/opt/devkitpro/devkitARM/bin:$PATH; arm-none-eabi-g++ -std=c++17 -O2 -fPIC -marm -fno-exceptions -fno-rtti -I/mod/vendor/forge/include -isystem /mod/vendor/sdk/libs/libnx/nx/include -isystem /mod/vendor/sdk/libs/cimgui -include /mod/vendor/forge/include/compat.h -c /mod/src/plugin.cpp -o /output/plugin.o; arm-none-eabi-gcc -fPIC -marm -c /mod/src/start.S -o /output/start.o; arm-none-eabi-g++ -shared -nostdlib -Wl,--hash-style=sysv,-z,max-page-size=4096,-init=init,-fini=fini -Wl,-T,/mod/src/plugin.ld -Wl,--version-script=/mod/src/exports.txt /output/start.o /output/plugin.o -o /output/plugin.elf"]
   args[-1]=args[-1].replace('-std=c++17','-std=c++17 -DMHGU_DIAGNOSTICS='+('1' if os.environ.get('MHGU_DIAGNOSTICS')=='1' else '0'))
-  run(args);p=ROOT/'build'/NAME/'package/romfs/nativeNX/plugins'/('plugin.nro');p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(elf_to_nro((native/'plugin.elf').read_bytes()))
+  run(args);p=BUILD_ROOT/'package/romfs/nativeNX/plugins'/('plugin.nro');p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(elf_to_nro((native/'plugin.elf').read_bytes()))
  else:
-  recipe=json.loads((MOD/'recipe.json').read_text());dest=ROOT/'build'/NAME/'package'
+  recipe=json.loads((MOD/'recipe.json').read_text());dest=BUILD_ROOT/'package'
   expected=set(recipe.get('payloads',{}))
   existing={str(p.relative_to(dest)) for p in dest.rglob('*') if p.is_file()}
   if existing-expected:raise ValueError('Stale candidate payload; preserve/archive it before updating the recipe')

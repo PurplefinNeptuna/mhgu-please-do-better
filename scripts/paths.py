@@ -3,9 +3,18 @@ from pathlib import Path
 import json, os, sys, shutil
 MOD=Path(__file__).resolve().parents[1]
 SCRIPTS=MOD/'scripts'
-NAME=json.loads((MOD/'mod.json').read_text())['mod']
+MOD_CONFIG=json.loads((MOD/'mod.json').read_text())
+NAME=MOD_CONFIG['mod']
 WORKSPACE=(MOD.parent.name=='mods' and (MOD.parent.parent/'scripts/mod_distribution.py').is_file())
 ROOT=MOD.parent.parent if WORKSPACE else MOD
+OUTPUT_VERSION=MOD_CONFIG.get('version') if MOD_CONFIG.get('candidate') else None
+if OUTPUT_VERSION and (Path(OUTPUT_VERSION).name!=OUTPUT_VERSION or OUTPUT_VERSION in ('.','..')):
+    raise ValueError('Unsafe candidate output version')
+BUILD_ROOT=ROOT/'build'/NAME
+WORK_ROOT=ROOT/'work'/NAME
+if OUTPUT_VERSION:
+    BUILD_ROOT=BUILD_ROOT/'candidates'/OUTPUT_VERSION
+    WORK_ROOT=WORK_ROOT/'candidates'/OUTPUT_VERSION
 CONFIG=json.loads((MOD/'build.local.json').read_text()) if (MOD/'build.local.json').exists() else {}
 def configured(name, default):
     value=CONFIG.get(name)
