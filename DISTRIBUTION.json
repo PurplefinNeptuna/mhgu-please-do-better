@@ -6,14 +6,9 @@
   "archive": "please-do-better-r17-config1.zip",
   "dependencies": [
     {
-      "name": "forge-patched 1.4.1-render1",
-      "sha256": "f22f4be84163deba14a2bd086d76065a4baa0b3943aba78b5c1aac15f2f94eee",
-      "scope": "External LOCAL_ONLY loader used in the tested Eden setup; not bundled. Its renderer fix permits menu/dropdowns and gameplay overlays together."
-    },
-    {
-      "name": "Forge 1.4.1 compiler/import baseline",
-      "sha256": "9d472d56f81f834f366171426dbd0131af19c7697e132c731c3fd3f335af53d0",
-      "scope": "Unchanged pinned build/import-validation input; runtime also resolves against render1."
+      "name": "Forge",
+      "version": "1.4.1",
+      "scope": "Public loader API dependency; external and unbundled."
     }
   ],
   "evidence": {
@@ -55,11 +50,21 @@
       "eden": true,
       "nro_sha256": "bf2263640192b4b6bdb33b0cb507ea7dfe8a65fc86e27f3b90a91fee860eacbe",
       "scope": "User-confirmed tested Eden setup; screenshot shows visible Forge menu alongside PDB reward highlights. No exhaustive feature, save-restart, clean-shutdown, new Ryujinx or native Switch claim."
+    },
+    "local_test_loader": {
+      "name": "forge-patched 1.4.1-render1",
+      "sha256": "f22f4be84163deba14a2bd086d76065a4baa0b3943aba78b5c1aac15f2f94eee",
+      "scope": "External LOCAL_ONLY loader used in the tested Eden setup; not bundled. Its renderer fix permits menu/dropdowns and gameplay overlays together."
+    },
+    "compiler_import_baseline": {
+      "name": "Forge 1.4.1 compiler/import baseline",
+      "sha256": "9d472d56f81f834f366171426dbd0131af19c7697e132c731c3fd3f335af53d0",
+      "scope": "Unchanged pinned build/import-validation input; runtime also resolves against render1."
     }
   },
   "limitations": [
     "User confirmation is scoped to the tested Eden setup; not exhaustive feature, persistence-restart, clean-shutdown, new Ryujinx or native Switch validation.",
-    "Standard Forge builds without the multi-list renderer fix can blank/corrupt menus while dropdowns or overlays are active; the tested render1 loader stays LOCAL_ONLY.",
+    "Standard Forge builds without the multi-list renderer fix can blank/corrupt menus while dropdowns or overlays are active.",
     "Unknown reward shader, target or execution paths suppress markers.",
     "Successful cache calls do not establish CPU translation freshness; the second forced check broader role remains incompletely traced."
   ],

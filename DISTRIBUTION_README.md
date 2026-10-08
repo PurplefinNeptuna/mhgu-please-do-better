@@ -5,8 +5,7 @@ and small sparkle. A gold marker shows which extra slot came from luck.
 
 ## Requirements
 
-MHGU 1.4.0 for Nintendo Switch and Forge 1.4.1. Use Forge 1.4.1-render1 to keep
-Forge's menu visible while reward highlights are active.
+MHGU 1.4.0 for Nintendo Switch and Forge 1.4.1.
 
 ## Installation
 
@@ -32,7 +31,8 @@ beside Better Input's config in player save storage.
 If saving fails, the current choice remains active for the session. Load a
 player save and retry **Save settings**.
 
-## Compatibility
+## Known issue
 
-Older Forge loaders can corrupt the menu while reward highlighting is active.
-Use Forge 1.4.1-render1 for the menu and reward highlights together.
+Forge's menu can show visual corruption while reward highlighting is active.
+Adjust settings outside the reward screen and close Forge's menu when viewing
+marked rewards.
