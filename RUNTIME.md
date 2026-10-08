@@ -61,3 +61,11 @@ with a recording filesystem; compiled ARM32 fixtures cover old-file load,
 explicit versionless save and restart. These are simulated storage results,
 not a new emulator/game run. Earlier runtime reports keep their original
 version and binary scope. Nothing was installed or activated by this task.
+
+## 2026-10-08: r19-savehint save-location wording
+
+The success message names this plugin's INI and MHGU's save folder. Public
+instructions use the same location without referencing another plugin.
+Persistence, config fields, hooks and gameplay behavior are unchanged.
+Scoped validation is recorded in [SAVE_HINT_VALIDATION.json](docs/SAVE_HINT_VALIDATION.json).
+No new gameplay run or installation was performed for this wording revision.

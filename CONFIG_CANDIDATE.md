@@ -19,3 +19,10 @@ and backup non-access remain in place. The previous delivery is preserved under
 `backups/config-no-version-20261008/`. Validation is recorded in
 [CONFIG_WITHOUT_VERSION.json](docs/CONFIG_WITHOUT_VERSION.json); no fresh game run
 is claimed for this revision.
+
+## Standalone save hints, 2026-10-08
+
+r19-savehint replaces the Better Input location reference in save feedback
+with this plugin's INI filename and MHGU's save folder. Only the success
+string and public instructions change; storage and config behavior are retained.
+[Validation](docs/SAVE_HINT_VALIDATION.json) records the checks and runtime scope.

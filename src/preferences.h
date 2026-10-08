@@ -28,7 +28,7 @@ template<class Files> struct PreferenceStore {
             save_failure=2;status = "Save failed; session choice retained.";
             return false;
         }
-        status = "Plugin preference saved beside Better Input."; return true;
+        status = "Saved please_do_better.ini in MHGU's save folder."; return true;
     }
 };
 }

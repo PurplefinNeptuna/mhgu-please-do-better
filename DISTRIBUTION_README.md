@@ -10,7 +10,7 @@ MHGU 1.4.0 for Nintendo Switch and Forge 1.4.1.
 ## Installation
 
 1. Close Eden.
-2. Extract `please-do-better-r18-config2.zip`.
+2. Extract `please-do-better-r19-savehint.zip`.
 3. Copy the `please-do-better` folder into
    `~/.local/share/eden/load/0100770008DD8000/`.
 4. Enable `please-do-better` in Eden and launch the game.
@@ -26,7 +26,7 @@ Open **Plugin UI > Please do Better** in Forge's overlay.
 By default, the mod highlights rewards from your hunter's natural luck.
 Enable **Force Miraculous Luck** to use Miraculous Luck for subsequent reward
 batches. Select **Save settings** to keep your choice in `please_do_better.ini`
-beside Better Input's config in player save storage.
+in the root of your MHGU player save folder.
 
 If saving fails, the current choice remains active for the session. Load a
 player save and retry **Save settings**.

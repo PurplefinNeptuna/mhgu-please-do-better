@@ -1,7 +1,7 @@
 # Please do Better
 
-Current release: **r18-config2**, with primary-only configs. The preceding r17-config1 release was
-confirmed on Eden on 2026-10-08. [Release details](R18_RELEASE.md) and
+Current release: **r19-savehint**, with primary-only configs. The preceding r17-config1 release was
+confirmed on Eden on 2026-10-08. [Release details](R19_RELEASE.md) and
 [installation guide](DISTRIBUTION_README.md). Earlier reports retain their
 original version; Forge remains LOCAL_ONLY.
 
@@ -24,7 +24,7 @@ independent checkout uses its own ignored `build/` and `work/` directories.
 The author keeps all rights to owned code; third-party and font licenses remain separate.
 
 
-Current source release: **r18-config2**, using only the primary config without
+Current source release: **r19-savehint**, using only the primary config without
 a version marker. Host/ARM32 validation does not claim a fresh game run.
 See [config candidate](CONFIG_CANDIDATE.md). The preceding r16 delivery is archived with verified hashes.
 
@@ -83,7 +83,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r18-config2/delivery/please-do-better-r18-config2-candidate.zip`.
+`build/please-do-better/candidates/r19-savehint/delivery/please-do-better-r19-savehint-candidate.zip`.
 Its only member is:
 
 ```text

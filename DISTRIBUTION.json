@@ -1,9 +1,9 @@
 {
   "approval": {
     "date": "2026-10-08",
-    "basis": "User requested removal of unnecessary INI versions for Damage Numbers and Please do Better; existing ready status retained after host/ARM32 validation."
+    "basis": "User reported Better Input save wording was confusing for standalone use; ready status retained after scoped validation of the wording correction."
   },
-  "archive": "please-do-better-r18-config2.zip",
+  "archive": "please-do-better-r19-savehint.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -16,24 +16,22 @@
       "mods/please-do-better/RUNTIME.md",
       "mods/please-do-better/docs/CONFIG_RELEASE_RUNTIME.json"
     ],
-    "manual_summary": "No fresh game run; preceding r17-config1 user-confirmed Eden report remains scoped to those bytes.",
+    "manual_summary": "No new game run for the save-message correction. Earlier gameplay confirmation keeps its recorded version and bytes.",
     "static": [
-      "build/please-do-better/candidates/r18-config2/input-validation.json",
-      "build/please-do-better/candidates/r18-config2/binary-validation.json",
-      "build/please-do-better/candidates/r18-config2/host-tests.json",
-      "build/please-do-better/candidates/r18-config2/arm-tests.json",
-      "build/please-do-better/candidates/r18-config2/runtime-tests.json",
-      "build/please-do-better/candidates/r18-config2/native-tests.json",
-      "build/please-do-better/candidates/r18-config2/observation-tests.json",
-      "build/please-do-better/candidates/r18-config2/display-tests.json",
-      "build/please-do-better/candidates/r18-config2/highlight-tests.json",
-      "build/please-do-better/candidates/r18-config2/log-tests.json",
-      "build/please-do-better/candidates/r18-config2/highlight-research.json",
-      "build/please-do-better/candidates/r18-config2/standalone-build.json",
-      "build/please-do-better/candidates/r18-config2/runtime-policy.json",
-      "mods/please-do-better/docs/PRIMARY_ONLY_CONFIG_VALIDATION.json",
-      "mods/please-do-better/docs/FORGE_RENDERER_VALIDATION.json",
-      "mods/please-do-better/docs/CONFIG_WITHOUT_VERSION.json"
+      "build/please-do-better/candidates/r19-savehint/input-validation.json",
+      "build/please-do-better/candidates/r19-savehint/binary-validation.json",
+      "build/please-do-better/candidates/r19-savehint/host-tests.json",
+      "build/please-do-better/candidates/r19-savehint/arm-tests.json",
+      "build/please-do-better/candidates/r19-savehint/runtime-tests.json",
+      "build/please-do-better/candidates/r19-savehint/native-tests.json",
+      "build/please-do-better/candidates/r19-savehint/observation-tests.json",
+      "build/please-do-better/candidates/r19-savehint/display-tests.json",
+      "build/please-do-better/candidates/r19-savehint/highlight-tests.json",
+      "build/please-do-better/candidates/r19-savehint/log-tests.json",
+      "build/please-do-better/candidates/r19-savehint/highlight-research.json",
+      "build/please-do-better/candidates/r19-savehint/runtime-policy.json",
+      "build/please-do-better/candidates/r19-savehint/save-hint-validation.json",
+      "mods/please-do-better/docs/SAVE_HINT_VALIDATION.json"
     ],
     "prior_runtime_confirmation": {
       "date": "2026-10-07",
@@ -44,11 +42,11 @@
       "scope": "One reported Eden reward-grid result; not exhaustive coverage or a clean-shutdown claim."
     },
     "runtime_confirmation": {
-      "version": "r18-config2",
+      "version": "r19-savehint",
       "fresh_gameplay_test": false,
       "user_confirmed": false,
-      "nro_sha256": "891802053b724dd3045d7fa1085a4409a88f801ccb4cb9ba06b32be14e883424",
-      "scope": "No fresh game run; preceding r17-config1 user-confirmed Eden report remains scoped to those bytes."
+      "nro_sha256": "9cafa6f6639a0a4345927ba79cf24ad5add6b19741a33476677c1b1e12da7edb",
+      "scope": "No new game run for the save-message correction. Earlier gameplay confirmation keeps its recorded version and bytes."
     },
     "local_test_loader": {
       "name": "forge-patched 1.4.1-render1",
@@ -68,10 +66,36 @@
       "eden": true,
       "nro_sha256": "bf2263640192b4b6bdb33b0cb507ea7dfe8a65fc86e27f3b90a91fee860eacbe",
       "scope": "User-confirmed tested Eden setup; screenshot shows visible Forge menu alongside PDB reward highlights. No exhaustive feature, save-restart, clean-shutdown, new Ryujinx or native Switch claim."
+    },
+    "previous_release_static": [
+      "build/please-do-better/candidates/r18-config2/input-validation.json",
+      "build/please-do-better/candidates/r18-config2/binary-validation.json",
+      "build/please-do-better/candidates/r18-config2/host-tests.json",
+      "build/please-do-better/candidates/r18-config2/arm-tests.json",
+      "build/please-do-better/candidates/r18-config2/runtime-tests.json",
+      "build/please-do-better/candidates/r18-config2/native-tests.json",
+      "build/please-do-better/candidates/r18-config2/observation-tests.json",
+      "build/please-do-better/candidates/r18-config2/display-tests.json",
+      "build/please-do-better/candidates/r18-config2/highlight-tests.json",
+      "build/please-do-better/candidates/r18-config2/log-tests.json",
+      "build/please-do-better/candidates/r18-config2/highlight-research.json",
+      "build/please-do-better/candidates/r18-config2/standalone-build.json",
+      "build/please-do-better/candidates/r18-config2/runtime-policy.json",
+      "mods/please-do-better/docs/PRIMARY_ONLY_CONFIG_VALIDATION.json",
+      "mods/please-do-better/docs/FORGE_RENDERER_VALIDATION.json",
+      "mods/please-do-better/docs/CONFIG_WITHOUT_VERSION.json"
+    ],
+    "static_summary": {
+      "ARM32_checks": 2122,
+      "runtime_gateway_checks": 100511,
+      "native_geometry_checks": 678,
+      "observation_checks": 28841,
+      "display_checks": 16634,
+      "highlight_checks": 8286
     }
   },
   "limitations": [
-    "This config simplification passed host/ARM32 fixtures but has no fresh in-game validation; prior user confirmation is for r17-config1.",
+    "Save-message wording validated by host/ARM32/static checks; not a new in-game test of this binary.",
     "User confirmation is scoped to the tested Eden setup; not exhaustive feature, persistence-restart, clean-shutdown, new Ryujinx or native Switch validation.",
     "Unknown reward shader, target or execution paths suppress markers.",
     "Successful cache calls do not establish CPU translation freshness; the second forced check broader role remains incompletely traced."
@@ -84,8 +108,8 @@
   "package_name": "please-do-better",
   "payloads": {
     "romfs/nativeNX/plugins/please_do_better.nro": {
-      "source": "build/please-do-better/candidates/r18-config2/delivery/Please do Better/romfs/nativeNX/plugins/please_do_better.nro",
-      "sha256": "891802053b724dd3045d7fa1085a4409a88f801ccb4cb9ba06b32be14e883424"
+      "source": "build/please-do-better/candidates/r19-savehint/delivery/Please do Better/romfs/nativeNX/plugins/please_do_better.nro",
+      "sha256": "9cafa6f6639a0a4345927ba79cf24ad5add6b19741a33476677c1b1e12da7edb"
     }
   },
   "publication": {
@@ -94,10 +118,10 @@
     "url": null
   },
   "readme": "mods/please-do-better/DISTRIBUTION_README.md",
-  "reason": "Validated config simplification requested by the user; no version marker is required or saved. Previous runtime acceptance remains scoped to r17-config1.",
+  "reason": "Standalone save-location wording requested by the user; UI and public guides name the plugin INI and MHGU save folder. Persistence and gameplay behavior are unchanged.",
   "schema_version": 1,
   "status": "READY_TO_DISTRIBUTE",
   "support": {},
   "target": "MHGU Nintendo Switch 1.4.0; Forge 1.4.1 on the user-confirmed Eden/Linux setup.",
-  "version": "r18-config2"
+  "version": "r19-savehint"
 }

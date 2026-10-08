@@ -14,6 +14,9 @@ filesystem helpers. Preferences use its counted save mount/release, following
 the active Eden user. Each plugin has its own config beside `better_inputs.ini`.
 Balance mounts/handles and preserve other configs/game saves.
 
+User-facing save messages and config instructions name the plugin's own INI
+and MHGU's save folder. Do not use another plugin as a location reference.
+
 Configs use one plugin-specific primary INI only. Do not create, read, recover
 from or delete `_backup` configs, and do not imitate the game's save backups.
 Validate before writing, flush and verify the primary, then commit through

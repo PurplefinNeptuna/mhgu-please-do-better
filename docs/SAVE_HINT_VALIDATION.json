@@ -1,0 +1,25 @@
+{
+  "status": "PASSED_SAVE_HINT_AND_ARM32",
+  "nro_sha256": "9cafa6f6639a0a4345927ba79cf24ad5add6b19741a33476677c1b1e12da7edb",
+  "success_message": "Saved please_do_better.ini in MHGU's save folder.",
+  "old_success_message_absent": true,
+  "scope": "Fresh production host and compiled ARM32 suites from mod-local build; no fresh GPU/gameplay run",
+  "date": "2026-10-08",
+  "version": "r19-savehint",
+  "installed": false,
+  "published": false,
+  "native_source_change": "src/preferences.h: success string only",
+  "public_guides": "MHGU player save folder and this plugin INI; no Better Input location reference",
+  "reports": {
+    "host-tests.json": "c0ade04d96e2639a67ae46cf10d7fd971a694691c015239439ab0929060abd4c",
+    "arm-tests.json": "7654c10f959d6dea084606bc93b47ff187f0961701f2da38b25160eb6e4b9100",
+    "runtime-tests.json": "0c2721143b03dda65689c6a71f5a35d4ac263b4c024e20beb478451f0e7c8c64",
+    "native-tests.json": "c030dd5755820fde80eb210776b3bdd0838a4b9d14efbe53a981369b17a1e782",
+    "observation-tests.json": "ed128e2bb5329fda65c073e6f7cbd19c4841c57fac6c9161093a8c5e9d513c10",
+    "display-tests.json": "7385374437d47df6f79d494bd72cdd8f33d71dc0c11290827d50612adb96ebf9",
+    "highlight-tests.json": "1b27d4aa90a46dd7b85d570454ae83aab905c77dfac9a99f852a6906c068a061",
+    "log-tests.json": "273a1c599e3b25399dd439400b6f62c947e055f85b7729a695e20eef739fb20e",
+    "runtime-policy.json": "4395c4e71b1438085ae16814d5873a12688a467925e469daf354a0d683908605",
+    "binary-validation.json": "cbec5c658997c54a8903dc846d28ae64c13292cfaffad1358cdd0e3b47ab1b4b"
+  }
+}
