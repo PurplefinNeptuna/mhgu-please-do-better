@@ -1,7 +1,7 @@
 # Please do Better
 
-Current release: **r17-config1**, with primary-only configs. The user confirmed
-the tested Eden setup on 2026-10-08. [Release details](R17_RELEASE.md) and
+Current release: **r18-config2**, with primary-only configs. The preceding r17-config1 release was
+confirmed on Eden on 2026-10-08. [Release details](R18_RELEASE.md) and
 [installation guide](DISTRIBUTION_README.md). Earlier reports retain their
 original version; Forge remains LOCAL_ONLY.
 
@@ -24,7 +24,8 @@ independent checkout uses its own ignored `build/` and `work/` directories.
 The author keeps all rights to owned code; third-party and font licenses remain separate.
 
 
-Current source release: **r17-config1**, using only the primary config.
+Current source release: **r18-config2**, using only the primary config without
+a version marker. Host/ARM32 validation does not claim a fresh game run.
 See [config candidate](CONFIG_CANDIDATE.md). The preceding r16 delivery is archived with verified hashes.
 
 The recipe retains **the settings-only panel and quiet release logging**
@@ -55,7 +56,10 @@ Open the closed-by-default **Please do Better** tree under Forge's **Plugin UI**
 The checkbox changes the request immediately; each observed batch retains its
 entry mode. Existing rewards stay unchanged. **Save settings** remembers the
 request only in `savedata:/please_do_better.ini` through Forge's counted player
-save mount. Existing `_backup.ini` files are ignored and untouched. Writes are
+save mount. The file contains only `force_miraculous=0` or `force_miraculous=1`
+with a trailing newline; no version marker is required or written. Existing
+`version=2` files remain readable and lose that marker on the next explicit save.
+Existing `_backup.ini` files are ignored and untouched. Writes are
 flushed and verified before commit; failures retain the session choice but may
 have changed the primary file. Missing or invalid primary files use defaults. Editing the checkbox cancels delayed loading.
 Closing the panel leaves highlighting, observation and storage polling active.
@@ -79,7 +83,7 @@ python3 scripts/mod_distribution.py check
 The recipe uses the maintained pinned offline ARM32 container and Unicorn 2.1.4.
 It performs no installation, activation, game launch or real preference/save write.
 The deterministic ZIP is
-`build/please-do-better/candidates/r17-config1/delivery/please-do-better-r17-config1-candidate.zip`.
+`build/please-do-better/candidates/r18-config2/delivery/please-do-better-r18-config2-candidate.zip`.
 Its only member is:
 
 ```text

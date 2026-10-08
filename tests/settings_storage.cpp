@@ -27,13 +27,19 @@ uint32_t pdb_fs_commit(const char* p){assert(std::strcmp(p,"savedata")==0);++com
 }
 static void balanced(){assert(!mounts&&!handles&&!guards&&backup=="untouched legacy backup");}
 int main(){using namespace pdb;
- Preferences session{true};assert(save_preferences(session));balanced();assert(exists);
+ Preferences session{true};assert(save_preferences(session));balanced();assert(exists&&primary.find("version=")==std::string::npos);
  Preferences restarted{};store.pending=true;assert(load_preferences(restarted)&&restarted.force);balanced();
+ for(bool force:{false,true}) {
+  primary=std::string("version=2\nforce_miraculous=")+(force?"1\n":"0\n");
+  Preferences legacy{};store.pending=true;assert(load_preferences(legacy)&&legacy.force==force);balanced();
+  assert(save_preferences(legacy)&&primary.find("version=")==std::string::npos);balanced();
+  Preferences migrated{};store.pending=true;assert(load_preferences(migrated)&&migrated.force==force);balanced();
+ }
  session.force=false;assert(save_preferences(session)&&save_preferences(session));balanced();
  for(failure=1;failure<=9;++failure){exists=failure!=9;assert(!save_preferences(session));balanced();assert(!session.force&&std::strstr(preferences_status(),"session"));}
  failure=0;available=false;assert(!save_preferences(session));balanced();available=true;
  exists=true;primary="invalid primary";Preferences defaults{};store.pending=true;assert(!load_preferences(defaults)&&!defaults.force);balanced();
  exists=false;store.pending=true;assert(!load_preferences(defaults));balanced();
  assert(save_preferences({true}));Preferences again{};store.pending=true;assert(load_preferences(again)&&again.force);balanced();
- std::printf("PASS: production primary-only persistence, restart/repeated saves, ignored backup, invalid primary and nine storage failures (%u accesses, %u commits)\n",accesses,commits);
+ std::printf("PASS: production primary-only persistence, versionless restart/repeated saves, existing version-2 migration, ignored backup, invalid primary and nine storage failures (%u accesses, %u commits)\n",accesses,commits);
 }

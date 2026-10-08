@@ -226,6 +226,7 @@ def package_candidate(payload):
     report = {'mod': 'please-do-better', 'version': VERSION, 'diagnostics':os.environ.get('MHGU_DIAGNOSTICS','0')=='1', 'status': 'DEVELOPMENT',
               'package_name': 'Please do Better', 'target': 'MHGU Nintendo Switch 1.4.0; Forge 1.4.1',
               'settings_save_paths':['savedata:/please_do_better.ini'],
+              'settings_format':'One force_miraculous setting; no version marker; existing version=2 accepted',
               'settings_backup_access':False, 'settings_save_policy':'validate, write, flush, readback verification, commit; session retained on failure',
               'build_id': binary.BUILD_ID[:32].upper(), 'runtime_inventory': {MEMBER: sha(payload)},
               'archive': {'name': ARCHIVE, 'sha256': sha(archive.read_bytes())},

@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-08",
+  "version": "r18-config2",
+  "status": "PASSED_HOST_AND_ARM32",
+  "runtime_test": "NOT RUN",
+  "installed": false,
+  "published": false,
+  "policy": "Only force_miraculous is written; existing exact version=2 prefix is accepted and removed by the next explicit save. Primary INI only; backups remain untouched and unused.",
+  "codec_fixture": "tests/preferences.cpp: both modes, versionless output, old files, rewrite/restart, corruption, bounds and rejected older marker.",
+  "production_storage_fixture": "tests/settings_storage.cpp: both old modes load, explicit save removes marker, restart preserves mode; primary-only access and nine failure paths with balanced cleanup.",
+  "compiled_fixture": "scripts/please_do_better_runtime_probe.py: both old modes load, save versionless bytes, restart; primary-only commit/readback failures.",
+  "payload_sha256": "891802053b724dd3045d7fa1085a4409a88f801ccb4cb9ba06b32be14e883424",
+  "reports": {
+    "host-tests.json": {
+      "sha256": "c0ade04d96e2639a67ae46cf10d7fd971a694691c015239439ab0929060abd4c"
+    },
+    "arm-tests.json": {
+      "sha256": "32d0e4ced2426c83d843e3812eb286ba9bfcdbfad24108c34af10e03add8989f",
+      "checks": 2122
+    },
+    "runtime-tests.json": {
+      "sha256": "b722fa276049686800f2bf2bb9d0919ef2301802de23e18ca7c4456778e78642",
+      "checks": 100511
+    },
+    "native-tests.json": {
+      "sha256": "c030dd5755820fde80eb210776b3bdd0838a4b9d14efbe53a981369b17a1e782",
+      "checks": 678
+    },
+    "observation-tests.json": {
+      "sha256": "46c6d6f758379a15414aa1352ac8f265832dcc21dc53421ef893a242ef35a76d",
+      "checks": 28841
+    },
+    "display-tests.json": {
+      "sha256": "dc915a9b7cb48ad2fe787e9808817a4fd4e8688ccb8becaa4c5414b26ef41ef9",
+      "checks": 16634
+    },
+    "highlight-tests.json": {
+      "sha256": "bfaa89af06a63f6801a8a0de4140fb916fb051d39445b35dd835ed00a7f18488",
+      "checks": 8286
+    },
+    "log-tests.json": {
+      "sha256": "273a1c599e3b25399dd439400b6f62c947e055f85b7729a695e20eef739fb20e",
+      "checks": 8,
+      "status": "PASSED"
+    },
+    "runtime-policy.json": {
+      "sha256": "4395c4e71b1438085ae16814d5873a12688a467925e469daf354a0d683908605",
+      "checks": 8,
+      "status": "PASSED"
+    },
+    "binary-validation.json": {
+      "sha256": "12a29753e8f0af34436fc98d4261e81e8e2095e89ad1f23f58da52b4394637e1"
+    }
+  }
+}

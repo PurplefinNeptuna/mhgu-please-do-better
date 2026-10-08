@@ -13,11 +13,19 @@ struct Preferences { bool force = false; };
 struct PreferencesText { char bytes[64]{}; unsigned size = 0; };
 inline PreferencesText encode_preferences(Preferences p) {
     PreferencesText out{};
-    const char* text = p.force ? "version=2\nforce_miraculous=1\n" : "version=2\nforce_miraculous=0\n";
+    const char* text = p.force ? "force_miraculous=1\n" : "force_miraculous=0\n";
     while (text[out.size]) { out.bytes[out.size] = text[out.size]; ++out.size; }
     return out;
 }
 inline bool decode_preferences(const char* text, unsigned size, Preferences& out) {
+    if (!size || size >= sizeof(PreferencesText::bytes)) return false;
+    // Existing configs stay readable; new saves omit this obsolete marker.
+    constexpr char legacy[] = "version=2\n";
+    if (size >= sizeof(legacy)-1) {
+        bool same = true;
+        for (unsigned i = 0; i < sizeof(legacy)-1; ++i) same = same && text[i] == legacy[i];
+        if (same) { text += sizeof(legacy)-1; size -= sizeof(legacy)-1; }
+    }
     // Exact bounded format: damaged/unsupported files cannot opt into forcing.
     for (unsigned value = 0; value != 2; ++value) {
         const auto expected = encode_preferences({value != 0});

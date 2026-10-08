@@ -10,7 +10,7 @@ MHGU 1.4.0 for Nintendo Switch and Forge 1.4.1.
 ## Installation
 
 1. Close Eden.
-2. Extract `please-do-better-r17-config1.zip`.
+2. Extract `please-do-better-r18-config2.zip`.
 3. Copy the `please-do-better` folder into
    `~/.local/share/eden/load/0100770008DD8000/`.
 4. Enable `please-do-better` in Eden and launch the game.

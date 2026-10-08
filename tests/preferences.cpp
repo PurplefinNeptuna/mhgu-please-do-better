@@ -19,9 +19,14 @@ int main(){
     unsigned checks=0;
     for(bool force:{false,true}) {
         auto t=encode_preferences({force});Preferences p{};
+        assert(!strstr(t.bytes,"version="));++checks;
         assert(decode_preferences(t.bytes,t.size,p)&&p.force==force);++checks;
         for(unsigned i=0;i<t.size;++i){t.bytes[i]^=2;assert(!decode_preferences(t.bytes,t.size,p));t.bytes[i]^=2;++checks;}
         assert(!decode_preferences(t.bytes,t.size-1,p));++checks;
+        char legacy[64];snprintf(legacy,sizeof(legacy),"version=2\nforce_miraculous=%u\n",unsigned(force));
+        assert(decode_preferences(legacy,unsigned(strlen(legacy)),p)&&p.force==force);++checks;
+        legacy[8]='1';assert(!decode_preferences(legacy,unsigned(strlen(legacy)),p));++checks;
+        assert(!decode_preferences(t.bytes,sizeof(t.bytes),p));++checks;
     }
     {Files f;PreferenceStore<Files>s;Preferences p{};assert(!s.load(f,p)&&!p.force&&!s.pending&&!f.mounts);assert(f.writes==0);++checks;}
     {Files f;f.available=false;PreferenceStore<Files>s;Preferences p{};
@@ -29,6 +34,13 @@ int main(){
      assert(!s.load(f,p)&&!p.force);++checks;}
     {Files f;f.primary=encode_preferences({true});PreferenceStore<Files>s;Preferences p{};
      assert(s.load(f,p)&&p.force&&!s.pending&&!f.mounts);++checks;}
+    for(bool force:{false,true}) {Files f;PreferenceStore<Files>s;Preferences p{};
+     snprintf(f.primary.bytes,sizeof(f.primary.bytes),"version=2\nforce_miraculous=%u\n",unsigned(force));
+     f.primary.size=strlen(f.primary.bytes);
+     assert(s.load(f,p)&&p.force==force&&!f.mounts);++checks;
+     assert(s.save(f,p)&&!strstr(f.primary.bytes,"version=")&&!f.mounts);++checks;
+     PreferenceStore<Files> restart;Preferences loaded{};
+     assert(restart.load(f,loaded)&&loaded.force==force&&!f.mounts);++checks;}
     {Files f;f.primary.size=1;f.primary.bytes[0]='!';PreferenceStore<Files>s;Preferences p{};
      assert(!s.load(f,p)&&!p.force&&f.reads==1&&f.writes==0);++checks;}
     for(unsigned failure=0;failure<5;++failure){Files f;f.primary=encode_preferences({false});PreferenceStore<Files>s;

@@ -52,3 +52,12 @@ setup, not exhaustive dropdown/transition/save-restart coverage or a clean
 shutdown claim. The newest Ryujinx log used older plugin bytes and is not
 confirmation of this release. Distribution preparation rebuilds no runtime,
 installs nothing and publishes nothing. Earlier entries remain historical.
+
+## 2026-10-08: r18-config2 config simplification
+
+The config codec now writes no version marker and reads existing `version=2`
+files without changing their preferences. Host tests execute production storage
+with a recording filesystem; compiled ARM32 fixtures cover old-file load,
+explicit versionless save and restart. These are simulated storage results,
+not a new emulator/game run. Earlier runtime reports keep their original
+version and binary scope. Nothing was installed or activated by this task.
