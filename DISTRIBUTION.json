@@ -103,7 +103,7 @@
   "mod": "please-do-better",
   "notices": [
     "mods/please-do-better/LICENSE",
-    "mods/please-do-better/THIRD_PARTY.md"
+    "mods/please-do-better/DISTRIBUTION_NOTICES.md"
   ],
   "package_name": "please-do-better",
   "payloads": {

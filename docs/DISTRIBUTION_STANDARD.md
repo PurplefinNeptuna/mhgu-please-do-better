@@ -59,6 +59,13 @@ archive. `NOTICES.html` contains notices/licenses only, formatted as a paste-rea
 GameBanana HTML fragment. It uses basic headings, paragraphs, line breaks, code
 and public links, with no page wrappers, CSS or scripts. Preserve license wording
 and copyright statements in both formats.
+Release notices cover only the package's current code, assets and applicable
+credits, including Forge where used. Preserve required copyright and license
+text. Exclude unrelated mods, development tools, local source paths, Git/history
+references and previous-license commentary. Keep development provenance in
+`THIRD_PARTY.md`; use dedicated `DISTRIBUTION_NOTICES.md` for release credits and
+component notices, alongside current license files. Notices must be usable
+without a source checkout.
 Every ready or published release's `README.md` must be strictly user-facing.
 Describe the mod, actual requirements, direct installation steps, controls or
 settings, and actionable known issues. Mention other mods only when they are
