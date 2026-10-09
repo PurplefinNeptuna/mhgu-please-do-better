@@ -25,8 +25,7 @@ MEMBER = 'Please do Better/romfs/nativeNX/plugins/please_do_better.nro'
 ARCHIVE = 'please-do-better-' + VERSION + '-candidate.zip'
 SUPPORT = {'README.md': 'README.md', 'NOTICES.txt': 'THIRD_PARTY.md',
            'MANUAL_TESTS.md': 'MANUAL_TESTS.md', 'IMPLEMENTATION.md': 'IMPLEMENTATION.md',
-           'VALIDATION.md': 'CONFIG_CANDIDATE.md', 'RESEARCH.md':'RESEARCH.md',
-           'DIAGNOSTICS.md':'R15_RELEASE.md'}
+           'RUNTIME.md': 'RUNTIME.md', 'RESEARCH.md': 'RESEARCH.md'}
 CALLBACKS = {'init', 'fini', 'forge_onLoad', 'forge_onInit', 'forge_onUpdate',
              'forge_onImGuiInit', 'forge_onImGuiRender', 'forge_onImGuiFreeRender'}
 ALLOWED_IMPORTS = {'forge_mem_getMainTextAddr', 'forge_log', 'igTreeNode_Str', 'igTreePop',
@@ -219,7 +218,7 @@ def package_candidate(payload):
         zipped.writestr(info, payload)
     for name, source in SUPPORT.items():
         shutil.copyfile(RECIPE / source, CANDIDATE / name)
-    (CANDIDATE/'VALIDATION.md').write_text((RECIPE/'CONFIG_CANDIDATE.md').read_text()+
+    (CANDIDATE/'VALIDATION.md').write_text('Development candidate; gameplay evidence is scoped in RUNTIME.md.\n'+
         '\nNRO SHA-256: '+sha(payload)+'\nZIP SHA-256: '+sha(archive.read_bytes())+'\n')
     if os.environ.get('MHGU_DIAGNOSTICS','0')=='1':
         (CANDIDATE/'VALIDATION.md').write_text('Development diagnostics candidate; not approved for release. No gameplay run.\nNRO SHA-256: '+sha(payload)+'\nZIP SHA-256: '+sha(archive.read_bytes())+'\n')
@@ -248,7 +247,7 @@ def verify_candidate():
     require(manifest['status'] == 'DEVELOPMENT' and manifest['sources'] == sources(), 'Stale candidate sources')
     spec = json.loads((RECIPE / 'DISTRIBUTION.json').read_text())
     require(spec['mod']=='please-do-better','Candidate identity differs from distribution record')
-    expected = {MEMBER, ARCHIVE, 'candidate-manifest.json', 'SHA256SUMS'} | set(SUPPORT)
+    expected = {MEMBER, ARCHIVE, 'candidate-manifest.json', 'SHA256SUMS', 'VALIDATION.md'} | set(SUPPORT)
     actual = {str(p.relative_to(CANDIDATE)) for p in CANDIDATE.rglob('*') if p.is_file()}
     require(actual == expected and not any(p.is_symlink() for p in CANDIDATE.rglob('*')), 'Candidate inventory differs')
     payload = (CANDIDATE / MEMBER).read_bytes()

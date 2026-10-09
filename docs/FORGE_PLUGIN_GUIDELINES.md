@@ -1,7 +1,7 @@
 # Forge plugin development
 
 Rules for the maintained Forge fork, requested 2026-10-04. Authority:
-[AGENTS.md](../AGENTS.md); baseline: [FORGE_LOCAL_BRANCH.md](FORGE_LOCAL_BRANCH.md).
+[AGENTS.md](../AGENTS.md); baseline: [dependencies.lock.json](../dependencies.lock.json).
 
 ## Use the loader's facilities
 
@@ -67,7 +67,7 @@ to those sites and must not be generalized to new hooks.
 ## Standalone development and logs
 
 New plugins start with `mod_distribution.py init NAME --kind plugin` and own
-their complete source/build/test/export layout. Follow [STANDALONE_MODS.md](STANDALONE_MODS.md).
+their complete source/build/test/export layout. Follow [local development workflow](../DEVELOPMENT.md).
 Use Forge logging: one short startup summary, committed settings changes, and
 actionable failures. Deduplicate failures by fixed reason for the process
 lifetime. Normal frames/hits/reward screens must not generate periodic logs.

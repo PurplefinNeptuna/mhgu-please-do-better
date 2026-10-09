@@ -182,7 +182,7 @@ folder under `mods/<name>/`. `init --kind` scaffolds its layout and DEVELOPMENT
 record without replacing an existing directory. Each mod owns its source,
 recipes, tests, dependency pins, notices and mod-local `build.sh`.
 Root scripts coordinate the workspace; they are not required by an exported
-source repo. [Standalone workflow](STANDALONE_MODS.md) covers local inputs and
+source repo. [Standalone workflow](../DEVELOPMENT.md) covers local inputs and
 allowlisted source export. Source publication readiness and runtime delivery
 readiness remain separate. Settings-only UI and quiet logs are release rules
 for gameplay plugins.

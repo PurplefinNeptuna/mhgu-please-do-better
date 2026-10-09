@@ -1,5 +1,9 @@
 # Implementation and state audit
 
+The current release retains the R14 independent overlay and R15 quiet logging.
+The revision sections below explain earlier rendering changes; removed telemetry
+and transfer hooks are historical. Runtime acceptance is in [RUNTIME.md](RUNTIME.md).
+
 ## Identity and hook inventory
 
 Source main: `work/shared/game-exefs/main`, SHA-256
@@ -59,14 +63,18 @@ presented frames with the panel closed too. UI edits cancel pending load before
 publishing the mode, avoiding an assumption that game update and NVN presentation
 share a thread.
 
-Only `savedata:/please_do_better.ini` and `savedata:/please_do_better_backup.ini`
-are accessed. Exact version-2 decoding accepts force=0/1 only. Use Forge's counted
+Only `savedata:/please_do_better.ini` is accessed. The file contains
+`force_miraculous=0` or `force_miraculous=1` with a trailing newline; no version
+marker is written or required. Existing `version=2` files remain readable and
+lose the marker on the next explicit save. Missing/invalid primary files use
+natural-mode defaults; existing backup files are ignored and untouched.
+Use Forge's counted
 mount, scoped SDK abort suppression, four-byte ARM32 handles and aligned 64-bit
 offsets. Check open/create/resize/read/write/flush/readback and explicit commit.
-SDK CloseFile is void. Before replacing the primary, write/read back/commit
-a recovery copy, preferring a valid primary, then a valid existing backup, then
-the natural-mode default for a fresh save. Failed replacement attempts checked restoration; failed recovery
-is reported as uncertain. Save failure retains the session choice. No INI is shipped.
+SDK CloseFile is void. Validate before writing, flush and verify the primary,
+then commit through the counted mount. Balance handles/mounts on every failure.
+Save failure retains the session choice; previous disk contents are not
+guaranteed. No INI is shipped.
 
 ## Checked publication and API gaps
 
@@ -149,15 +157,14 @@ Accept only traced copies with matching contents. Lost scopes, overflow, overwri
 mailboxes, empty/incompatible entries or unknown routes suppress attribution.
 Last completed batch totals retain scalar generation evidence independently of
 live array invalidation. Partial coverage reports the extra total unavailable.
-No collection tracker is added. See [R4_OBSERVATIONS.md](R4_OBSERVATIONS.md) for
-exact route offsets and runtime evidence.
+No collection tracker is added; [RESEARCH.md](RESEARCH.md) records native copy offsets.
 
 R5 also snapshots state-1 main-array contents on entry to the existing update
 hook. Up to six eight-entry records fit its existing eight-record scope storage.
 At return, the new pointer/capacity and every copied prefix entry must match;
 only then publish a batch-tagged old/new index mapping. The old allocation is
 never read after native return. Count limits remain 48. No allocator/free is
-intercepted. See [R5_OBSERVATIONS.md](R5_OBSERVATIONS.md).
+intercepted.
 
 R7 snapshots list-copy contents at native return in at most six eight-entry
 mailbox records, tagged with the current batch serial. The first chunk clears
@@ -172,7 +179,7 @@ when that nested builder starts a new batch for the same UI object. Newly
 validated generation records already refer to the current destination. Their
 contents must not be compared with the old empty array. Genuine relocations
 without a same-object new batch retain their existing guards. Incomplete new
-batches remain unavailable. See [R8_HIGHLIGHTS.md](R8_HIGHLIGHTS.md).
+batches remain unavailable.
 
 List refresh accepts same-index quantity decreases or fully empty pairs verified
 against generation snapshots. Empty slots lose live eligibility. Other IDs,
@@ -203,8 +210,7 @@ bindings and full viewport determine the perimeter. It pushes native clipping,
 draws four gold lines at 1.5px scaled from 720p plus eight lines for a four-point
 sparkle, then pops clipping. Alpha follows a deterministic two-second pulse.
 No fill covers icons or quantities. Unsupported geometry produces no draw.
-The shader/presentation proof is in [R6_HIGHLIGHTS.md](R6_HIGHLIGHTS.md);
-[R7_HIGHLIGHTS.md](R7_HIGHLIGHTS.md) documents the texture/copy repairs.
+
 
 Repeat initialization checks every installed transaction without republishing.
 A lost conditional/observation owner disables forcing, capture and highlighting
@@ -217,8 +223,8 @@ The native target resolver accepts the default sentinel and resolved presentatio
 surface. The native viewport flag selects one of two rectangle banks; accept
 either only when clamping gives the full surface. Capture the matching clip from
 the immutable packet rather than assuming the renderer's normal clip bank.
-R9_HIGHLIGHTS.md records original offsets, reflected shader-list verification
-and precise, bounded rejection diagnostics. No target coordinates are guessed.
+Reflected shader-list checks and bounded rejection diagnostics retain the
+original native target/viewport guards.
 
 ## R10 native texture identity
 
@@ -237,29 +243,7 @@ producer frame change. No new hooks, arena, TLS slot or game writes were added.
 The first rejection for a live screen fence is retained, so alternating images
 do not make the displayed diagnostic unreadable. Later rejected draws still
 increase the internal counter. New screen fences allow a new diagnostic;
-completed reward totals stay retained. See R10_HIGHLIGHTS.md for exact receipts
-and the remaining GPU/gameplay acceptance gate.
-
-## R11 emulator-only rendering telemetry
-
-The user-authorized verbose logging addresses silent exits exposed by the r10
-grid: four bindings, zero draw count and no recorded rejection. Gate counters
-now distinguish missing geometry gateway activity, unmatched nodes, list/item
-validation, cache/layout/submission checks, transform inputs, degenerate quads,
-clip/epoch checks, publication, native present metadata, missing presentation
-callbacks, cycle/serial mismatches, framebuffer dimensions, binding identity and
-image mismatch. No acceptance guard is relaxed and no RNG/game writes are added.
-
-Native gateways update scalar atomic counters and two bounded immutable
-snapshots. They invoke no logger or formatter. The free-render callback logs
-those records through Forge after attempting rendering, including on every early
-return. Geometry snapshots preserve vertices/model/global inputs for explaining
-failed transformation. Per-screen output uses eight initial callbacks, then one
-per 120 callbacks, capped at 24 bundles per screen and 128 per process. Logging
-uses a nonblocking atomic claim; contention drops telemetry without waiting.
-Snapshot publication failure cannot alter reward results or draw eligibility.
-Detailed render fields and copy values stay out of the compact panel. See
-R11_RENDER_LOGGING.md for labels, limits and evidence distinctions.
+completed reward totals stay retained.
 
 ## R12 native scissor semantics
 
@@ -273,7 +257,7 @@ empty rectangles and failed sentinel reads remain suppressed. No reward, RNG,
 settings, publication/rollback or resource-allocation behavior changes.
 Original ARM execution is compared with compiled capture/ImGui clip calls for
 both banks and nonzero sentinels; raw/effective values go only to emulator logs.
-See R12_RENDER_LOGGING.md and R12_VALIDATION.md.
+
 
 ## R13 native downsample provenance
 
@@ -289,7 +273,7 @@ unsupported composition and unobserved offscreen sources stay suppressed.
 No additional trampoline/arena, TLS, contexts or heap allocation. Rendering
 installation is a guarded four-hook transaction with ownership-aware rollback;
 forcing and observation remain independent. GPU execution/alignment remain
-pending. See R13_RENDER_LOGGING.md and R13_VALIDATION.md.
+pending.
 
 ## R14 independent overlay
 
@@ -310,7 +294,7 @@ eligibility intentionally: an intermediate offscreen UI image does not suppress
 our primitive when its exact projected geometry is valid for the presented frame.
 No native texture/sprite asset, game draw-packet edit, new API, heap, arena or TLS
 is needed. Visible output/alignment requires a user-run r14 check; local draw-call
-fixtures do not prove GPU success. See R14_OVERLAY.md and R14_VALIDATION.md.
+fixtures do not prove GPU success.
 
 ## R15 quiet release logging
 
@@ -322,8 +306,9 @@ no gateway logs or formats text. Reward/geometry/hook/mode/settings code retains
 r14 behavior. Regression fixtures verify log-free rendering over 240 boundaries,
 with the existing complete native/compiled regression suites.
 
-R14 visible Eden acceptance is recorded in RUNTIME.md. R15's separate gameplay
-coverage remains pending. Known Forge menu/background-list corruption is external
-to this change and remains disclosed. Source commit and all accepted r14 package
-bytes are preserved. Shared delivery uses mods/please-do-better/DISTRIBUTION.json
+R14 visible Eden acceptance and the later R17-config1/render1 setup confirmation
+are recorded in [RUNTIME.md](RUNTIME.md). Later plugin revisions retain separate
+static evidence without a fresh gameplay run. The legacy Forge multi-list offset
+defect remains external to this plugin; [DEVELOPMENT.md](DEVELOPMENT.md) describes
+the separate loader correction. Accepted earlier package bytes are preserved. Shared delivery uses mods/please-do-better/DISTRIBUTION.json
 and scripts/mod_distribution.py; no installation or publication.

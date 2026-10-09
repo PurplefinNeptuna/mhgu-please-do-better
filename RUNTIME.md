@@ -16,14 +16,10 @@ R15 changes verbose logging only; overlay eligibility, coordinates, shape,
 forcing, preferences, reward attribution and hooks are retained. R15's binary
 has local compiled/static validation, with no new gameplay run claimed.
 
-The user reports Forge's menu corrupts while this background overlay is present,
-and explicitly excludes fixing forge-patched from this task. The inspected Forge
-multi-list buffer offset defect is documented in
-docs/FORGE_IMGUI_DAMAGE_CORRUPTION_HANDOFF.md. Its relevance to this plugin
-fits the source mechanism and user report; no fixed Forge build was tested.
-The limitation remains disclosed in the release README. Use the settings panel
-outside reward highlighting and close Forge's menu while viewing marked rewards.
-This guidance does not change or repair Forge.
+The R14 session also exposed Forge menu corruption with the background overlay.
+The legacy loader's multi-list buffer-offset defect and subsequent render1
+correction are described in [DEVELOPMENT.md](DEVELOPMENT.md). The later
+2026-10-08 setup confirmation below uses that separate loader trial.
 
 This is scoped Eden acceptance, not exhaustive coverage. Natural positive luck,
 no luck, forced/live toggles across repeated batches, save loading/restart

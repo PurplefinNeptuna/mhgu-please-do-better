@@ -11,3 +11,16 @@ Use the configured Python environment for the exact `requirements.txt` versions.
 Use settings-only panels. Format logs in Forge callbacks, outside native hooks. Keep one startup summary, meaningful committed preference changes and readable actionable failures. Never reset failure reason masks; unchanged frames stay silent. Overlays and background work run with settings panels closed.
 
 Export only `EXPORT.json` entries. `source-export.json` records the parent commit and source/export hashes. Exports omit game assets, outputs, caches, backups, private configurations, historical asset editions and Git metadata. Initialize remotes and publish separately.
+
+
+## Forge rendering limits
+
+The legacy NVN backend concatenates ImGui lists but omits preceding-list index
+and vertex offsets when submitting later lists. Menu windows/background overlays
+can consequently address the wrong geometry. The separate 1.4.1-render1 loader
+trial adds cumulative offsets while preserving command-local offsets, texture
+bindings, clipping and callbacks. Real-ImGui/NVN-call fixtures recorded 476 bad
+submissions in the original and zero in the fix across 201 frames/879 draws.
+The 2026-10-08 tested Eden setup was user-confirmed; Forge remains LOCAL_ONLY.
+This is scoped evidence, without exhaustive dropdown/transition or new Ryujinx
+validation. Keep plugin rendering active with its settings panel closed.
