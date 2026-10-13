@@ -1,9 +1,9 @@
-# Switch r21 quantity multiplier
+# Switch r22 quantity multiplier
 
-r21-multiplier is a DEVELOPMENT candidate. The r20 delivery remains preserved;
-its scoped user acceptance is in R20_RUNTIME_RESULTS.json. Switch r19's
-distribution record, release payload, installation README and historical evidence
-remain unchanged.
+r22-iniheader is a DEVELOPMENT candidate. The r20/r21 deliveries remain preserved;
+their scoped user acceptance is in R20_RUNTIME_RESULTS.json and
+R21_RUNTIME_RESULTS.json. Switch r19's distribution record, release payload,
+installation README and historical evidence remain unchanged.
 PC is outside this change. No emulator is installed, configured or launched.
 
 ## Native data flow
@@ -58,9 +58,10 @@ gameplay acceptance requires the tested emulator's fresh log and payload hash.
 
 ## Settings format
 
-New saves use force_miraculous and reward_multiplier=1..5. Only this canonical
-format is read: the user requested no migration from older settings. Old files,
-invalid multipliers and unsupported formats use natural Luck and 1x defaults.
+New saves require [PleaseDoBetter], force_miraculous and reward_multiplier=1..5.
+Only this canonical format is read; the user requested no migration from older
+settings. Headerless r21 files, old files, invalid multipliers and unsupported
+formats use natural Luck and 1x defaults.
 Files are rewritten only by explicit Save. The integer slider clamps dragging
 and typed values to 1..5; gameplay scopes latch one atomic settings record.
 Closing the menu leaves the chosen settings active.

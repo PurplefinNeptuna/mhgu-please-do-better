@@ -27,16 +27,17 @@ struct PreferencesText { char bytes[64]{}; unsigned size = 0; };
 inline PreferencesText encode_preferences(Preferences p) {
     PreferencesText out{};
     if(p.multiplier<1 || p.multiplier>5)return out;
-    const char* text = "force_miraculous=0\nreward_multiplier=1\n";
+    const char* text = "[PleaseDoBetter]\nforce_miraculous=0\nreward_multiplier=1\n";
     while (text[out.size]) { out.bytes[out.size] = text[out.size]; ++out.size; }
     // Derive value positions from literal prefixes; '=' remains part of each key.
-    out.bytes[sizeof("force_miraculous=")-1]=p.force?'1':'0';
-    out.bytes[sizeof("force_miraculous=0\nreward_multiplier=")-1]=char('0'+p.multiplier);
+    out.bytes[sizeof("[PleaseDoBetter]\nforce_miraculous=")-1]=p.force?'1':'0';
+    out.bytes[sizeof("[PleaseDoBetter]\nforce_miraculous=0\nreward_multiplier=")-1]=char('0'+p.multiplier);
     return out;
 }
 inline bool decode_preferences(const char* text, unsigned size, Preferences& out) {
     if (!size || size >= sizeof(PreferencesText::bytes)) return false;
-    // Accept only the new bounded canonical format. Older configs use defaults;
+    // The section header is mandatory. Accept only this bounded canonical format.
+    // Headerless/older configs use defaults;
     // the user explicitly chose no migration. Only Save rewrites the primary.
     for (unsigned force=0;force<2;++force) {
         for(unsigned multiplier=1;multiplier<=5;++multiplier) {

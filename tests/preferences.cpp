@@ -22,6 +22,11 @@ int main(){
         auto t=encode_preferences({force,multiplier});Preferences p{};
         assert(!strstr(t.bytes,"version="));++checks;
         assert(decode_preferences(t.bytes,t.size,p)&&p.force==force&&p.multiplier==multiplier);++checks;
+        assert(!decode_preferences(t.bytes+sizeof("[PleaseDoBetter]\n")-1,
+               t.size-(sizeof("[PleaseDoBetter]\n")-1),p));++checks;
+        t.bytes[1]='X';assert(!decode_preferences(t.bytes,t.size,p));t.bytes[1]='P';++checks;
+        char prefixed[128];snprintf(prefixed,sizeof(prefixed),"version=2\n%s",t.bytes);
+        assert(!decode_preferences(prefixed,unsigned(strlen(prefixed)),p));++checks;
         for(unsigned i=0;i<t.size;++i){t.bytes[i]^=char(0x80);assert(!decode_preferences(t.bytes,t.size,p));t.bytes[i]^=char(0x80);++checks;}
         assert(!decode_preferences(t.bytes,t.size-1,p));++checks;
         char legacy[64];snprintf(legacy,sizeof(legacy),"version=2\nforce_miraculous=%u\n",unsigned(force));
@@ -36,7 +41,7 @@ int main(){
     }
     for(unsigned value:{0u,6u,255u}) {
         assert(!encode_preferences({false,uint8_t(value)}).size);++checks;
-        char bad[64];snprintf(bad,sizeof(bad),"force_miraculous=0\nreward_multiplier=%u\n",value);
+        char bad[64];snprintf(bad,sizeof(bad),"[PleaseDoBetter]\nforce_miraculous=0\nreward_multiplier=%u\n",value);
         Preferences p{};assert(!decode_preferences(bad,unsigned(strlen(bad)),p));++checks;
     }
     {Files f;PreferenceStore<Files>s;Preferences p{};assert(!s.load(f,p)&&!p.force&&!s.pending&&!f.mounts);assert(f.writes==0);++checks;}

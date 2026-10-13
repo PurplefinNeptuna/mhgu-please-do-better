@@ -1,0 +1,21 @@
+{
+  "version": "r21-multiplier",
+  "date": "2026-10-13",
+  "user_report": "works very well",
+  "user_confirmed": true,
+  "environment": "Eden Development Build master-4dc69c06f7-master; Forge 1.4.1-render1",
+  "nro_sha256": "fc6ee47676dbfa75bb01713b335d9851e8a5a2544b1ae1674637f4675cff720c",
+  "installed_payload_matches_candidate": true,
+  "log_snapshot": "work/please-do-better/runtime/r21-20261013/eden_log.txt",
+  "log_sha256": "a9aa87deccf7750caf6ff2579a193f9dbd17427f4528682bf39ed1cf8bf441a8",
+  "log_evidence": [
+    "r21-multiplier loaded; forcing and highlights ready",
+    "Saved: luck on, quantities 5x"
+  ],
+  "scope": "User reports general success; individual quest, collection/appraisal and settings-restart scenarios were not enumerated.",
+  "limits": [
+    "Log includes HLE/keyboard and Maxwell assertions plus later unmapped-memory errors; no clean-run or clean-shutdown claim.",
+    "No multiplier-skipped diagnostic seen in the inspected log; emulator messages are not attributed to this plugin.",
+    "Ryujinx and physical Switch gameplay untested."
+  ]
+}

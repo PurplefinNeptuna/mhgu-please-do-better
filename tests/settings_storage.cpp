@@ -34,7 +34,8 @@ int main(){using namespace pdb;
   assert(save_preferences(wanted));store.pending=true;
   assert(load_preferences(loaded)&&loaded.force==wanted.force&&loaded.multiplier==wanted.multiplier);balanced();
  }
- for(const char* old:{"version=2\nforce_miraculous=1\n","force_miraculous=1\ndouble_quantity=1\n"}) {
+ for(const char* old:{"version=2\nforce_miraculous=1\n","force_miraculous=1\ndouble_quantity=1\n",
+                     "force_miraculous=1\nreward_multiplier=5\n"}) {
   primary=old;Preferences defaults{};store.pending=true;
   assert(!load_preferences(defaults)&&!defaults.force&&defaults.multiplier==1&&primary==old);balanced();
  }

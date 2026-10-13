@@ -7,12 +7,14 @@ wiki's two-site cheat without changing equipped skills.
 Current local release: **r19-savehint**, READY_TO_DISTRIBUTE and unpublished.
 [Installation and settings](DISTRIBUTION_README.md); [status and payload hashes](DISTRIBUTION.json).
 
-Switch development candidate: **r21-multiplier**, with a first-screen 1x to 5x
+Switch development candidate: **r22-iniheader**, with a first-screen 1x to 5x
 integer slider. [Candidate installation/settings](CANDIDATE_README.md) and
 [implementation/manual checklist](docs/DOUBLE_QUANTITY.md). The user reported
 r20 working well; its matching Eden log and installed hash are recorded in
-[the r20 receipt](docs/R20_RUNTIME_RESULTS.json). The r19 release remains pinned;
-r21 has no gameplay acceptance yet.
+[the r20 receipt](docs/R20_RUNTIME_RESULTS.json). The r19 release remains pinned.
+The user also reported r21 working very well at the recorded 5x setting;
+[the r21 receipt](docs/R21_RUNTIME_RESULTS.json) retains that scope.
+r22 adds the required INI section header and has no gameplay acceptance yet.
 
 ## Development and evidence
 

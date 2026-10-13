@@ -34,12 +34,18 @@ def main():
     for bits in range(10):
         multiplier=bits//2+1
         p=setup(bool(bits&1),multiplier);p.save_available=True;p.button=True;p.call('forge_onImGuiRender')
-        expected=f'force_miraculous={bits&1}\nreward_multiplier={multiplier}\n'.encode()
+        expected=f'[PleaseDoBetter]\nforce_miraculous={bits&1}\nreward_multiplier={multiplier}\n'.encode()
         check(p.files[primary]==expected and not p.mounts and not p.handles and not p.guard,'Compiled two-setting save balances storage')
         restarted=Probe(image,payload);restarted.call('forge_onInit');restarted.save_available=True;restarted.files=p.files.copy()
         restarted.call('forge_onImGuiFreeRender')
         check(restarted.read(restarted.private('mode'))==bits,'Compiled restart restores all ten setting combinations')
     for force in (0,1):
+        for multiplier in range(1,6):
+            p=Probe(image,payload);p.call('forge_onInit');p.save_available=True
+            record=f'force_miraculous={force}\nreward_multiplier={multiplier}\n'.encode()
+            p.files[primary]=record;p.call('forge_onImGuiFreeRender')
+            check(p.read(p.private('mode'))==0 and p.files[primary]==record,
+                  'Headerless r21 settings use defaults and remain untouched until Save')
         for doubled in (0,1):
             for legacy in (b'',b'version=2\n'):
                 p=Probe(image,payload);p.call('forge_onInit');p.save_available=True

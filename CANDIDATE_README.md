@@ -12,7 +12,7 @@ testing on an emulator; save progress before testing it.
 ## Installation
 
 1. Close your emulator.
-2. Extract `please-do-better-r21-multiplier-candidate.zip`.
+2. Extract `please-do-better-r22-iniheader-candidate.zip`.
 3. Copy the `Please do Better` folder into your emulator's MHGU mod directory.
    For Eden, use `~/.local/share/eden/load/0100770008DD8000/`.
 4. Enable the package and launch MHGU. Keep only one enabled copy of
@@ -36,9 +36,20 @@ Changing either setting affects the next reward generation. The multiplier is
 independent of Force Miraculous Luck. Closing the panel keeps both settings active.
 
 Select **Save settings** to remember both choices in `please_do_better.ini` in
-MHGU's player save folder. Older settings files use the defaults: Luck forcing
-off and multiplier 1x. Only Save settings writes the new format. If saving fails,
-your session choices remain active; load a player save and retry **Save settings**.
+MHGU's player save folder. If saving fails, your session choices remain active;
+load a player save and retry **Save settings**.
+
+The saved INI must use this section and both keys:
+
+```ini
+[PleaseDoBetter]
+force_miraculous=0
+reward_multiplier=1
+```
+
+The section header is required. Headerless and older formats use Luck forcing
+off and multiplier 1x; there is no migration. Select your settings and save to
+write the new format.
 
 ## Quantity limits
 
