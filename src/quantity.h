@@ -2,6 +2,10 @@
 #include "attribution.h"
 namespace pdb {
 constexpr unsigned first_screen_capacity=48;
+// Verified uUIResult constructor (main+0x3839BC) allocates these capacities.
+// Page 0 also has 16-entry arena layouts. Page 3 belongs to companion Palicoes.
+constexpr unsigned player_page_capacities[3]={48,48,8};
+constexpr unsigned palico_page_capacity=32;
 enum class QuantityFault : unsigned { None, Memory, Record, Overflow, Generation, Snapshot, Multiplier };
 
 // Collection/appraisal consumes amounts as signed shorts. Keep the multiplied

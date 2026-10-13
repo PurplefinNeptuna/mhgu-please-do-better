@@ -1,32 +1,51 @@
-# Switch r22 quantity multiplier
+# Switch r23 reward-page multiplier
 
-r22-iniheader is a DEVELOPMENT candidate. The r20/r21 deliveries remain preserved;
-their scoped user acceptance is in R20_RUNTIME_RESULTS.json and
-R21_RUNTIME_RESULTS.json. Switch r19's distribution record, release payload,
-installation README and historical evidence remain unchanged.
-PC is outside this change. No emulator is installed, configured or launched.
+r23-reward-pages is a DEVELOPMENT candidate. The r20/r21/r22 deliveries and
+scoped runtime receipts remain preserved. Switch r19's distribution record,
+release bytes and support remain unchanged. PC is outside this change.
+No emulator is installed, configured or launched.
 
 ## Native data flow
 
-The paired builder at main+0x3874E0 owns first-screen records at UI+0x5C with
-capacity at +0x60. Normal capacity is 48 four-byte `(u16 item, u16 amount)`
-records: A/B/special occupy indices 0..23; break/capture occupies 24..47.
-Other result arrays (+0x64, +0x6C, +0x74) are excluded. Smaller first-screen
-layouts are bounded by their actual count rather than forced to 48.
+The paired builder at main+0x3874E0 supplies four arrays of four-byte
+`(u16 item, u16 amount)` records. Collection at +0x388EE8 selects them by page:
+
+| Page | UI pointer/count | Capacity | Quantity scope |
+| --- | --- | --- | --- |
+| 0 (also arena selectors 4/5) | +0x5C / +0x60 | 48 normal, 16 arena | Main A/B, special, break/capture; multiplied |
+| 1 | +0x64 / +0x68 | 48 | Subquest, free-hunt, bonus items, break/capture overflow; multiplied |
+| 2 | +0x6C / +0x70 | 8 | Player extra-item page copied from result save-state +0xAE0; multiplied |
+| 3 | +0x74 / +0x78 | 16 or 32 | Palico page: gathered and stolen items; unchanged |
+
+The constructor at +0x3839BC verifies capacities. The builder copies each
+companion's gathering row from save-state +0xAF0 and generates its stolen row
+through +0x382FFC. Companion count +0xB17 determines page 3's row count at
+UI+0x158 (two rows per companion). These records have no quantity writes here.
+Items already received during a quest into the pouch/box are outside result
+arrays and remain unchanged. Layout evidence is in REWARD_PAGE_LAYOUT.json.
 
 One atomic mode word carries force_miraculous in bit 0 and multiplier-1 in
 bits 1..3 (valid multipliers 1..5). Native scopes latch both before generation.
-The paired return processes its local scope once; collection, list copies,
-rendering and presentation never
-invoke the multiplier. A nonempty preimage requires freshly captured main
-counts/copies, preventing an unproductive builder from multiplying an old result.
+The builder captures all three player pointers/counts before native execution.
+On return it preflights all included pages before writing any one of them.
+It verifies stable metadata, capacities, alignment, writable bounds, disjoint
+ownership including the Palico page, zero/zero empty pairs, signed quantity
+bounds and captured snapshots against the unmodified live records.
 
-Before writes, check the unchanged pointer/count, whole readable/writable heap
-region, zero/zero empty pairs, signed quantity bounds and all pending snapshots
-that overlap the first array. Failure preserves the complete native array and
-publishes a deduplicated fault for formatting in the update callback. Success
-writes amount halfwords and adjusts only the first-screen pending snapshots.
-Item IDs, RNG, indices, counts and Luck masks retain their native meanings.
+A result-object latch records the completed attempt even at 1x or on failure.
+Later settings changes and repeated builders cannot rescale that same result.
+The existing destructor hook at +0x384408 clears the owning gameplay context's
+latch before that UI address can be reused for another quest. Native builders
+and their UI destructor use the same captured gameplay-thread context.
+Fresh constructors zero the player arrays; a nonempty entry preimage also needs
+fresh native main/free-hunt count/copy evidence. Lost capture or TLS ownership
+never authorizes retrospective writes. Collection/list refresh/render paths do
+not invoke the multiplier.
+
+Failure preserves all included quantities and publishes a deduplicated reason
+for logging in the update callback. Success writes occupied amount halfwords
+on pages 0/1/2 and reconciles both main and secondary pending snapshots.
+Item IDs, indices, slot counts, RNG and Luck attribution remain unchanged.
 
 Collection at main+0x388EE8 and appraisal enqueue at +0x3C6C6C read amounts as
 signed shorts. The multiplier rejects an input whose product exceeds 32767.
@@ -44,11 +63,12 @@ SDK reader/TLS bindings remain in use for observation and paired ownership.
 ## Acceptance checklist
 
 - [ ] Slider 1x: normal quantities and existing highlights.
-- [ ] Slider 2x..5x: main A/B, special and break/capture quantities scaled once.
+- [ ] Slider 2x..5x: all occupied slots on player pages 0/1/2 scaled once.
 - [ ] Both Luck modes retain highlighting; the slider works independently.
 - [ ] Village 4-star Great Ore Discovery: guaranteed Dragonite Ore scales with the slider;
       main-reward Mystery Charms appraise as the displayed quantity.
-- [ ] Gathering, subquest/free-hunt and separate plunder quantities unchanged.
+- [ ] Subquest/free-hunt, overflow and player extra items multiply; companion
+      gathering/plunder on the Palico page and existing pouch/box items unchanged.
 - [ ] Manual collection, Take All, Send to Box, partial stacks and full storage.
 - [ ] Move slider while results are visible: existing rewards unchanged.
 - [ ] Consecutive quests and settings save/restart retain expected behavior.

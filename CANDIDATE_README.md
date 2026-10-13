@@ -2,7 +2,7 @@
 
 Highlights extra reward slots granted by Luck with a pulsing gold border and
 sparkle. Optional settings force Miraculous Luck and multiply item quantities by 1x to 5x on
-the first reward screen.
+all player reward pages. Palico rewards keep their normal quantities.
 
 ## Requirements
 
@@ -12,7 +12,7 @@ testing on an emulator; save progress before testing it.
 ## Installation
 
 1. Close your emulator.
-2. Extract `please-do-better-r22-iniheader-candidate.zip`.
+2. Extract `please-do-better-r23-reward-pages-candidate.zip`.
 3. Copy the `Please do Better` folder into your emulator's MHGU mod directory.
    For Eden, use `~/.local/share/eden/load/0100770008DD8000/`.
 4. Enable the package and launch MHGU. Keep only one enabled copy of
@@ -27,11 +27,12 @@ Open **Plugin UI > Please do Better** in Forge's overlay.
 | Setting | Default | Effect |
 | --- | --- | --- |
 | Force Miraculous Luck | Off | Uses Miraculous Luck for subsequent reward generations. |
-| Reward multiplier | 1x | Integer slider from 1x to 5x for each occupied slot on the first reward screen. |
+| Reward multiplier | 1x | Integer slider from 1x to 5x for each occupied slot on all player reward pages. Palico rewards keep their normal quantities. |
 
-The quantity setting covers main A/B rewards, special rewards, and break/capture
-rewards. It keeps the same items and number of slots. Subquest, free-hunt,
-gathered items and separate plunder/Palico rewards keep their normal quantities.
+The quantity setting covers main A/B, special, break/capture, subquest,
+free-hunt and other items on the player reward pages, including the player's
+extra-item page. It keeps the same items and number of slots. The Palico page
+keeps its normal quantities, including companion gathering and stolen items.
 Changing either setting affects the next reward generation. The multiplier is
 independent of Force Miraculous Luck. Closing the panel keeps both settings active.
 
@@ -55,4 +56,5 @@ write the new format.
 
 The game's inventory and appraisal capacity limits still apply. Multiplying a
 charm quantity supplies additional charms for appraisal within those limits.
-Gathered charms are outside the quantity setting's scope.
+Charms on player reward pages are multiplied; the Palico page stays unchanged.
+Items already received during the quest into your pouch or box are unchanged.

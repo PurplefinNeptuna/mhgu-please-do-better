@@ -44,12 +44,14 @@ struct CountSnapshot {
     uint32_t slots=0;
     bool ready=false;
 };
+struct QuantityPage { uint32_t array=0,count=0; };
 struct Scope {
     uint32_t kind=0, caller=0, sp=0, subject=0, array=0, start=0, count=0;
     // Keep inactive contexts in BSS. Entry always assigns a latched 1..5 value
     // before this scope can be used; zero is only an inactive sentinel.
     bool force=false; uint8_t multiplier=0;
-    bool quantity_ready=false, first_blank=false;
+    bool quantity_ready=false, player_blank=false, quantity_done=false;
+    QuantityPage quantity_pages[3]{};
     // Unknown scopes are zero-initialized BSS. begin() supplies the threshold
     // and stop sentinel only when a real comparison is observed.
     Attribution attribution{0,0,false,false};
@@ -64,6 +66,10 @@ struct Context {
     unsigned depth=0; bool quarantine=false;
     bool tls_lost=false;
     uint32_t cookie=0,serial=0,last_ui=0;
+    // A uUIResult owns one result generation. Its existing destructor hook
+    // clears this latch before the address can be reused for another quest.
+    // Mark even 1x and failed attempts: later settings/rebuilds cannot alter it.
+    uint32_t quantity_ui=0;
     Scope scopes[4]{};
     Mailbox<Record,16> records;
 };
@@ -98,63 +104,93 @@ static void quantity_fault(QuantityFault reason) {
     if(reason!=QuantityFault::None)
         __atomic_fetch_or(&quantity_faults,1u<<unsigned(reason),__ATOMIC_RELAXED);
 }
-// Run exactly at the original builder's return, before immutable observations
-// are published. The first array is A/B/special followed by break/capture.
-// Secondary, gathered and plunder arrays are deliberately never written.
-static void multiply_first_screen(Scope& s) {
-    if(s.multiplier==1)return;
+// Run at the original builder's paired return, before immutable observations
+// are published. Pages 0/1/2 use UI+0x5C/+0x64/+0x6C respectively; page 3
+// (+0x74) is companion gathering/plunder and is excluded from every write.
+// The UI-object latch, cleared by the existing destructor, makes this a single
+// attempt per result lifetime, including 1x and unsupported-data failures.
+static void multiply_player_pages(Scope& s) {
+    if(s.multiplier==1 || s.quantity_done)return;
     if(!__atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE)) {
         quantity_fault(QuantityFault::Generation);return;
     }
-    if(!s.quantity_ready || !field(s.ui,0x5c,8) || word(s.ui+0x5c)!=s.array ||
-       word(s.ui+0x60)!=s.count || s.array%4 || !writable_rewards(s.array,s.count*4)) {
+    if(!s.quantity_ready || !field(s.ui,0x5c,32)) {
         quantity_fault(QuantityFault::Memory);return;
     }
-    // Malformed metadata must not alias excluded result arrays into the first
-    // screen. Normal builder allocations are disjoint; validate that ownership
-    // boundary before changing a shared address through an unexpected pointer.
-    if(!field(s.ui,0x64,24)) {quantity_fault(QuantityFault::Memory);return;}
-    for(unsigned offset=0x64;offset<=0x74;offset+=8) {
-        const uint32_t other=word(s.ui+offset),count=word(s.ui+offset+4);
-        const uint64_t end=uint64_t(other)+uint64_t(count)*4;
-        if(count && (!other || end>0x100000000ull ||
-            (other<uint64_t(s.array)+s.count*4 && s.array<end))) {
+    QuantityPage all[4]{};
+    for(unsigned page=0;page<4;++page) {
+        const unsigned offset=0x5c+page*8;
+        all[page]={word(s.ui+offset),word(s.ui+offset+4)};
+        const auto& q=all[page];
+        const unsigned capacity=page<3?player_page_capacities[page]:palico_page_capacity;
+        if(q.count>capacity || (q.count && (!q.array || q.array%4 ||
+           uint64_t(q.array)+q.count*4>0x100000000ull)) ||
+           (page<3 && (q.array!=s.quantity_pages[page].array ||
+            q.count!=s.quantity_pages[page].count ||
+            (q.count && !writable_rewards(q.array,q.count*4))))) {
             quantity_fault(QuantityFault::Memory);return;
         }
+        // Native allocations are disjoint. Reject overlapping included pages
+        // or any alias into the excluded Palico page, regardless of contents.
+        for(unsigned previous=0;previous<page;++previous) {
+            const auto& other=all[previous];
+            if(q.count && other.count && q.array<uint64_t(other.array)+other.count*4 &&
+               other.array<uint64_t(q.array)+q.count*4) {
+                quantity_fault(QuantityFault::Memory);return;
+            }
+        }
     }
-    // A repeated builder that produces no new main records must not multiply
-    // an old result. Fresh empty arrays also permit break/capture-only results.
-    if(!s.first_blank && (!(s.counted&3) || (s.counted&3)!=(s.copied&3))) {
+    // Constructors zero all player arrays. For a nonempty entry preimage,
+    // require fresh observed native main/free-hunt counts and matching copies.
+    // Lost observation/TLS must never authorize scaling previously built data.
+    if(!s.player_blank && (!s.counted || s.counted!=s.copied)) {
         quantity_fault(QuantityFault::Generation);return;
     }
-    Reward original[first_screen_capacity]{};
-    if(!copy(s.array,original,s.count*4)) {quantity_fault(QuantityFault::Memory);return;}
-    const auto fault=quantity_preflight(original,s.count,s.multiplier);
-    if(fault!=QuantityFault::None) {quantity_fault(fault);return;}
-    // Verify pending first-screen snapshots against unmodified records first.
-    // Secondary snapshots retain their quantities and original attribution.
-    for(unsigned i=0;i<s.pending_count;++i) {
-        const auto& r=s.pending[i];
-        if(r.rewards.array<s.array || uint64_t(r.rewards.array)>=uint64_t(s.array)+s.count*4)continue;
-        const unsigned start=(r.rewards.array-s.array)/4;
-        if((r.rewards.array-s.array)%4 || r.rewards.count>8 || start+r.rewards.count>s.count) {
-            quantity_fault(QuantityFault::Snapshot);return;
+    Reward original[3][first_screen_capacity]{};
+    for(unsigned page=0;page<3;++page) {
+        const auto& q=all[page];
+        if(q.count && !copy(q.array,original[page],q.count*4)) {
+            quantity_fault(QuantityFault::Memory);return;
         }
-        for(unsigned j=0;j<r.rewards.count;++j)
-            if(original[start+j].item!=r.rewards.items[j].item ||
-               original[start+j].amount!=r.rewards.items[j].amount) {
+        const auto fault=quantity_preflight(original[page],q.count,s.multiplier);
+        if(fault!=QuantityFault::None) {quantity_fault(fault);return;}
+    }
+    // Match captured main/free-hunt snapshots to their original live page.
+    // Validate every overlapping range before touching ANY player page. Luck
+    // attribution, slot indices and item IDs remain attached to the same slots.
+    int snapshot_page[8];
+    if(s.pending_count>8) {quantity_fault(QuantityFault::Snapshot);return;}
+    for(unsigned i=0;i<s.pending_count;++i) {
+        snapshot_page[i]=-1;
+        const auto& r=s.pending[i].rewards;
+        for(unsigned page=0;page<3;++page) {
+            const auto& q=all[page];
+            const uint64_t end=uint64_t(r.array)+uint64_t(r.count)*4;
+            if(!q.count || !r.count || r.array>=uint64_t(q.array)+q.count*4 || q.array>=end)continue;
+            if(r.array<q.array || (r.array-q.array)%4 || r.count>8 ||
+               end>uint64_t(q.array)+q.count*4) {
                 quantity_fault(QuantityFault::Snapshot);return;
             }
+            const unsigned start=(r.array-q.array)/4;
+            for(unsigned j=0;j<r.count;++j)
+                if(original[page][start+j].item!=r.items[j].item ||
+                   original[page][start+j].amount!=r.items[j].amount) {
+                    quantity_fault(QuantityFault::Snapshot);return;
+                }
+            snapshot_page[i]=int(page);
+        }
     }
-    // All checks passed. Native collection needs the original item IDs and
-    // slot count; only the u16 amount halfword changes, once in this scope.
-    auto* live=reinterpret_cast<volatile Reward*>(s.array);
-    for(unsigned i=0;i<s.count;++i)if(original[i].item)live[i].amount=original[i].amount*s.multiplier;
-    for(unsigned i=0;i<s.pending_count;++i) {
-        auto& r=s.pending[i];
-        if(r.rewards.array<s.array || uint64_t(r.rewards.array)>=uint64_t(s.array)+s.count*4)continue;
-        for(unsigned j=0;j<r.rewards.count;++j)r.rewards.items[j].amount*=s.multiplier;
+    // All checks passed for all three pages. Only occupied amount halfwords
+    // change. Collection/appraisal therefore receives exactly the displayed
+    // product, subject to native inventory and appraisal queue capacity.
+    for(unsigned page=0;page<3;++page) {
+        auto* live=reinterpret_cast<volatile Reward*>(all[page].array);
+        for(unsigned i=0;i<all[page].count;++i)
+            if(original[page][i].item)live[i].amount=original[page][i].amount*s.multiplier;
     }
+    for(unsigned i=0;i<s.pending_count;++i)if(snapshot_page[i]>=0)
+        for(unsigned j=0;j<s.pending[i].rewards.count;++j)
+            s.pending[i].rewards.items[j].amount*=s.multiplier;
 }
 static Snapshot<Binding> bindings[64];
 static Snapshot<Geometry> geometries[64];
@@ -652,14 +688,21 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     s.multiplier=multiplier;
     s.subject=f->r[0];
     if(kind==12) {
-        if(s.multiplier!=1 && field(s.subject,0x5c,8)) {
-            s.array=word(s.subject+0x5c);s.count=word(s.subject+0x60);
-            Reward before[first_screen_capacity]{};
-            s.quantity_ready=s.count && s.count<=first_screen_capacity &&
-                writable_rewards(s.array,s.count*4) && copy(s.array,before,s.count*4);
-            s.first_blank=s.quantity_ready;
-            if(s.quantity_ready)for(unsigned i=0;i<s.count;++i)
-                s.first_blank=s.first_blank && !before[i].item && !before[i].amount;
+        s.quantity_done=c->quantity_ui==s.subject;
+        if(s.multiplier!=1 && !s.quantity_done && field(s.subject,0x5c,24)) {
+            s.quantity_ready=true;s.player_blank=true;
+            for(unsigned page=0;page<3;++page) {
+                const unsigned offset=0x5c+page*8;
+                auto& q=s.quantity_pages[page];
+                q={word(s.subject+offset),word(s.subject+offset+4)};
+                Reward before[first_screen_capacity]{};
+                if(q.count>player_page_capacities[page] || (q.count &&
+                   (q.array%4 || !writable_rewards(q.array,q.count*4) || !copy(q.array,before,q.count*4)))) {
+                    s.quantity_ready=false;break;
+                }
+                for(unsigned i=0;i<q.count;++i)
+                    s.player_blank=s.player_blank && !before[i].item && !before[i].amount;
+            }
         }
         invalidate_highlights();
         s.epoch=++c->serial;s.ui=s.subject;
@@ -687,6 +730,7 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
         if(readable(f->r[1],8)) { s.array=word(f->r[1]);s.count=word(f->r[1]+4); }
         Scope* ui=find(*c,15);if(ui)s.ui=ui->subject;
     } else if(kind==16) {
+        if(c->quantity_ui==s.subject)c->quantity_ui=0;
         invalidate_highlights();
     } else if(kind==15 && field(s.subject,0x3c,4) && word(s.subject+0x3c)==1) {
         // State 1 may reallocate the main array before opening the grid.
@@ -740,7 +784,8 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
             } else {ui->incomplete=true;lost();}
         }
     } else if(s.kind==12) {
-        multiply_first_screen(s);
+        multiply_player_pages(s);
+        c->quantity_ui=s.ui;
         const uint32_t order=__atomic_add_fetch(&completed_batches,1,__ATOMIC_RELAXED);
         for(unsigned i=0;i<s.pending_count;++i) {
             Record r=s.pending[i];Reward check[8]{};

@@ -21,8 +21,9 @@ def main():
         p.call('forge_onImGuiRender')
         p.write(ui+0x5c,array);p.write(ui+0x60,count);p.write(ui+0x3c,2)
         for offset,target in ((0x64,secondary),(0x6c,plunder),(0x74,plunder+0x100)):
-            p.write(ui+offset,target);p.write(ui+offset+4,48)
-            p.u.mem_write(target,b'\x23\x01\x03\x00'*48)
+            capacity={0x64:48,0x6c:8,0x74:32}[offset]
+            p.write(ui+offset,target);p.write(ui+offset+4,capacity)
+            p.u.mem_write(target,bytes(capacity*4) if offset!=0x74 else b'\x23\x01\x03\x00'*capacity)
         p.u.mem_write(array,bytes(192)+b'Q'*32)
         check(p.read(p.private('mode'))==int(force)+2*(multiplier-1),'Independent integer slider publication')
         return p
@@ -65,17 +66,24 @@ def main():
         for multiplier in range(1,6):
             for count in (16,48):
                 p=setup(force,multiplier,count);root=begin(p);items=records(count);items[3]=(0,0);put(p,items)
-                before=[bytes(p.u.mem_read(t,192)) for t in (secondary,plunder,plunder+0x100)]
+                extra=[records(48),records(8)]
+                for target,values in zip((secondary,plunder),extra):
+                    p.u.mem_write(target,b''.join(struct.pack('<HH',*r) for r in values))
+                before=bytes(p.u.mem_read(plunder+0x100,128))
                 p.leave(root)
                 expected=[(item,amount*multiplier) for item,amount in items]
                 check(get(p,count)==expected,'All occupied first-screen slots multiplied, IDs/empty slots retained')
                 check(bytes(p.u.mem_read(array+192,32))==b'Q'*32,'Neighbor sentinel unchanged')
-                check(before==[bytes(p.u.mem_read(t,192)) for t in (secondary,plunder,plunder+0x100)],'All secondary/plunder arrays unchanged')
+                for target,values in zip((secondary,plunder),extra):
+                    check(bytes(p.u.mem_read(target,len(values)*4))==b''.join(struct.pack('<HH',i,n*multiplier) for i,n in values),'Secondary/player extra pages multiplied')
+                check(before==bytes(p.u.mem_read(plunder+0x100,128)),'Palico gathering/plunder page byte-identical')
                 for _ in range(3):p.call('forge_onUpdate',[0]);p.call('forge_onImGuiRender');p.call('forge_onImGuiFreeRender')
                 check(get(p,count)==expected,'Repeated UI/presentation never reapplies multiplier')
                 again=begin(p);p.leave(again)
                 check(get(p,count)==expected,'No new native generation retains old rewards')
-                p.u.mem_write(array,bytes(count*4));next_root=begin(p);put(p,items);p.leave(next_root)
+                _,destroy=p.frame(16,[ui],at=DATA+0x5800);p.leave(destroy)
+                for target,capacity in ((array,count),(secondary,48),(plunder,8)):p.u.mem_write(target,bytes(capacity*4))
+                next_root=begin(p);put(p,items);p.leave(next_root)
                 check(get(p,count)==expected,'Next fresh generation multiplies once')
     for initial in range(1,6):
         subsequent=initial%5+1
@@ -87,7 +95,7 @@ def main():
         p.edits={'Reward multiplier###pdb_multiplier':subsequent};p.call('forge_onImGuiRender')
         root=begin(p);put(p,items);p.leave(root);p.leave(outer)
         check(get(p,48)==[(i,n*initial) for i,n in items],'Nested builder inherits complete outer-generation mode')
-    for defect in ('overflow','empty_amount','empty_item','readonly','unmapped','count','pointer','alias','unaligned'):
+    for defect in ('overflow','empty_amount','empty_item','readonly','unmapped','count','pointer','alias','palico_alias','unaligned','secondary_overflow','extra_overflow','secondary_count','extra_count'):
         p=setup();root=begin(p);items=records(48)
         if defect=='overflow':items[47]=(123,6554)
         if defect=='empty_amount':items[47]=(123,0)
@@ -98,10 +106,39 @@ def main():
         if defect=='count':p.write(ui+0x60,49)
         if defect=='pointer':p.write(ui+0x5c,array+4)
         if defect=='alias':p.write(ui+0x64,array+4)
+        if defect=='palico_alias':p.write(ui+0x74,array+4)
         if defect=='unaligned':p.write(ui+0x5c,array+1)
+        if defect=='secondary_overflow':p.u.mem_write(secondary+47*4,struct.pack('<HH',123,6554))
+        if defect=='extra_overflow':p.u.mem_write(plunder+7*4,struct.pack('<HH',123,6554))
+        if defect=='secondary_count':p.write(ui+0x68,49)
+        if defect=='extra_count':p.write(ui+0x70,9)
+        other_before=[bytes(p.u.mem_read(t,n)) for t,n in ((secondary,192),(plunder,32),(plunder+0x100,128))]
         p.leave(root);check(bytes(p.u.mem_read(array,192))==before,'Preflight failure has no partial writes: '+defect)
+        check(other_before==[bytes(p.u.mem_read(t,n)) for t,n in ((secondary,192),(plunder,32),(plunder+0x100,128))],'Failure preserves every page: '+defect)
         for _ in range(3):p.call('forge_onUpdate',[0])
         check(sum('Multiplier skipped' in fmt for fmt,_ in p.log_records)==1,'Fault log emitted once: '+defect)
+    for initial in range(1,6):
+        p=setup(False,initial);root=begin(p);items=records(48);put(p,items);p.leave(root)
+        expected=get(p,48)
+        p.edits={'Reward multiplier###pdb_multiplier':5};p.call('forge_onImGuiRender')
+        root=begin(p)
+        _,counter=p.frame(9,[0,0],caller=MAIN+0x381dc4,at=DATA+0x4400)
+        p.frame(25,[31,0,0,0,4],at=DATA+0x4800)
+        p.write(counter+272,8);p.leave(counter)
+        p.leave(root)
+        check(get(p,48)==expected,'Completed UI lifetime latches once, including initial 1x')
+    # Palico records are never preflighted as player records or modified, even
+    # if their quantities exceed the player's signed multiplication limit.
+    for palico_count in (0,16,32):
+        p=setup();p.write(ui+0x78,palico_count)
+        p.u.mem_write(plunder+0x100,b'\xff\xff\xff\xff'*32)
+        root=begin(p);put(p,records(48));p.leave(root)
+        check(get(p,48)==[(i,n*5) for i,n in records(48)],'Excluded Palico values do not veto player rewards')
+        check(bytes(p.u.mem_read(plunder+0x100,128))==b'\xff'*128,'Every excluded Palico byte retained')
+    # Native layouts may leave an inactive player page empty/unallocated.
+    p=setup();p.write(ui+0x6c,0);p.write(ui+0x70,0)
+    root=begin(p);put(p,records(48));p.leave(root)
+    check(get(p,48)==[(i,n*5) for i,n in records(48)],'Zero-capacity player page needs no dereference')
     # Original native A-copy observations keep the same Luck mask at every
     # multiplier. Multiply live values and snapshots before publication.
     for multiplier in range(1,6):
@@ -118,6 +155,22 @@ def main():
         check(get(p,8)==[(i,n*multiplier) for i,n in entries],'Native copy keeps multiplied first-screen records')
         check(p.read(p.private('bonus_count'))==4 and p.read(p.private('summary_status'))==1,'Multiplied snapshots retain four Luck bonus slots')
         check(not p.read(p.private('quantity_faults')),'Known snapshots pass original-value validation')
+    # The native free-hunt copy targets page 1, slots 8..15. Its immutable
+    # observation must receive the same multiplier while retaining Luck bits.
+    for multiplier in range(1,6):
+        p=setup(True,multiplier);u=p.u;root=begin(p);entries=records(8)
+        u.mem_write(source,b''.join(struct.pack('<HH',*r) for r in entries))
+        container=DATA+0x16000;p.write(container,source)
+        _,counter=p.frame(10,[8,container,8],caller=MAIN+0x388084,at=DATA+0x4400)
+        for slots in range(2,8):p.frame(slots+1,[22 if slots==2 else 0,0,0,0,0,0,31],at=DATA+0x4800)
+        p.leave(counter)
+        u.reg_write(a.UC_ARM_REG_CPSR,0x10);u.reg_write(a.UC_ARM_REG_SP,STACK+0xff00)
+        u.reg_write(REGS[4],ui);u.reg_write(REGS[5],source)
+        u.emu_start(MAIN+0x388084,MAIN+0x388144,count=10000)
+        p.leave(root);p.call('forge_onUpdate',[0])
+        check(bytes(u.mem_read(secondary+32,32))==b''.join(struct.pack('<HH',i,n*multiplier) for i,n in entries),'Native free-hunt copy scales on secondary page')
+        check(p.read(p.private('bonus_count'))==6 and p.read(p.private('summary_status'))==1,'Secondary snapshots retain six Luck bonus slots')
+        check(not p.read(p.private('quantity_faults')),'Secondary snapshot original values validated')
     # Native enqueue reads a signed quantity and appends one item ID per unit.
     # Stub only item metadata; execute the original game's enqueue instructions.
     save,itemdata,queue=DATA+0x20000,DATA+0x23000,DATA+0x24000

@@ -30,6 +30,8 @@
     "docs/PRIMARY_ONLY_CONFIG_VALIDATION.json",
     "docs/R20_RUNTIME_RESULTS.json",
     "docs/R21_RUNTIME_RESULTS.json",
+    "docs/R22_RUNTIME_RESULTS.json",
+    "docs/REWARD_PAGE_LAYOUT.json",
     "docs/SAVE_HINT_VALIDATION.json",
     "mod.json",
     "requirements.txt",

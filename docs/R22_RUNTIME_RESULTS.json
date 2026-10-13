@@ -1,0 +1,21 @@
+{
+  "version": "r22-iniheader",
+  "date": "2026-10-13",
+  "user_report": "ok all good",
+  "user_confirmed": true,
+  "environment": "Eden Development Build master-4dc69c06f7-master; Forge 1.4.1-render1",
+  "nro_sha256": "ff6e04263cf1a82aeb441a80e6bd83cc3d6326541592709c3d0776ee072b93a0",
+  "installed_payload_matches_candidate": true,
+  "log_snapshot": "work/please-do-better/runtime/r22-20261013/eden_log.txt",
+  "log_sha256": "8431266db06882f4a1bff8b37c4a10b59337bcde8c7fa53793384959228f8bf3",
+  "log_evidence": [
+    "r22-iniheader loaded; forcing and highlights ready",
+    "Saved: luck on, quantities 3x"
+  ],
+  "scope": "User reports general success; individual quest, collection/appraisal and settings-restart scenarios were not enumerated.",
+  "limits": [
+    "Log includes HLE/keyboard assertions plus later unmapped-memory errors; no clean-run or clean-shutdown claim.",
+    "No multiplier-skipped diagnostic seen in the inspected log; emulator messages are not attributed to this plugin.",
+    "Ryujinx and physical Switch gameplay untested."
+  ]
+}
