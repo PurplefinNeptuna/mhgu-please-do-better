@@ -23,16 +23,17 @@ VERSION = MOD_CONFIG['version']
 CANDIDATE = OUT / 'delivery' if MOD_CONFIG.get('candidate') else OUT / 'candidates' / VERSION
 MEMBER = 'Please do Better/romfs/nativeNX/plugins/please_do_better.nro'
 ARCHIVE = 'please-do-better-' + VERSION + '-candidate.zip'
-SUPPORT = {'README.md': 'README.md', 'NOTICES.txt': 'THIRD_PARTY.md',
-           'MANUAL_TESTS.md': 'MANUAL_TESTS.md', 'IMPLEMENTATION.md': 'IMPLEMENTATION.md',
-           'RUNTIME.md': 'RUNTIME.md', 'RESEARCH.md': 'RESEARCH.md'}
+SUPPORT = {'README.md':'CANDIDATE_README.md','DOUBLE_QUANTITY.md':'docs/DOUBLE_QUANTITY.md'}
+GENERATED_SUPPORT = ('README.html','GAMEBANANA_README.html','NOTICES.txt','NOTICES.html')
 CALLBACKS = {'init', 'fini', 'forge_onLoad', 'forge_onInit', 'forge_onUpdate',
              'forge_onImGuiInit', 'forge_onImGuiRender', 'forge_onImGuiFreeRender'}
 ALLOWED_IMPORTS = {'forge_mem_getMainTextAddr', 'forge_log', 'igTreeNode_Str', 'igTreePop',
                    'forge_singleton_getInstanceByName', 'igGetIO_Nil', 'igGetTime', 'igGetBackgroundDrawList_Nil', 'ImDrawList_AddLine', 'ImDrawList_PushClipRect', 'ImDrawList_PopClipRect',
                    'igText', 'igTextUnformatted', 'igSetCurrentContext', 'igSetAllocatorFunctions'}
-LIMITS = ['User confirmed r14 gold highlighting working on the tested Eden reward grid; installed hash and matching log/screenshot retained. R15 removes verbose render logging only. Forge menu corruption with simultaneous background overlays is unresolved and outside this release; broader gameplay and Ryujinx coverage remain pending.',
-          'Gold borders and procedural markers implemented for verified 2D reward frames on the native direct and one-frame parallel presentation routes. GPU/gameplay alignment remains pending; offset/half targets and unknown shaders are suppressed.',
+LIMITS = ['r20-doubleqty is a development candidate with no gameplay acceptance. Earlier highlighting/configuration acceptance belongs to its recorded release and payload.',
+          'Quantity doubling covers the first screen only; secondary, gathered and separate plunder/Palico rewards are excluded.',
+          'The original 150-entry appraisal queue and inventory limits remain; excess items can be limited by native collection.',
+          'Unknown rendering routes suppress gold markers; quantity changes do not require an active rendering route.',
           'Flush results/barriers/readback do not establish Eden CPU translation freshness.',
           'Reward probability, quest return/restart and multicore behavior remain unverified.',
           'Second site broader gameplay role is incompletely traced; 0x102 check is preserved.',
@@ -120,7 +121,7 @@ def host_tests():
     results = []
     destination = WORK / 'tests'
     destination.mkdir(parents=True, exist_ok=True)
-    for name in ('transaction', 'native_platform', 'preferences', 'attribution', 'hooks', 'highlight', 'settings_storage'):
+    for name in ('transaction', 'native_platform', 'preferences', 'attribution', 'quantity', 'hooks', 'highlight', 'settings_storage'):
         inputs = [RECIPE / f'tests/{name}.cpp']
         flags = ['-std=c++17', '-O1', '-g', '-Wall', '-Wextra', '-Werror',
                  '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie']
@@ -206,18 +207,24 @@ def inspect_binary(payload, inventory):
 
 
 def package_candidate(payload):
+    import mod_distribution as delivery
     CANDIDATE.mkdir(parents=True, exist_ok=True)
     target = CANDIDATE / MEMBER
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(payload)
     archive = CANDIDATE / ARCHIVE
-    with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zipped:
-        info = zipfile.ZipInfo(MEMBER, (1980, 1, 1, 0, 0, 0))
-        info.compress_type = zipfile.ZIP_DEFLATED
-        info.external_attr = 0o100644 << 16
-        zipped.writestr(info, payload)
+    readme=(RECIPE/SUPPORT['README.md']).read_bytes()
+    archive.write_bytes(delivery.make_zip({'romfs/nativeNX/plugins/please_do_better.nro':payload},
+                                        'Please do Better',{'README.md':readme}))
     for name, source in SUPPORT.items():
         shutil.copyfile(RECIPE / source, CANDIDATE / name)
+    spec=json.loads((RECIPE/'DISTRIBUTION.json').read_text())
+    notices=[(p,delivery.read(ROOT,p)) for p in spec['notices']]
+    generated={'README.html':delivery.readme_html(readme),
+        'GAMEBANANA_README.html':delivery.gamebanana_readme_html(readme,spec['gamebanana']),
+        'NOTICES.txt':b'\n\n'.join(blob.strip() for _,blob in notices)+b'\n',
+        'NOTICES.html':delivery.notices_html(notices)}
+    for name,blob in generated.items():(CANDIDATE/name).write_bytes(blob)
     (CANDIDATE/'VALIDATION.md').write_text('Development candidate; gameplay evidence is scoped in RUNTIME.md.\n'+
         '\nNRO SHA-256: '+sha(payload)+'\nZIP SHA-256: '+sha(archive.read_bytes())+'\n')
     if os.environ.get('MHGU_DIAGNOSTICS','0')=='1':
@@ -225,14 +232,15 @@ def package_candidate(payload):
     report = {'mod': 'please-do-better', 'version': VERSION, 'diagnostics':os.environ.get('MHGU_DIAGNOSTICS','0')=='1', 'status': 'DEVELOPMENT',
               'package_name': 'Please do Better', 'target': 'MHGU Nintendo Switch 1.4.0; Forge 1.4.1',
               'settings_save_paths':['savedata:/please_do_better.ini'],
-              'settings_format':'One force_miraculous setting; no version marker; existing version=2 accepted',
+              'settings_format':'force_miraculous and double_quantity; versionless; older one-key/version=2 accepted',
+              'quantity_scope':'first screen only; native signed/appraisal capacity limits retained',
               'settings_backup_access':False, 'settings_save_policy':'validate, write, flush, readback verification, commit; session retained on failure',
               'build_id': binary.BUILD_ID[:32].upper(), 'runtime_inventory': {MEMBER: sha(payload)},
               'archive': {'name': ARCHIVE, 'sha256': sha(archive.read_bytes())},
               'sources': sources(), 'evidence': {
                   p.name: sha(p.read_bytes()) for p in sorted(OUT.glob('*-validation.json'))+[OUT/'highlight-research.json']},
-              'tests': {p.name: sha(p.read_bytes()) for p in (OUT / 'host-tests.json', OUT / 'arm-tests.json', OUT / 'runtime-tests.json', OUT / 'native-tests.json', OUT / 'observation-tests.json',OUT/'display-tests.json',OUT/'highlight-tests.json',OUT/'log-tests.json')},
-              'support': {name: sha((CANDIDATE / name).read_bytes()) for name in SUPPORT},
+              'tests': {p.name: sha(p.read_bytes()) for p in (OUT / 'host-tests.json', OUT / 'arm-tests.json', OUT / 'runtime-tests.json', OUT / 'native-tests.json', OUT / 'observation-tests.json',OUT/'display-tests.json',OUT/'highlight-tests.json',OUT/'quantity-tests.json',OUT/'log-tests.json')},
+              'support': {name: sha((CANDIDATE / name).read_bytes()) for name in (*SUPPORT,*GENERATED_SUPPORT)},
               'limitations': LIMITS, 'published': False, 'runtime_tested': False}
     write_json(CANDIDATE / 'candidate-manifest.json', report)
     lines = [f'{sha(p.read_bytes())}  {p.relative_to(CANDIDATE)}' for p in sorted(CANDIDATE.rglob('*'))
@@ -247,7 +255,7 @@ def verify_candidate():
     require(manifest['status'] == 'DEVELOPMENT' and manifest['sources'] == sources(), 'Stale candidate sources')
     spec = json.loads((RECIPE / 'DISTRIBUTION.json').read_text())
     require(spec['mod']=='please-do-better','Candidate identity differs from distribution record')
-    expected = {MEMBER, ARCHIVE, 'candidate-manifest.json', 'SHA256SUMS', 'VALIDATION.md'} | set(SUPPORT)
+    expected = {MEMBER, ARCHIVE, 'candidate-manifest.json', 'SHA256SUMS', 'VALIDATION.md'} | set(SUPPORT) | set(GENERATED_SUPPORT)
     actual = {str(p.relative_to(CANDIDATE)) for p in CANDIDATE.rglob('*') if p.is_file()}
     require(actual == expected and not any(p.is_symlink() for p in CANDIDATE.rglob('*')), 'Candidate inventory differs')
     payload = (CANDIDATE / MEMBER).read_bytes()
@@ -255,7 +263,8 @@ def verify_candidate():
     archive = CANDIDATE / ARCHIVE
     require(manifest['archive'] == {'name': ARCHIVE, 'sha256': sha(archive.read_bytes())}, 'ZIP hash mismatch')
     with zipfile.ZipFile(archive) as zipped:
-        require(zipped.testzip() is None and zipped.namelist() == [MEMBER] and zipped.read(MEMBER) == payload,
+        require(zipped.testzip() is None and zipped.namelist() == sorted([MEMBER,'README.md']) and zipped.read(MEMBER) == payload and
+                zipped.read('README.md')==(CANDIDATE/'README.md').read_bytes(),
                 'ZIP CRC/member readback failed')
     validation_text = (CANDIDATE / 'VALIDATION.md').read_text()
     require(sha(payload) in validation_text and sha(archive.read_bytes()) in validation_text,
@@ -275,6 +284,7 @@ def verify_candidate():
 
 
 def build():
+    source_before=sources()
     before = baseline()
     write_json(OUT/"highlight-research.json",json.loads((RECIPE/"research/highlight-fixtures.json").read_text()))
     validate_inputs()
@@ -313,7 +323,9 @@ arm-none-eabi-objdump -d /output/plugin.elf > /output/disassembly.txt
     binary.run([PYTHON, SCRIPTS / 'please_do_better_observation_probe.py'])
     binary.run([PYTHON, SCRIPTS / 'please_do_better_display_probe.py'])
     binary.run([PYTHON, SCRIPTS / 'please_do_better_highlight_probe.py'])
+    binary.run([PYTHON, SCRIPTS / 'please_do_better_quantity_probe.py'])
     require(baseline() == before, 'Installed packages/maintained Forge changed during build')
+    require(sources()==source_before,'Source changed during build; rebuild before packaging')
     archive = package_candidate(payload)
     print(f'Built {archive}: {len(payload)} bytes; ZIP SHA-256 {sha(archive.read_bytes())}')
 

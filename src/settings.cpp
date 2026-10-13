@@ -38,14 +38,15 @@ static PreferenceStore<Files> store;
 bool load_preferences(Preferences& out) { Files files; return store.load(files, out); }
 bool save_preferences(Preferences value) {
     Files files;static mod_log::Once failures;
-    static bool have_saved, saved;
+    static bool have_saved; static Preferences saved;
     if (!store.save(files,value)) {
         const unsigned reason=store.save_failure;
         if(failures.claim(reason)) forge_log_warn("[please-do-better] %s Load a player save and retry Save settings.",store.status);
         return false;
     }
-    if(!have_saved || saved!=value.force) forge_log_info("[please-do-better] Preference saved: forcing %s",value.force?"enabled":"disabled");
-    saved=value.force;have_saved=true;return true;
+    if(!have_saved || saved.force!=value.force || saved.double_quantity!=value.double_quantity)
+        forge_log_info("[please-do-better] Saved: luck %s, quantities %s",value.force?"on":"off",value.double_quantity?"2x":"1x");
+    saved=value;have_saved=true;return true;
 }
 void preferences_changed() { store.changed(); }
 bool preferences_pending() { return store.pending; }

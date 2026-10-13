@@ -2,6 +2,7 @@
 #include "runtime.h"
 #include "mode.h"
 #include "attribution.h"
+#include "quantity.h"
 #include "gateway.h"
 #include "signatures.h"
 #include "native_platform.h"
@@ -23,6 +24,7 @@ namespace pdb {
 static NativePlatform platform;
 static Hooks<NativePlatform> conditional(platform), visual(platform), highlight(platform);
 static Mode mode;
+static uint32_t quantity_faults;
 static uint32_t base, initialized, pair_ready, capture_ready, drops;
 static uint32_t expected_refreshes, remapped_arrays, mapping_faults;
 struct CopyFault { uint32_t index,expected,actual,route=0; };
@@ -44,7 +46,7 @@ struct CountSnapshot {
 };
 struct Scope {
     uint32_t kind=0, caller=0, sp=0, subject=0, array=0, start=0, count=0;
-    bool force=false;
+    bool force=false, double_quantity=false, quantity_ready=false, first_blank=false;
     // Unknown scopes are zero-initialized BSS. begin() supplies the threshold
     // and stop sentinel only when a real comparison is observed.
     Attribution attribution{0,0,false,false};
@@ -79,6 +81,77 @@ static bool copy(uint32_t a,void* dest,unsigned n) {
     auto* s=reinterpret_cast<volatile const unsigned char*>(a);
     for(unsigned i=0;i<n;++i)d[i]=s[i];
     return true;
+}
+// The builder owns this heap array until its paired return; no allocator runs
+// during the mutation. The pinned Forge binary lacks the queryMemory export
+// declared by its headers; reuse our existing checked SVC adapter for this gap.
+static bool writable_rewards(uint32_t a,unsigned n) {
+    MemoryInfo m{};uint32_t page=0;
+    return a && n && uint64_t(a)+n<=0x100000000ull && !pdb_svc_query(&m,&page,a) &&
+        (m.perm&3)==3 && m.addr<=a && m.addr<=0x100000000ull &&
+        m.size<=0x100000000ull-m.addr && uint64_t(a)+n<=m.addr+m.size;
+}
+static void quantity_fault(QuantityFault reason) {
+    if(reason!=QuantityFault::None)
+        __atomic_fetch_or(&quantity_faults,1u<<unsigned(reason),__ATOMIC_RELAXED);
+}
+// Run exactly at the original builder's return, before immutable observations
+// are published. The first array is A/B/special followed by break/capture.
+// Secondary, gathered and plunder arrays are deliberately never written.
+static void double_first_screen(Scope& s) {
+    if(!s.double_quantity)return;
+    if(!__atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE)) {
+        quantity_fault(QuantityFault::Generation);return;
+    }
+    if(!s.quantity_ready || !field(s.ui,0x5c,8) || word(s.ui+0x5c)!=s.array ||
+       word(s.ui+0x60)!=s.count || s.array%4 || !writable_rewards(s.array,s.count*4)) {
+        quantity_fault(QuantityFault::Memory);return;
+    }
+    // Malformed metadata must not alias excluded result arrays into the first
+    // screen. Normal builder allocations are disjoint; validate that ownership
+    // boundary before changing a shared address through an unexpected pointer.
+    if(!field(s.ui,0x64,24)) {quantity_fault(QuantityFault::Memory);return;}
+    for(unsigned offset=0x64;offset<=0x74;offset+=8) {
+        const uint32_t other=word(s.ui+offset),count=word(s.ui+offset+4);
+        const uint64_t end=uint64_t(other)+uint64_t(count)*4;
+        if(count && (!other || end>0x100000000ull ||
+            (other<uint64_t(s.array)+s.count*4 && s.array<end))) {
+            quantity_fault(QuantityFault::Memory);return;
+        }
+    }
+    // A repeated builder that produces no new main records must not multiply
+    // an old result. Fresh empty arrays also permit break/capture-only results.
+    if(!s.first_blank && (!(s.counted&3) || (s.counted&3)!=(s.copied&3))) {
+        quantity_fault(QuantityFault::Generation);return;
+    }
+    Reward original[first_screen_capacity]{};
+    if(!copy(s.array,original,s.count*4)) {quantity_fault(QuantityFault::Memory);return;}
+    const auto fault=quantity_preflight(original,s.count);
+    if(fault!=QuantityFault::None) {quantity_fault(fault);return;}
+    // Verify pending first-screen snapshots against unmodified records first.
+    // Secondary snapshots retain their quantities and original attribution.
+    for(unsigned i=0;i<s.pending_count;++i) {
+        const auto& r=s.pending[i];
+        if(r.rewards.array<s.array || uint64_t(r.rewards.array)>=uint64_t(s.array)+s.count*4)continue;
+        const unsigned start=(r.rewards.array-s.array)/4;
+        if((r.rewards.array-s.array)%4 || r.rewards.count>8 || start+r.rewards.count>s.count) {
+            quantity_fault(QuantityFault::Snapshot);return;
+        }
+        for(unsigned j=0;j<r.rewards.count;++j)
+            if(original[start+j].item!=r.rewards.items[j].item ||
+               original[start+j].amount!=r.rewards.items[j].amount) {
+                quantity_fault(QuantityFault::Snapshot);return;
+            }
+    }
+    // All checks passed. Native collection needs the original item IDs and
+    // slot count; only the u16 amount halfword changes, once in this scope.
+    auto* live=reinterpret_cast<volatile Reward*>(s.array);
+    for(unsigned i=0;i<s.count;++i)if(original[i].item)live[i].amount=original[i].amount*2;
+    for(unsigned i=0;i<s.pending_count;++i) {
+        auto& r=s.pending[i];
+        if(r.rewards.array<s.array || uint64_t(r.rewards.array)>=uint64_t(s.array)+s.count*4)continue;
+        for(unsigned j=0;j<r.rewards.count;++j)r.rewards.items[j].amount*=2;
+    }
 }
 static Snapshot<Binding> bindings[64];
 static Snapshot<Geometry> geometries[64];
@@ -569,10 +642,22 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     Context* c=context();
     if(!c || !__atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE))return original;
     if(c->depth==4) { c->quarantine=true;lost();return original; }
-    const bool latched=force(c);
+    const auto requested=mode.preferences();
+    const bool latched=c->depth?force(c):requested.force && forcing_available();
+    const bool double_quantity=c->depth?c->scopes[0].double_quantity:requested.double_quantity;
     auto& s=c->scopes[c->depth++];s={};s.kind=kind;s.caller=f->r[13];s.sp=f->caller_sp();s.force=latched;
+    s.double_quantity=double_quantity;
     s.subject=f->r[0];
     if(kind==12) {
+        if(s.double_quantity && field(s.subject,0x5c,8)) {
+            s.array=word(s.subject+0x5c);s.count=word(s.subject+0x60);
+            Reward before[first_screen_capacity]{};
+            s.quantity_ready=s.count && s.count<=first_screen_capacity &&
+                writable_rewards(s.array,s.count*4) && copy(s.array,before,s.count*4);
+            s.first_blank=s.quantity_ready;
+            if(s.quantity_ready)for(unsigned i=0;i<s.count;++i)
+                s.first_blank=s.first_blank && !before[i].item && !before[i].amount;
+        }
         invalidate_highlights();
         s.epoch=++c->serial;s.ui=s.subject;
         // State 1 resizes first, then calls this builder inside the SAME paired
@@ -624,7 +709,7 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
 extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
     Context* c=context();
     if(!c || !c->depth)__builtin_trap(); // Never invent a native return address.
-    const Scope s=c->scopes[--c->depth];
+    Scope s=c->scopes[--c->depth];
     if(s.sp!=f->caller_sp())__builtin_trap();
     if(f->r[13]==uint32_t(uintptr_t(pdb_gateway_after)))f->r[13]=s.caller;
     if(c->quarantine) { if(!c->depth)c->quarantine=false;return s.caller; }
@@ -652,6 +737,7 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
             } else {ui->incomplete=true;lost();}
         }
     } else if(s.kind==12) {
+        double_first_screen(s);
         const uint32_t order=__atomic_add_fetch(&completed_batches,1,__ATOMIC_RELAXED);
         for(unsigned i=0;i<s.pending_count;++i) {
             Record r=s.pending[i];Reward check[8]{};
@@ -732,6 +818,8 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
 }
 void request_force(bool value) { mode.set(value); }
 bool requested_force() { return mode.get(); }
+Preferences requested_preferences() { return mode.preferences(); }
+void request_preferences(Preferences p) { mode.set(p); }
 bool forcing_available() { return __atomic_load_n(&pair_ready,__ATOMIC_ACQUIRE) &&
                                  __atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE); }
 template<class ReportType> static void install_failure(const char* feature,const ReportType& r) {
@@ -778,6 +866,12 @@ static uint32_t epochs[8]{}, owners[8]{}, latest_tier=0, bonus_count=0;
 static uint32_t generated_count, summary_status, summary_order, summary_records;
 void update() {
     count(update_hits);
+    static mod_log::Once quantity_reported;
+    static const char* const reasons[]={"", "unwritable or unsupported reward array", "invalid item/amount record",
+        "quantity exceeds the native signed limit", "no fresh first-screen generation", "reward snapshot changed"};
+    const unsigned faults=seen(quantity_faults);
+    for(unsigned reason=1;reason<6;++reason)if((faults&(1u<<reason)) && quantity_reported.claim(reason))
+        forge_log_warn("[please-do-better] 2x skipped: %s; quantities retained. Restart if persistent.",reasons[reason]);
     if(!seen(native_render)) {
         const uint32_t sr=uint32_t(uintptr_t(forge_singleton_getInstanceByName("sFestaRender")));
         if(field(sr,0x389cc,4))__atomic_store_n(&native_render,sr,__ATOMIC_RELEASE);

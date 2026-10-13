@@ -26,7 +26,7 @@ extern "C" void forge_onLoad(PluginInitParam* out) {
     const char* name = "Please do Better";
     for (unsigned i = 0; name[i]; ++i) bytes[offsetof(PluginInitParam, name)+i] = name[i];
 }
-extern "C" void forge_onInit() { pdb::install(); static bool reported; if(reported)return; reported=true; forge_log_info("[please-do-better] r17-config1 loaded; %s",pdb::startup_status()); }
+extern "C" void forge_onInit() { pdb::install(); static bool reported; if(reported)return; reported=true; forge_log_info("[please-do-better] r20-doubleqty loaded; %s",pdb::startup_status()); }
 extern "C" void forge_onUpdate(float) { pdb::update(); }
 extern "C" void forge_onImGuiInit(void* context, void* allocate, void* release) {
     igSetCurrentContext(static_cast<ImGuiContext*>(context));
@@ -35,11 +35,14 @@ extern "C" void forge_onImGuiInit(void* context, void* allocate, void* release) 
 }
 extern "C" void forge_onImGuiRender() {
     if (!igTreeNode_Str("Please do Better###pdb_panel")) return;
-    bool force=pdb::requested_force();
-    if(igCheckbox("Force Miraculous Luck###pdb_force", &force)) {
-        pdb::preferences_changed();pdb::request_force(force);
+    auto p=pdb::requested_preferences();
+    if(igCheckbox("Force Miraculous Luck###pdb_force", &p.force)) {
+        pdb::preferences_changed();pdb::request_preferences(p);
     }
-    if(igButton("Save settings###pdb_save",ImVec2_c{0,0}))pdb::save_preferences({force});
+    if(igCheckbox("Double reward quantities###pdb_double_quantity", &p.double_quantity)) {
+        pdb::preferences_changed();pdb::request_preferences(p);
+    }
+    if(igButton("Save settings###pdb_save",ImVec2_c{0,0}))pdb::save_preferences(p);
     igTextUnformatted(pdb::preferences_status(),nullptr);
     igTreePop();
 }
@@ -50,7 +53,7 @@ extern "C" void forge_onImGuiFreeRender() {
     static uint32_t retry=59;
     if(pdb::preferences_pending() && ++retry>=60) {
         retry=0;pdb::Preferences p{};
-        if(pdb::load_preferences(p))pdb::request_force(p.force);
+        if(pdb::load_preferences(p))pdb::request_preferences(p);
     }
     pdb::render();
 }

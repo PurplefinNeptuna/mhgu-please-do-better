@@ -17,14 +17,16 @@ struct Files {
 };
 int main(){
     unsigned checks=0;
-    for(bool force:{false,true}) {
-        auto t=encode_preferences({force});Preferences p{};
+    for(unsigned bits=0;bits<4;++bits) {
+        const bool force=bits&1, doubled=bits&2;
+        auto t=encode_preferences({force,doubled});Preferences p{};
         assert(!strstr(t.bytes,"version="));++checks;
-        assert(decode_preferences(t.bytes,t.size,p)&&p.force==force);++checks;
+        assert(decode_preferences(t.bytes,t.size,p)&&p.force==force&&p.double_quantity==doubled);++checks;
         for(unsigned i=0;i<t.size;++i){t.bytes[i]^=2;assert(!decode_preferences(t.bytes,t.size,p));t.bytes[i]^=2;++checks;}
         assert(!decode_preferences(t.bytes,t.size-1,p));++checks;
         char legacy[64];snprintf(legacy,sizeof(legacy),"version=2\nforce_miraculous=%u\n",unsigned(force));
-        assert(decode_preferences(legacy,unsigned(strlen(legacy)),p)&&p.force==force);++checks;
+        assert(decode_preferences(legacy,unsigned(strlen(legacy)),p)&&p.force==force&&!p.double_quantity);++checks;
+        assert(decode_preferences(legacy+10,unsigned(strlen(legacy))-10,p)&&p.force==force&&!p.double_quantity);++checks;
         legacy[8]='1';assert(!decode_preferences(legacy,unsigned(strlen(legacy)),p));++checks;
         assert(!decode_preferences(t.bytes,sizeof(t.bytes),p));++checks;
     }

@@ -447,7 +447,7 @@ def main():
     # Plugin preference I/O operates only on in-memory fake files. Verify the
     # compiled SDK argument layout, counted mount and primary-only commit paths.
     primary='savedata:/please_do_better.ini';backup='savedata:/please_do_better_backup.ini'
-    off=b'force_miraculous=0\n';on=off.replace(b'=0\n',b'=1\n')
+    off=b'force_miraculous=0\ndouble_quantity=0\n';on=off.replace(b'force_miraculous=0',b'force_miraculous=1')
     for force,record in ((0,off),(1,on)):
         p=Probe(image,payload);p.call('forge_onInit');p.save_available=True;p.files[primary]=b'version=2\n'+record
         p.call('forge_onImGuiFreeRender')

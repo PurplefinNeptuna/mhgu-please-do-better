@@ -7,6 +7,11 @@ wiki's two-site cheat without changing equipped skills.
 Current local release: **r19-savehint**, READY_TO_DISTRIBUTE and unpublished.
 [Installation and settings](DISTRIBUTION_README.md); [status and payload hashes](DISTRIBUTION.json).
 
+Switch development candidate: **r20-doubleqty**, with an independent first-screen
+quantity toggle. [Candidate installation/settings](CANDIDATE_README.md) and
+[implementation/manual checklist](docs/DOUBLE_QUANTITY.md). The r19 release and
+its gameplay evidence remain pinned; r20 has no gameplay acceptance yet.
+
 ## Development and evidence
 
 Use [DEVELOPMENT.md](DEVELOPMENT.md) for pinned inputs, build/test/package/export

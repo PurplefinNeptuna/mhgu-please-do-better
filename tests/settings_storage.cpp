@@ -27,8 +27,13 @@ uint32_t pdb_fs_commit(const char* p){assert(std::strcmp(p,"savedata")==0);++com
 }
 static void balanced(){assert(!mounts&&!handles&&!guards&&backup=="untouched legacy backup");}
 int main(){using namespace pdb;
- Preferences session{true};assert(save_preferences(session));balanced();assert(exists&&primary.find("version=")==std::string::npos);
- Preferences restarted{};store.pending=true;assert(load_preferences(restarted)&&restarted.force);balanced();
+ Preferences session{true,true};assert(save_preferences(session));balanced();assert(exists&&primary.find("version=")==std::string::npos);
+ Preferences restarted{};store.pending=true;assert(load_preferences(restarted)&&restarted.force&&restarted.double_quantity);balanced();
+ for(unsigned bits=0;bits<4;++bits) {
+  Preferences wanted{bool(bits&1),bool(bits&2)},loaded{};
+  assert(save_preferences(wanted));store.pending=true;
+  assert(load_preferences(loaded)&&loaded.force==wanted.force&&loaded.double_quantity==wanted.double_quantity);balanced();
+ }
  for(bool force:{false,true}) {
   primary=std::string("version=2\nforce_miraculous=")+(force?"1\n":"0\n");
   Preferences legacy{};store.pending=true;assert(load_preferences(legacy)&&legacy.force==force);balanced();
@@ -36,7 +41,7 @@ int main(){using namespace pdb;
   Preferences migrated{};store.pending=true;assert(load_preferences(migrated)&&migrated.force==force);balanced();
  }
  session.force=false;assert(save_preferences(session)&&save_preferences(session));balanced();
- for(failure=1;failure<=9;++failure){exists=failure!=9;assert(!save_preferences(session));balanced();assert(!session.force&&std::strstr(preferences_status(),"session"));}
+ for(failure=1;failure<=9;++failure){exists=failure!=9;assert(!save_preferences(session));balanced();assert(!session.force&&session.double_quantity&&std::strstr(preferences_status(),"session"));}
  failure=0;available=false;assert(!save_preferences(session));balanced();available=true;
  exists=true;primary="invalid primary";Preferences defaults{};store.pending=true;assert(!load_preferences(defaults)&&!defaults.force);balanced();
  exists=false;store.pending=true;assert(!load_preferences(defaults));balanced();
