@@ -65,3 +65,19 @@ instructions use the same location without referencing another plugin.
 Persistence, config fields, hooks and gameplay behavior are unchanged.
 Scoped validation is recorded in [SAVE_HINT_VALIDATION.json](docs/SAVE_HINT_VALIDATION.json).
 No new gameplay run or installation was performed for this wording revision.
+
+## 2026-10-13: r23 distribution approval
+
+The user requested "good job, mark it ready to distribute". The latest Eden log
+records r23-reward-pages loading with forcing/highlights ready, and the installed
+NRO matches the preserved candidate SHA-256
+`e61e3bda1def28ea2cb03930c59196646573c6bcd27a3d288da0078ce2a4dc00`.
+Promotion rebuilds no runtime. [The release receipt](docs/R23_RELEASE_APPROVAL.json)
+records the log fingerprint, original candidate ZIP and r19 rollback archive.
+
+This is explicit distribution approval plus fresh runtime loading evidence.
+Individual player-page multiplier, Palico exclusion, appraisal/collection,
+persistence and consecutive-quest checks were not separately reported. The log
+contains HLE/keyboard and Maxwell assertions and an unmapped-memory error; no
+clean-run or clean-shutdown claim is made, and those emulator messages are not
+attributed to this plugin. Ryujinx and physical Switch gameplay remain untested.

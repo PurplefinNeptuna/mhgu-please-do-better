@@ -4,19 +4,20 @@ Marks verified extra luck reward slots with a pulsing gold border and sparkle.
 Natural luck is the default; optional Force Miraculous Luck reproduces the
 wiki's two-site cheat without changing equipped skills.
 
-Current local release: **r19-savehint**, READY_TO_DISTRIBUTE and unpublished.
+Current local release: **r23-reward-pages**, READY_TO_DISTRIBUTE and unpublished.
 [Installation and settings](DISTRIBUTION_README.md); [status and payload hashes](DISTRIBUTION.json).
+The 1x to 5x integer slider scales player reward pages and leaves the Palico page
+unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
-Switch development candidate: **r23-reward-pages**, with a 1x to 5x
-integer slider for all player reward pages; the Palico page is excluded. [Candidate installation/settings](CANDIDATE_README.md) and
-[implementation/manual checklist](docs/DOUBLE_QUANTITY.md). The user reported
-r20 working well; its matching Eden log and installed hash are recorded in
-[the r20 receipt](docs/R20_RUNTIME_RESULTS.json). The r19 release remains pinned.
-The user also reported r21 working very well at the recorded 5x setting;
-[the r21 receipt](docs/R21_RUNTIME_RESULTS.json) retains that scope.
-The user confirmed r22 working; [the r22 receipt](docs/R22_RUNTIME_RESULTS.json)
-records the tested 3x setting and its limits. r23 expands the page scope and
-has no gameplay acceptance yet. The required INI header remains unchanged.
+The user approved distribution of the unchanged r23 candidate. Its installed
+hash and fresh Eden log confirm loading; [the release receipt](docs/R23_RELEASE_APPROVAL.json)
+records the approval and remaining manual/platform limits. The original r23
+candidate stays preserved, and r19's delivery and source guides are retained in
+the verified rollback archive recorded there.
+
+Earlier r20/r21/r22 reports keep their original payload and coverage scope:
+[r20](docs/R20_RUNTIME_RESULTS.json), [r21](docs/R21_RUNTIME_RESULTS.json),
+[r22](docs/R22_RUNTIME_RESULTS.json).
 
 ## Development and evidence
 

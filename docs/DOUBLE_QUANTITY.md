@@ -1,9 +1,11 @@
 # Switch r23 reward-page multiplier
 
-r23-reward-pages is a DEVELOPMENT candidate. The r20/r21/r22 deliveries and
-scoped runtime receipts remain preserved. Switch r19's distribution record,
-release bytes and support remain unchanged. PC is outside this change.
-No emulator is installed, configured or launched.
+r23-reward-pages is READY_TO_DISTRIBUTE and unpublished. Distribution approval
+and scoped Eden loading evidence are in R23_RELEASE_APPROVAL.json. Promotion
+uses the original candidate NRO without rebuilding. The r20/r21/r22 candidates
+and scoped receipts remain preserved; r19's release and source support are in
+the verified rollback archive named in the approval receipt. PC is unchanged.
+No emulator is installed, configured or launched by this promotion.
 
 ## Native data flow
 
