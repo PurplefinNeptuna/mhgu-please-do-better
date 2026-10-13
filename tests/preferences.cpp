@@ -17,18 +17,27 @@ struct Files {
 };
 int main(){
     unsigned checks=0;
-    for(unsigned bits=0;bits<4;++bits) {
-        const bool force=bits&1, doubled=bits&2;
-        auto t=encode_preferences({force,doubled});Preferences p{};
+    for(unsigned bits=0;bits<10;++bits) {
+        const bool force=bits&1;const uint8_t multiplier=uint8_t(bits/2+1);
+        auto t=encode_preferences({force,multiplier});Preferences p{};
         assert(!strstr(t.bytes,"version="));++checks;
-        assert(decode_preferences(t.bytes,t.size,p)&&p.force==force&&p.double_quantity==doubled);++checks;
-        for(unsigned i=0;i<t.size;++i){t.bytes[i]^=2;assert(!decode_preferences(t.bytes,t.size,p));t.bytes[i]^=2;++checks;}
+        assert(decode_preferences(t.bytes,t.size,p)&&p.force==force&&p.multiplier==multiplier);++checks;
+        for(unsigned i=0;i<t.size;++i){t.bytes[i]^=char(0x80);assert(!decode_preferences(t.bytes,t.size,p));t.bytes[i]^=char(0x80);++checks;}
         assert(!decode_preferences(t.bytes,t.size-1,p));++checks;
         char legacy[64];snprintf(legacy,sizeof(legacy),"version=2\nforce_miraculous=%u\n",unsigned(force));
-        assert(decode_preferences(legacy,unsigned(strlen(legacy)),p)&&p.force==force&&!p.double_quantity);++checks;
-        assert(decode_preferences(legacy+10,unsigned(strlen(legacy))-10,p)&&p.force==force&&!p.double_quantity);++checks;
+        assert(!decode_preferences(legacy,unsigned(strlen(legacy)),p));++checks;
+        assert(!decode_preferences(legacy+10,unsigned(strlen(legacy))-10,p));++checks;
         legacy[8]='1';assert(!decode_preferences(legacy,unsigned(strlen(legacy)),p));++checks;
         assert(!decode_preferences(t.bytes,sizeof(t.bytes),p));++checks;
+    }
+    for(unsigned force=0;force<2;++force)for(unsigned doubled=0;doubled<2;++doubled) {
+        char old[64];snprintf(old,sizeof(old),"force_miraculous=%u\ndouble_quantity=%u\n",force,doubled);
+        Preferences p{};assert(!decode_preferences(old,unsigned(strlen(old)),p));++checks;
+    }
+    for(unsigned value:{0u,6u,255u}) {
+        assert(!encode_preferences({false,uint8_t(value)}).size);++checks;
+        char bad[64];snprintf(bad,sizeof(bad),"force_miraculous=0\nreward_multiplier=%u\n",value);
+        Preferences p{};assert(!decode_preferences(bad,unsigned(strlen(bad)),p));++checks;
     }
     {Files f;PreferenceStore<Files>s;Preferences p{};assert(!s.load(f,p)&&!p.force&&!s.pending&&!f.mounts);assert(f.writes==0);++checks;}
     {Files f;f.available=false;PreferenceStore<Files>s;Preferences p{};
@@ -39,10 +48,7 @@ int main(){
     for(bool force:{false,true}) {Files f;PreferenceStore<Files>s;Preferences p{};
      snprintf(f.primary.bytes,sizeof(f.primary.bytes),"version=2\nforce_miraculous=%u\n",unsigned(force));
      f.primary.size=strlen(f.primary.bytes);
-     assert(s.load(f,p)&&p.force==force&&!f.mounts);++checks;
-     assert(s.save(f,p)&&!strstr(f.primary.bytes,"version=")&&!f.mounts);++checks;
-     PreferenceStore<Files> restart;Preferences loaded{};
-     assert(restart.load(f,loaded)&&loaded.force==force&&!f.mounts);++checks;}
+     assert(!s.load(f,p)&&!p.force&&p.multiplier==1&&f.writes==0&&!f.mounts);++checks;}
     {Files f;f.primary.size=1;f.primary.bytes[0]='!';PreferenceStore<Files>s;Preferences p{};
      assert(!s.load(f,p)&&!p.force&&f.reads==1&&f.writes==0);++checks;}
     for(unsigned failure=0;failure<5;++failure){Files f;f.primary=encode_preferences({false});PreferenceStore<Files>s;

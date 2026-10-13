@@ -162,6 +162,11 @@ class Probe:
             label=self.string(r[0]);value=self.edits.pop(label,None)
             if value is not None:self.write(r[1],int(value),'<B')
             self.ret(int(value is not None))
+        elif name=='igSliderInt':
+            label=self.string(r[0]);value=self.edits.pop(label,None)
+            assert r[2:4]==[1,5]
+            if value is not None:self.write(r[1],int(value),'<i')
+            self.ret(int(value is not None))
         elif name=='igButton':self.ret(int(self.button));self.button=False
         elif name=='igTextUnformatted':self.messages.append(self.string(r[0]));self.ret()
         elif name=='igText':
@@ -447,14 +452,14 @@ def main():
     # Plugin preference I/O operates only on in-memory fake files. Verify the
     # compiled SDK argument layout, counted mount and primary-only commit paths.
     primary='savedata:/please_do_better.ini';backup='savedata:/please_do_better_backup.ini'
-    off=b'force_miraculous=0\ndouble_quantity=0\n';on=off.replace(b'force_miraculous=0',b'force_miraculous=1')
+    off=b'force_miraculous=0\nreward_multiplier=1\n';on=off.replace(b'force_miraculous=0',b'force_miraculous=1')
     for force,record in ((0,off),(1,on)):
-        p=Probe(image,payload);p.call('forge_onInit');p.save_available=True;p.files[primary]=b'version=2\n'+record
+        p=Probe(image,payload);p.call('forge_onInit');p.save_available=True;p.files[primary]=record
         p.call('forge_onImGuiFreeRender')
-        check(p.read(p.private('mode'))==force,'Existing version-2 preference preserves requested mode in compiled load')
+        check(p.read(p.private('mode'))==force,'New two-key preference preserves requested mode in compiled load')
         p.tree=True;p.button=True;p.call('forge_onImGuiRender')
         check(p.files[primary]==record and not p.mounts and not p.handles and not p.guard,
-              'Compiled save removes obsolete version marker with balanced cleanup')
+              'Compiled save preserves canonical two-key format with balanced cleanup')
         restarted=Probe(image,payload);restarted.call('forge_onInit');restarted.save_available=True;restarted.files=p.files.copy()
         restarted.call('forge_onImGuiFreeRender')
         check(restarted.read(restarted.private('mode'))==force,'Compiled restart loads migrated versionless preference')

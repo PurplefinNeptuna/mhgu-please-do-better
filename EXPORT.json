@@ -28,6 +28,7 @@
     "docs/FORGE_PLUGIN_GUIDELINES.md",
     "docs/FORGE_RENDERER_VALIDATION.json",
     "docs/PRIMARY_ONLY_CONFIG_VALIDATION.json",
+    "docs/R20_RUNTIME_RESULTS.json",
     "docs/SAVE_HINT_VALIDATION.json",
     "mod.json",
     "requirements.txt",

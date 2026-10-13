@@ -30,7 +30,7 @@ CALLBACKS = {'init', 'fini', 'forge_onLoad', 'forge_onInit', 'forge_onUpdate',
 ALLOWED_IMPORTS = {'forge_mem_getMainTextAddr', 'forge_log', 'igTreeNode_Str', 'igTreePop',
                    'forge_singleton_getInstanceByName', 'igGetIO_Nil', 'igGetTime', 'igGetBackgroundDrawList_Nil', 'ImDrawList_AddLine', 'ImDrawList_PushClipRect', 'ImDrawList_PopClipRect',
                    'igText', 'igTextUnformatted', 'igSetCurrentContext', 'igSetAllocatorFunctions'}
-LIMITS = ['r20-doubleqty is a development candidate with no gameplay acceptance. Earlier highlighting/configuration acceptance belongs to its recorded release and payload.',
+LIMITS = ['r21-multiplier is a development candidate with no gameplay acceptance. User-reported r20 success belongs to its preserved payload; individual scenarios were not enumerated.',
           'Quantity doubling covers the first screen only; secondary, gathered and separate plunder/Palico rewards are excluded.',
           'The original 150-entry appraisal queue and inventory limits remain; excess items can be limited by native collection.',
           'Unknown rendering routes suppress gold markers; quantity changes do not require an active rendering route.',
@@ -156,7 +156,7 @@ def inspect_binary(payload, inventory):
     require(sha(sdk.read_bytes()) == '9a9b7035266637ee693a32da6b0fde54bda00e897bef05b1c8d8cda30f8ac8b0', 'SDK fingerprint differs')
     sdk_imports = nso_exports(sdk)
     extra = {'nnosAllocateTlsSlot','nnosGetTlsValue','nnosSetTlsValue',
-             'forge_fs_mountSaveData','forge_fs_unmountSaveData','igCheckbox','igButton', 'memcpy'}
+             'forge_fs_mountSaveData','forge_fs_unmountSaveData','igCheckbox','igSliderInt','igButton', 'memcpy'}
     fs_imports = set(re.findall(r'asm\("([^"]+)"\)', (RECIPE / 'src/sdk_fs.h').read_text()))
     fs_imports |= set(re.findall(r'asm\("([^"]+)"\)', (RECIPE / 'src/sdk_tls.h').read_text()))
     require(imports <= ALLOWED_IMPORTS | extra | fs_imports, f'Unexpected imports: {imports-ALLOWED_IMPORTS-extra-fs_imports}')
@@ -232,7 +232,7 @@ def package_candidate(payload):
     report = {'mod': 'please-do-better', 'version': VERSION, 'diagnostics':os.environ.get('MHGU_DIAGNOSTICS','0')=='1', 'status': 'DEVELOPMENT',
               'package_name': 'Please do Better', 'target': 'MHGU Nintendo Switch 1.4.0; Forge 1.4.1',
               'settings_save_paths':['savedata:/please_do_better.ini'],
-              'settings_format':'force_miraculous and double_quantity; versionless; older one-key/version=2 accepted',
+              'settings_format':'force_miraculous and reward_multiplier=1..5 only; legacy files use defaults',
               'quantity_scope':'first screen only; native signed/appraisal capacity limits retained',
               'settings_backup_access':False, 'settings_save_policy':'validate, write, flush, readback verification, commit; session retained on failure',
               'build_id': binary.BUILD_ID[:32].upper(), 'runtime_inventory': {MEMBER: sha(payload)},

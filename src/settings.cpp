@@ -44,8 +44,8 @@ bool save_preferences(Preferences value) {
         if(failures.claim(reason)) forge_log_warn("[please-do-better] %s Load a player save and retry Save settings.",store.status);
         return false;
     }
-    if(!have_saved || saved.force!=value.force || saved.double_quantity!=value.double_quantity)
-        forge_log_info("[please-do-better] Saved: luck %s, quantities %s",value.force?"on":"off",value.double_quantity?"2x":"1x");
+    if(!have_saved || saved.force!=value.force || saved.multiplier!=value.multiplier)
+        forge_log_info("[please-do-better] Saved: luck %s, quantities %ux",value.force?"on":"off",unsigned(value.multiplier));
     saved=value;have_saved=true;return true;
 }
 void preferences_changed() { store.changed(); }

@@ -1,0 +1,21 @@
+{
+  "version": "r20-doubleqty",
+  "date": "2026-10-13",
+  "user_report": "its working well",
+  "user_confirmed": true,
+  "environment": "Eden Development Build master-4dc69c06f7-master; Forge 1.4.1-render1",
+  "nro_sha256": "417e43ecf04d48a0f069f17ef077db1cf5ea276be934e05999b3beed454827d0",
+  "installed_payload_matches_candidate": true,
+  "log_snapshot": "work/please-do-better/runtime/r20-20261013/eden_log.txt",
+  "log_sha256": "555875340dee891cf0bfd182eed53e7f2edad0b60296adb036b80a7a6594d5aa",
+  "log_evidence": [
+    "r20-doubleqty loaded; forcing and highlights ready",
+    "Saved: luck on, quantities 2x"
+  ],
+  "scope": "User reports general success with r20; individual collection/appraisal, setting restart and quest categories were not enumerated.",
+  "limits": [
+    "Log includes software-keyboard and Maxwell assertions, shader-version warning, later unmapped-memory/abandoned-buffer errors; no clean-run or clean-shutdown claim.",
+    "No direct guest fault or 2x-skipped quantity diagnostic was found in the inspected log; emulator messages are not attributed to this plugin.",
+    "Ryujinx and physical Switch gameplay untested."
+  ]
+}

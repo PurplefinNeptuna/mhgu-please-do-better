@@ -46,7 +46,10 @@ struct CountSnapshot {
 };
 struct Scope {
     uint32_t kind=0, caller=0, sp=0, subject=0, array=0, start=0, count=0;
-    bool force=false, double_quantity=false, quantity_ready=false, first_blank=false;
+    // Keep inactive contexts in BSS. Entry always assigns a latched 1..5 value
+    // before this scope can be used; zero is only an inactive sentinel.
+    bool force=false; uint8_t multiplier=0;
+    bool quantity_ready=false, first_blank=false;
     // Unknown scopes are zero-initialized BSS. begin() supplies the threshold
     // and stop sentinel only when a real comparison is observed.
     Attribution attribution{0,0,false,false};
@@ -98,8 +101,8 @@ static void quantity_fault(QuantityFault reason) {
 // Run exactly at the original builder's return, before immutable observations
 // are published. The first array is A/B/special followed by break/capture.
 // Secondary, gathered and plunder arrays are deliberately never written.
-static void double_first_screen(Scope& s) {
-    if(!s.double_quantity)return;
+static void multiply_first_screen(Scope& s) {
+    if(s.multiplier==1)return;
     if(!__atomic_load_n(&capture_ready,__ATOMIC_ACQUIRE)) {
         quantity_fault(QuantityFault::Generation);return;
     }
@@ -126,7 +129,7 @@ static void double_first_screen(Scope& s) {
     }
     Reward original[first_screen_capacity]{};
     if(!copy(s.array,original,s.count*4)) {quantity_fault(QuantityFault::Memory);return;}
-    const auto fault=quantity_preflight(original,s.count);
+    const auto fault=quantity_preflight(original,s.count,s.multiplier);
     if(fault!=QuantityFault::None) {quantity_fault(fault);return;}
     // Verify pending first-screen snapshots against unmodified records first.
     // Secondary snapshots retain their quantities and original attribution.
@@ -146,11 +149,11 @@ static void double_first_screen(Scope& s) {
     // All checks passed. Native collection needs the original item IDs and
     // slot count; only the u16 amount halfword changes, once in this scope.
     auto* live=reinterpret_cast<volatile Reward*>(s.array);
-    for(unsigned i=0;i<s.count;++i)if(original[i].item)live[i].amount=original[i].amount*2;
+    for(unsigned i=0;i<s.count;++i)if(original[i].item)live[i].amount=original[i].amount*s.multiplier;
     for(unsigned i=0;i<s.pending_count;++i) {
         auto& r=s.pending[i];
         if(r.rewards.array<s.array || uint64_t(r.rewards.array)>=uint64_t(s.array)+s.count*4)continue;
-        for(unsigned j=0;j<r.rewards.count;++j)r.rewards.items[j].amount*=2;
+        for(unsigned j=0;j<r.rewards.count;++j)r.rewards.items[j].amount*=s.multiplier;
     }
 }
 static Snapshot<Binding> bindings[64];
@@ -644,12 +647,12 @@ extern "C" uint32_t pdb_gateway_dispatch(uint32_t kind,RawFrame* f) {
     if(c->depth==4) { c->quarantine=true;lost();return original; }
     const auto requested=mode.preferences();
     const bool latched=c->depth?force(c):requested.force && forcing_available();
-    const bool double_quantity=c->depth?c->scopes[0].double_quantity:requested.double_quantity;
+    const uint8_t multiplier=c->depth?c->scopes[0].multiplier:requested.multiplier;
     auto& s=c->scopes[c->depth++];s={};s.kind=kind;s.caller=f->r[13];s.sp=f->caller_sp();s.force=latched;
-    s.double_quantity=double_quantity;
+    s.multiplier=multiplier;
     s.subject=f->r[0];
     if(kind==12) {
-        if(s.double_quantity && field(s.subject,0x5c,8)) {
+        if(s.multiplier!=1 && field(s.subject,0x5c,8)) {
             s.array=word(s.subject+0x5c);s.count=word(s.subject+0x60);
             Reward before[first_screen_capacity]{};
             s.quantity_ready=s.count && s.count<=first_screen_capacity &&
@@ -737,7 +740,7 @@ extern "C" uint32_t pdb_gateway_leave(RawFrame* f) {
             } else {ui->incomplete=true;lost();}
         }
     } else if(s.kind==12) {
-        double_first_screen(s);
+        multiply_first_screen(s);
         const uint32_t order=__atomic_add_fetch(&completed_batches,1,__ATOMIC_RELAXED);
         for(unsigned i=0;i<s.pending_count;++i) {
             Record r=s.pending[i];Reward check[8]{};
@@ -868,10 +871,10 @@ void update() {
     count(update_hits);
     static mod_log::Once quantity_reported;
     static const char* const reasons[]={"", "unwritable or unsupported reward array", "invalid item/amount record",
-        "quantity exceeds the native signed limit", "no fresh first-screen generation", "reward snapshot changed"};
+        "quantity exceeds the native signed limit", "no fresh first-screen generation", "reward snapshot changed", "invalid multiplier"};
     const unsigned faults=seen(quantity_faults);
-    for(unsigned reason=1;reason<6;++reason)if((faults&(1u<<reason)) && quantity_reported.claim(reason))
-        forge_log_warn("[please-do-better] 2x skipped: %s; quantities retained. Restart if persistent.",reasons[reason]);
+    for(unsigned reason=1;reason<7;++reason)if((faults&(1u<<reason)) && quantity_reported.claim(reason))
+        forge_log_warn("[please-do-better] Multiplier skipped: %s; quantities retained. Restart if persistent.",reasons[reason]);
     if(!seen(native_render)) {
         const uint32_t sr=uint32_t(uintptr_t(forge_singleton_getInstanceByName("sFestaRender")));
         if(field(sr,0x389cc,4))__atomic_store_n(&native_render,sr,__ATOMIC_RELEASE);

@@ -26,7 +26,7 @@ extern "C" void forge_onLoad(PluginInitParam* out) {
     const char* name = "Please do Better";
     for (unsigned i = 0; name[i]; ++i) bytes[offsetof(PluginInitParam, name)+i] = name[i];
 }
-extern "C" void forge_onInit() { pdb::install(); static bool reported; if(reported)return; reported=true; forge_log_info("[please-do-better] r20-doubleqty loaded; %s",pdb::startup_status()); }
+extern "C" void forge_onInit() { pdb::install(); static bool reported; if(reported)return; reported=true; forge_log_info("[please-do-better] r21-multiplier loaded; %s",pdb::startup_status()); }
 extern "C" void forge_onUpdate(float) { pdb::update(); }
 extern "C" void forge_onImGuiInit(void* context, void* allocate, void* release) {
     igSetCurrentContext(static_cast<ImGuiContext*>(context));
@@ -39,7 +39,12 @@ extern "C" void forge_onImGuiRender() {
     if(igCheckbox("Force Miraculous Luck###pdb_force", &p.force)) {
         pdb::preferences_changed();pdb::request_preferences(p);
     }
-    if(igCheckbox("Double reward quantities###pdb_double_quantity", &p.double_quantity)) {
+    int multiplier=p.multiplier;
+    // Clamp typed input as well as dragging; validate again before narrowing
+    // to the stored byte so every published gameplay value stays within 1..5.
+    if(igSliderInt("Reward multiplier###pdb_multiplier", &multiplier,1,5,"%dx",ImGuiSliderFlags_AlwaysClamp)) {
+        multiplier=multiplier<1?1:multiplier>5?5:multiplier;
+        p.multiplier=uint8_t(multiplier);
         pdb::preferences_changed();pdb::request_preferences(p);
     }
     if(igButton("Save settings###pdb_save",ImVec2_c{0,0}))pdb::save_preferences(p);
