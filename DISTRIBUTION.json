@@ -70,10 +70,16 @@
     "ai_assets": [],
     "credits": [
       {
-        "name": "Forge",
-        "author": "Fexty, Jeffi and the Skyline Project",
+        "name": "MHGU Forge",
+        "author": "Fexty",
         "url": "https://github.com/Fexty12573/forge",
         "scope": "Fexty's MHGU fork of Jeffi's original Forge. Plugin loading and rendering."
+      },
+      {
+        "name": "Original Forge",
+        "author": "Jeffi and the Skyline Project",
+        "url": "https://github.com/jeffi6375/forge",
+        "scope": "Original Forge code and API ancestry."
       },
       {
         "name": "libnx",
