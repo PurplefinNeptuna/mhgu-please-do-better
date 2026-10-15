@@ -2,7 +2,9 @@
 
 ## Forge
 
-[Forge by Jeffi](https://github.com/jeffi6375/forge) provides plugin loading and rendering.
+[Fexty's MHGU Forge fork](https://github.com/Fexty12573/forge), based on
+[Jeffi's original Forge](https://github.com/jeffi6375/forge), provides plugin
+loading and rendering.
 
 ## Great Luck credit
 

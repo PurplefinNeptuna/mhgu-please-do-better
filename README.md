@@ -6,7 +6,7 @@ on all player reward pages. Palico rewards keep their normal quantities.
 
 ## Requirements
 
-MHGU 1.4.0 for Nintendo Switch and Forge 1.5.1.
+MHGU 1.4.0 for Nintendo Switch and [Fexty's Forge 1.5.1](https://github.com/Fexty12573/forge/releases/tag/v1.5.1).
 
 ## Installation
 

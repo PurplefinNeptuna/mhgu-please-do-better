@@ -71,9 +71,9 @@
     "credits": [
       {
         "name": "Forge",
-        "author": "Jeffi",
-        "url": "https://github.com/jeffi6375/forge",
-        "scope": "Plugin loading and rendering."
+        "author": "Fexty, Jeffi and the Skyline Project",
+        "url": "https://github.com/Fexty12573/forge",
+        "scope": "Fexty's MHGU fork of Jeffi's original Forge. Plugin loading and rendering."
       },
       {
         "name": "libnx",
