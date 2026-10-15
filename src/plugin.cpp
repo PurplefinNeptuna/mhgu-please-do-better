@@ -22,11 +22,11 @@ extern "C" void forge_onLoad(PluginInitParam* out) {
     if (!out) return;
     auto* bytes = reinterpret_cast<volatile unsigned char*>(out);
     for (unsigned i = 0; i < sizeof(*out); ++i) bytes[i] = 0;
-    out->required_ver = {1, 4, 1};
+    out->required_ver = {1, 5, 1};
     const char* name = "Please do Better";
     for (unsigned i = 0; name[i]; ++i) bytes[offsetof(PluginInitParam, name)+i] = name[i];
 }
-extern "C" void forge_onInit() { pdb::install(); static bool reported; if(reported)return; reported=true; forge_log_info("[please-do-better] r23-reward-pages loaded; %s",pdb::startup_status()); }
+extern "C" void forge_onInit() { pdb::install(); static bool reported; if(reported)return; reported=true; forge_log_info("[please-do-better] r24-forge151 loaded; %s",pdb::startup_status()); }
 extern "C" void forge_onUpdate(float) { pdb::update(); }
 extern "C" void forge_onImGuiInit(void* context, void* allocate, void* release) {
     igSetCurrentContext(static_cast<ImGuiContext*>(context));

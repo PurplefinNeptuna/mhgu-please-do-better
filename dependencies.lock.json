@@ -1,10 +1,9 @@
 {
   "schema_version": 1,
-  "forge_revision": "b8921fa3bbe35bbbafb11ccc489d5f1c6aa24a2d",
+  "forge_revision": "b23e114a23f41c9a8e2fd34b2f4df2a2102d0ee1",
   "compiler_image": "docker.io/devkitpro/devkita64@sha256:1fc388c3a0d34bd2045a6dadcb1020e069d5f876a187fd705de14b4440c00282",
   "files": {
     "vendor/forge/LICENSE": "6d4fb3bcf0778cbac746ae328a61222de4308405f28b98044145e37ee7e03ef7",
-    "vendor/forge/LICENSE.legacyCtx14": "6dfb69c3e1996c82b0bfdd36cb56123a664cc3fb2215dd061e7f1fac1f9bdfe9",
     "vendor/forge/include/Mt/MtAllocator.h": "f058b9e2f28c9a126375a3bcbf4dc821f121bc509d59fb8998ac5f750939cf8e",
     "vendor/forge/include/Mt/MtArray.h": "a0af34197962e8ca53b717487eecfd79a90c2af781ded2c63aa244566a19d04f",
     "vendor/forge/include/Mt/MtCRC.h": "40002ecd266dba7fee34f34ae7bfab665bd5cab24c3cb3fc0fe9fd095af32f0a",
@@ -23,9 +22,8 @@
     "vendor/forge/include/forge/config.h": "ca42e90664ccceb3f35d27713c1cae22d570aa90fa379261328d35f8a47b1fe7",
     "vendor/forge/include/forge/fs.h": "7faddcb433bf1c9d0f924cf412a2e909ec426e6dfdd609c171879dc3b1461107",
     "vendor/forge/include/forge/graphics.h": "283459ec3c52eeb38352e030cf0a6be2595684334bdc4b43fb6ef1557283a277",
-    "vendor/forge/include/forge/hook.h": "5500bc39dfbc634361629d75a4e8869544feef89792af1ad05c1c8073781f7e8",
+    "vendor/forge/include/forge/hook.h": "032abe55c5dee9d2fc3090ac355004b5f329a8361c2276cff2668a3487acfd9a",
     "vendor/forge/include/forge/input.h": "84bf92198134b9a677381003a1a6ea40bbe648dcd526bfa3b9bcae8b078c0884",
-    "vendor/forge/include/forge/legacy_hook.h": "4c1678a7a7f6aa0ba0a0a2b137f02ac2b7c96c7d36fff34d4f37456246f76837",
     "vendor/forge/include/forge/log.h": "a94fdd0929bbe8fc183a285c771cb776225ab5f96b4cb3a0a280a3f4b4877264",
     "vendor/forge/include/forge/mem.h": "fbfa30f244abbb3ad6fbd551a76c6fcb21260de211ba832bffe0335480220338",
     "vendor/forge/include/forge/patch.h": "dca28bafc635a3f87f096b98a57504ad7e332ccfb8620bca57637b7961031094",
@@ -35,7 +33,7 @@
     "vendor/forge/include/forge/singleton.h": "cb15a024f6091f3f99e6b3cc7eefd24a709af3401ec5a16a4d4e8fe4f31a9f24",
     "vendor/forge/include/forge/socket.h": "f7cf8b0fb3f8dbd9030f8d605cac020c944cab443c4f2bd9223e7ba4a55cbc97",
     "vendor/forge/include/forge/types.h": "fa564522ba2fd8ec5a952cfb86d4a8ed3bc058e8f0d366f822063f3ac7343d65",
-    "vendor/forge/include/forge/wrapper.h": "8f986e770a309d7c2d586d63f743da2d770b89499a6dab291a778196d3df8313",
+    "vendor/forge/include/forge/wrapper.h": "5de62d0d2eb14ca7d06bb5e068648c17d1052f53f1c60456dffa01889cd42c53",
     "vendor/forge/include/graphics/allocator.h": "262a9f9ec9be894095f0b71d23753a73e0761f0749011a032adaeeab570b45e0",
     "vendor/forge/include/graphics/imgui_impl_nvn.h": "2cec8119e80217ef8015fe84bde845bf4b50e92d121ebe1fc7e86c4a8673b132",
     "vendor/forge/libs/nnsdk/include/forge/nn/crypto.h": "545764bc27ae8cc13f7acd8c911a171a51410bdd6c52f58b392fd413d7f70084",
@@ -45,7 +43,7 @@
     "vendor/forge/libs/nnsdk/include/forge/nn/os.h": "ce56be8d0f7aed42ef7dc5945d993b44e7d2487e8a40b9eebedd8b46d55fa834",
     "vendor/forge/libs/nnsdk/include/forge/nn/ro.h": "66cd38a55a9f41101fe98bcf987d8611f3c495f5ae082f6f2c15437f95d36811",
     "vendor/forge/libs/nnsdk/include/forge/nn/socket.h": "9e22b94b66f159f14facae4fce4f08c09c54376c43f60cfc1c0e08ec3eb6037c",
-    "vendor/forge/source/forge/graphics/imgui_impl_nvn.cpp": "4d403d2b72768689e5899a28d696f87a49c01c8cd1982f6c866cea4049010808",
+    "vendor/forge/source/forge/graphics/imgui_impl_nvn.cpp": "1e2b710721b597d7d8d498f235ca9e6104be145825bd39260d6dbf14e0dde5f7",
     "vendor/forge/source/forge/graphics.cpp": "c8803c1d97398553c980bb410829517650160d5ca955a8b860d4caa51bd30e5a",
     "vendor/forge/source/forge/log.c": "0ccfbfad125a50dcd3a24ab12116d7a6c6ccbdfc95eab318e48209e58632103a",
     "vendor/forge/source/main.c": "3d411992f5c6ef037b5b8027f3991afa1202ff6d41354a4b86b7c90abf8478d5",
@@ -255,7 +253,7 @@
   "binary_inputs": {
     "main": "b3935415499549adaf4c0e89822831daa175cfd456a7990791c79be3997645ef",
     "sdk": "9a9b7035266637ee693a32da6b0fde54bda00e897bef05b1c8d8cda30f8ac8b0",
-    "forge": "9d472d56f81f834f366171426dbd0131af19c7697e132c731c3fd3f335af53d0"
+    "forge": "469f425dd02a37b7a5d84ddde5f769922bc5e0d5fbc8adb0ca270e2c0773cd7d"
   },
   "origins": {
     "forge": {

@@ -1,39 +1,62 @@
 # Please do Better
 
-Marks verified extra luck reward slots with a pulsing gold border and sparkle.
-Natural luck is the default; optional Force Miraculous Luck reproduces the
-wiki's two-site cheat without changing equipped skills.
+Highlights extra reward slots granted by Luck with a pulsing gold border and
+sparkle. Optional settings force Miraculous Luck and multiply item quantities by 1x to 5x on
+all player reward pages. Palico rewards keep their normal quantities.
 
-Current local release: **r23-reward-pages**, READY_TO_DISTRIBUTE and unpublished.
-[Installation and settings](DISTRIBUTION_README.md); [status and payload hashes](DISTRIBUTION.json).
-The 1x to 5x integer slider scales player reward pages and leaves the Palico page
-unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
+## Requirements
 
-The user approved distribution of the unchanged r23 candidate. Its installed
-hash and fresh Eden log confirm loading; [the release receipt](docs/R23_RELEASE_APPROVAL.json)
-records the approval and remaining manual/platform limits. The original r23
-candidate stays preserved, and r19's delivery and source guides are retained in
-the verified rollback archive recorded there.
+MHGU 1.4.0 for Nintendo Switch and Forge 1.5.1.
 
-Earlier r20/r21/r22 reports keep their original payload and coverage scope:
-[r20](docs/R20_RUNTIME_RESULTS.json), [r21](docs/R21_RUNTIME_RESULTS.json),
-[r22](docs/R22_RUNTIME_RESULTS.json).
+## Installation
 
-## Development and evidence
+1. Close your emulator.
+2. Extract `please-do-better-r24-forge151.zip`.
+3. Copy the `please-do-better` folder into your emulator's MHGU mod directory.
+   For Eden, use `~/.local/share/eden/load/0100770008DD8000/`.
+4. Enable the package and launch MHGU. Keep only one enabled copy of
+   `please_do_better.nro`.
 
-Use [DEVELOPMENT.md](DEVELOPMENT.md) for pinned inputs, build/test/package/export
-commands. [Runtime evidence](RUNTIME.md) retains the version and limits of user
-reports. [THIRD_PARTY.md](THIRD_PARTY.md) records development provenance;
-[DISTRIBUTION_NOTICES.md](DISTRIBUTION_NOTICES.md) supplies release credits.
+To update, replace your existing `please-do-better` folder with the extracted
+folder. Keep only one enabled copy of `please_do_better.nro`. To remove the mod,
+disable or remove its folder in the emulator's mod directory.
 
+## Settings
 
-R19-savehint changes only the save-success string. Host persistence, 2,122
-ARM32 and 100,511 runtime/gateway checks, plus native observation/display/
-geometry/highlighting fixtures passed. No fresh game run was performed.
-[SAVE_HINT_VALIDATION.json](docs/SAVE_HINT_VALIDATION.json) pins the payload.
+Open **Plugin UI > Please do Better** in Forge's overlay.
 
-Technical references: [implementation and state audit](IMPLEMENTATION.md),
-[native research](RESEARCH.md) and [remaining gameplay coverage](MANUAL_TESTS.md).
-Disable the legacy Great Luck cheat for an authorized test; startup rejects
-prepatched/conflicting code. The second check's broader role remains incompletely
-traced, and Ryujinx compatibility remains untested.
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Force Miraculous Luck | Off | Uses Miraculous Luck for subsequent reward generations. |
+| Reward multiplier | 1x | Integer slider from 1x to 5x for each occupied slot on all player reward pages. Palico rewards keep their normal quantities. |
+
+The quantity setting covers main A/B, special, break/capture, subquest,
+free-hunt and other items on the player reward pages, including the player's
+extra-item page. It keeps the same items and number of slots. The Palico page
+keeps its normal quantities, including companion gathering and stolen items.
+Changing either setting affects the next reward generation. The multiplier is
+independent of Force Miraculous Luck. Closing the panel keeps both settings active. If reward borders look misplaced
+while the overlay is open on Forge 1.5.1, close the overlay.
+
+Select **Save settings** to remember both choices in `please_do_better.ini` in
+MHGU's player save folder. If saving fails, your session choices remain active;
+load a player save and retry **Save settings**.
+
+The saved INI must use this section and both keys:
+
+```ini
+[PleaseDoBetter]
+force_miraculous=0
+reward_multiplier=1
+```
+
+The section header is required. Headerless and older formats use Luck forcing
+off and multiplier 1x; there is no migration. Select your settings and save to
+write the new format.
+
+## Quantity limits
+
+The game's inventory and appraisal capacity limits still apply. Multiplying a
+charm quantity supplies additional charms for appraisal within those limits.
+Charms on player reward pages are multiplied; the Palico page stays unchanged.
+Items already received during the quest into your pouch or box are unchanged.

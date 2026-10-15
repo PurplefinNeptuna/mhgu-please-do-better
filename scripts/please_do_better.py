@@ -23,7 +23,7 @@ VERSION = MOD_CONFIG['version']
 CANDIDATE = OUT / 'delivery' if MOD_CONFIG.get('candidate') else OUT / 'candidates' / VERSION
 MEMBER = 'Please do Better/romfs/nativeNX/plugins/please_do_better.nro'
 ARCHIVE = 'please-do-better-' + VERSION + '-candidate.zip'
-SUPPORT = {'README.md':'CANDIDATE_README.md','DOUBLE_QUANTITY.md':'docs/DOUBLE_QUANTITY.md'}
+SUPPORT = {'README.md':'README.md','DEVELOPMENT.md':'DEVELOPMENT.md'}
 GENERATED_SUPPORT = ('README.html','GAMEBANANA_README.html','NOTICES.txt','NOTICES.html')
 CALLBACKS = {'init', 'fini', 'forge_onLoad', 'forge_onInit', 'forge_onUpdate',
              'forge_onImGuiInit', 'forge_onImGuiRender', 'forge_onImGuiFreeRender'}

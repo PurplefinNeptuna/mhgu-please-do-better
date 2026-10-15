@@ -1,88 +1,32 @@
 {
   "approval": {
-    "date": "2026-10-13",
-    "basis": "User requested: \"good job, mark it ready to distribute\". Promote the unchanged r23 candidate; fresh Eden log and installed hash establish r23 loading, with unenumerated manual coverage retained."
+    "date": "2026-10-15",
+    "basis": "User approved implementation of the full compaction plan, including renamed ready releases and stock Forge maintenance. Earlier gameplay acceptance remains attached to the original hashes."
   },
-  "archive": "please-do-better-r23-reward-pages.zip",
+  "archive": "please-do-better-r24-forge151.zip",
   "dependencies": [
     {
       "name": "Forge",
-      "version": "1.4.1",
-      "scope": "Public loader API dependency; external and unbundled."
+      "version": "1.5.1",
+      "scope": "External unmodified upstream Switch loader; not bundled."
     }
   ],
   "evidence": {
-    "manual": [
-      "mods/please-do-better/RUNTIME.md",
-      "mods/please-do-better/docs/R23_RELEASE_APPROVAL.json"
-    ],
-    "manual_summary": "Fresh log and installed hash establish r23 loading in the user-run Eden setup. Reward-page quantities, Palico exclusion, appraisal/collection, persistence and consecutive-quest behavior were not separately reported. User explicitly approved distribution; no exhaustive manual acceptance or clean-shutdown claim.",
     "static": [
-      "build/please-do-better/candidates/r23-reward-pages/input-validation.json",
-      "build/please-do-better/candidates/r23-reward-pages/binary-validation.json",
-      "build/please-do-better/candidates/r23-reward-pages/host-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/arm-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/runtime-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/native-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/observation-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/display-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/highlight-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/quantity-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/log-tests.json",
-      "build/please-do-better/candidates/r23-reward-pages/highlight-research.json",
-      "build/please-do-better/candidates/r23-reward-pages/runtime-policy.json",
-      "build/please-do-better/candidates/r23-reward-pages/standalone-build.json",
-      "mods/please-do-better/docs/REWARD_PAGE_LAYOUT.json"
+      "mods/please-do-better/EVIDENCE.json"
     ],
-    "runtime_confirmation": {
-      "version": "r23-reward-pages",
-      "date": "2026-10-13",
-      "user_approved_distribution": true,
-      "runtime_loaded": true,
-      "individual_manual_checks_reported": false,
-      "nro_sha256": "e61e3bda1def28ea2cb03930c59196646573c6bcd27a3d288da0078ce2a4dc00",
-      "log_sha256": "0f4cc7ee7bb21103d16efdc897e5611c21fa280bffb570e221e0ca0f89bdb86e",
-      "scope": "Fresh log and installed hash establish r23 loading in the user-run Eden setup. Reward-page quantities, Palico exclusion, appraisal/collection, persistence and consecutive-quest behavior were not separately reported."
-    },
-    "local_test_loader": {
-      "name": "forge-patched 1.4.1-render1",
-      "sha256": "f22f4be84163deba14a2bd086d76065a4baa0b3943aba78b5c1aac15f2f94eee",
-      "scope": "External LOCAL_ONLY loader used in the tested Eden setup; not bundled. Its renderer fix permits menu/dropdowns and gameplay overlays together."
-    },
-    "compiler_import_baseline": {
-      "name": "Forge 1.4.1 compiler/import baseline",
-      "sha256": "9d472d56f81f834f366171426dbd0131af19c7697e132c731c3fd3f335af53d0",
-      "scope": "Unchanged pinned build/import-validation input; runtime also resolves against render1."
-    },
-    "prior_runtime_receipts": [
-      "mods/please-do-better/docs/R20_RUNTIME_RESULTS.json",
-      "mods/please-do-better/docs/R21_RUNTIME_RESULTS.json",
-      "mods/please-do-better/docs/R22_RUNTIME_RESULTS.json"
+    "manual": [
+      "mods/please-do-better/EVIDENCE.json"
     ],
-    "static_summary": {
-      "ARM32_checks": 2122,
-      "runtime_gateway_checks": 100511,
-      "native_geometry_checks": 678,
-      "observation_checks": 28841,
-      "display_checks": 16634,
-      "highlight_checks": 8286,
-      "quantity_native_appraisal_checks": 455
-    },
-    "quantity_scope": "Player result arrays at UI+0x5C/+0x64/+0x6C; Palico UI+0x74 excluded. Native signed quantity, inventory and 150-entry appraisal capacity limits retained.",
-    "settings_format": "[PleaseDoBetter] header with force_miraculous=0/1 and reward_multiplier=1..5; no backward compatibility; primary INI only, explicit Save.",
-    "preservation": {
-      "runtime_rebuilt": false,
-      "candidate_archive_sha256": "463c7e80dc0da5f94472b7b0896658478a49baa4acb6cc5c290db1dcaebf7059",
-      "previous_release": "backups/please-do-better/superseded-releases/20261013T224457/r19-savehint",
-      "rollback_manifest": "backups/please-do-better/superseded-releases/20261013T224457/rollback-manifest.json"
-    }
+    "static_summary": "Current host/native/build evidence and original dated results are recorded in EVIDENCE.json.",
+    "manual_summary": "No new gameplay run. The user approved distribution of this maintenance build; historical gameplay reports and exact hashes remain under EVIDENCE.json historical records."
   },
   "limitations": [
+    "This maintenance build has no new gameplay run. Earlier user acceptance applies only to the preserved original binaries; Ryujinx/native Switch coverage remains unconfirmed.",
     "Fresh Eden log and installed hash confirm r23 loading. Individual player-page quantity, Palico exclusion, appraisal/collection, persistence and consecutive-quest checks were not separately reported.",
     "Log contains HLE/keyboard and Maxwell assertions plus an unmapped-memory error; no clean-run or clean-shutdown claim. These emulator messages are not attributed to the plugin.",
     "Native inventory capacity and the 150-entry appraisal queue remain; unsupported records or quantity products above 32767 suppress the entire multiplier attempt.",
     "Ryujinx and physical Switch gameplay are untested.",
-    "Unknown reward shader, target or execution paths suppress markers. On public Forge 1.4.1, closing the overlay avoids its known combined-menu/background rendering issue.",
     "Successful cache calls do not establish CPU translation freshness; the second forced check broader role remains incompletely traced."
   ],
   "mod": "please-do-better",
@@ -93,8 +37,8 @@
   "package_name": "please-do-better",
   "payloads": {
     "romfs/nativeNX/plugins/please_do_better.nro": {
-      "source": "build/please-do-better/candidates/r23-reward-pages/delivery/Please do Better/romfs/nativeNX/plugins/please_do_better.nro",
-      "sha256": "e61e3bda1def28ea2cb03930c59196646573c6bcd27a3d288da0078ce2a4dc00"
+      "source": "build/please-do-better/candidates/r24-forge151/delivery/Please do Better/romfs/nativeNX/plugins/please_do_better.nro",
+      "sha256": "d3d4a79ffd8c5780358bfbaa83def9f5caedbab9714b26493a0c24e93c1e2bfe"
     }
   },
   "publication": {
@@ -102,13 +46,16 @@
     "published": false,
     "url": null
   },
-  "readme": "mods/please-do-better/DISTRIBUTION_README.md",
-  "reason": "Integer reward quantity multiplier from 1x to 5x on player result pages; companion Palico rewards remain unchanged. Mandatory [PleaseDoBetter] primary INI, explicit Save and independent Luck setting.",
+  "readme": "mods/please-do-better/README.md",
+  "reason": "User explicitly approved the workspace compaction and distribution of the renamed/upstream-maintenance builds after static validation.",
   "schema_version": 1,
   "status": "READY_TO_DISTRIBUTE",
-  "support": {},
-  "target": "MHGU Nintendo Switch 1.4.0; Forge 1.4.1 on the user-confirmed Eden/Linux setup.",
-  "version": "r23-reward-pages",
+  "support": {
+    "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
+    "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
+  },
+  "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx.",
+  "version": "r24-forge151",
   "gamebanana": {
     "ai_code": {
       "used": true,
@@ -141,5 +88,6 @@
         "scope": "Original Great Luck patch."
       }
     ]
-  }
+  },
+  "runtime_test": "NOT_RUN"
 }
