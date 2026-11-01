@@ -1,47 +1,12 @@
-# Development and research
+# Please do Better: development and research
 
-Current Switch build: r24-forge151 with upstream Forge 1.5.1. Earlier version claims below retain their recorded scope.
+**Current state.** r24-forge151, READY_TO_DISTRIBUTE, unpublished, a stock Forge 1.5.1 maintenance build approved after static validation with no new gameplay run. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
-## Please do Better
+Marks verified extra luck reward slots with a pulsing gold border and sparkle. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
-Marks verified extra luck reward slots with a pulsing gold border and sparkle.
-Natural luck is the default; optional Force Miraculous Luck reproduces the
-wiki's two-site cheat without changing equipped skills.
+Runtime evidence, scoped to Eden: visible gold highlights on an accepted earlier build (user, 2026-10-07: "finally it works"), the tested setup with the Forge menu (2026-10-08: "all works well"), and r23 loading with forcing and highlights ready (log and installed hash, approved 2026-10-13: "good job, mark it ready to distribute").
 
-Current local release: **r23-reward-pages**, READY_TO_DISTRIBUTE and unpublished.
-[Installation and settings](README.md); [status and payload hashes](DISTRIBUTION.json).
-The 1x to 5x integer slider scales player reward pages and leaves the Palico page
-unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
-
-The user approved distribution of the unchanged r23 candidate. Its installed
-hash and fresh Eden log confirm loading; [the release receipt](EVIDENCE.json)
-records the approval and remaining manual/platform limits. The original r23
-candidate stays preserved, and r19's delivery and source guides are retained in
-the verified rollback archive recorded there.
-
-Earlier r20/r21/r22 reports keep their original payload and coverage scope:
-[r20](EVIDENCE.json), [r21](EVIDENCE.json),
-[r22](EVIDENCE.json).
-
-### Development and evidence
-
-Use [DEVELOPMENT.md](DEVELOPMENT.md) for pinned inputs, build/test/package/export
-commands. [Runtime evidence](DEVELOPMENT.md) retains the version and limits of user
-reports. [THIRD_PARTY.md](THIRD_PARTY.md) records development provenance;
-[DISTRIBUTION_NOTICES.md](DISTRIBUTION_NOTICES.md) supplies release credits.
-
-
-R19-savehint changes only the save-success string. Host persistence, 2,122
-ARM32 and 100,511 runtime/gateway checks, plus native observation/display/
-geometry/highlighting fixtures passed. No fresh game run was performed.
-[SAVE_HINT_VALIDATION.json](EVIDENCE.json) pins the payload.
-
-Technical references: [implementation and state audit](DEVELOPMENT.md),
-[native research](DEVELOPMENT.md) and [remaining gameplay coverage](DEVELOPMENT.md).
-Disable the legacy Great Luck cheat for an authorized test; startup rejects
-prepatched/conflicting code. The second check's broader role remains incompletely
-traced, and Ryujinx compatibility remains untested.
-
+Still unconfirmed: natural positive luck, no luck, forced and live toggles across repeated batches, save and restart persistence, collection and quantity decreases, repeated grids and transitions, player-page multiplier, Palico exclusion, appraisal and collection, consecutive quests, Ryujinx and physical Switch. No clean-shutdown claim is made; Maxwell, HLE and unmapped-memory messages in the logs are not attributed to this plugin. The second check's broader role is incompletely traced. Disable the legacy Great Luck cheat for an authorized test, because startup rejects prepatched or conflicting code.
 
 ## Developing please-do-better
 
@@ -66,19 +31,12 @@ can consequently address the wrong geometry. The separate 1.4.1-render1 loader
 trial adds cumulative offsets while preserving command-local offsets, texture
 bindings, clipping and callbacks. Real-ImGui/NVN-call fixtures recorded 476 bad
 submissions in the original and zero in the fix across 201 frames/879 draws.
-The 2026-10-08 tested Eden setup was user-confirmed; Forge remains LOCAL_ONLY.
-This is scoped evidence, without exhaustive dropdown/transition or new Ryujinx
-validation. Keep plugin rendering active with its settings panel closed.
+Keep plugin rendering active with its settings panel closed.
 
 
 ## Please do Better native research
 
-Current overlay/state rules are in [IMPLEMENTATION.md](DEVELOPMENT.md).
-The accepted R14 Forge background overlay replaced the experimental native
-texture-transfer route. The R13 user log showed valid slot geometry and zero
-execution of both downsample hooks. Historical R5-R13 pending-gate notes remain
-in Git; they do not describe the current renderer. Gameplay acceptance and
-remaining coverage are in [RUNTIME.md](DEVELOPMENT.md) and [MANUAL_TESTS.md](DEVELOPMENT.md).
+The overlay and state rules are under "Implementation and state audit".
 
 ### Decisions and accepted copies
 
@@ -191,15 +149,7 @@ reward-category coverage.
 
 ## Remaining gameplay coverage
 
-R4 forced reward observation and R14 visible highlighting were accepted on the
-tested Eden sessions. The 2026-10-08 R17-config1 setup was also user-confirmed,
-with Forge 1.4.1-render1 and a screenshot showing menu and highlights together.
-[RUNTIME.md](DEVELOPMENT.md) records exact versions, hashes and limits. R19-savehint
-has static checks without a fresh game run.
-
-For any authorized follow-up, retain the exact payload hashes, launch set and
-latest emulator log. Disable the legacy Great Luck cheat; verify activation
-separately from folder presence. Preserve rollback packages and use MHGU 1.4.0.
+For any authorized follow-up, keep the exact payload hashes, launch set and latest emulator log. Disable the legacy Great Luck cheat, verify activation separately from folder presence, and use MHGU 1.4.0.
 
 - [ ] Compare no luck and natural Good/Great/Miraculous Luck across repeated quests.
 - [ ] With forcing on and no equipped luck, check repeated batches; one lucky screen is insufficient.
@@ -210,7 +160,7 @@ separately from folder presence. Preserve rollback packages and use MHGU 1.4.0.
 - [ ] Check collection/quantity decreases: stale/empty slots hide and ordinary refreshes produce no false faults.
 - [ ] Check gold border/sparkle alignment, animation, clipping and cursor/icon visibility with the panel open/closed.
 - [ ] Confirm village return clears live highlights while retaining completed scalar totals.
-- [ ] Check Forge combos/navigation and overlays on the exact loader version; the legacy renderer has a multi-list offset defect.
+- [ ] Check Forge combos, navigation and overlays on the exact loader version.
 - [ ] Document Eden multicore/translation freshness separately from guest flush/readback.
 - [ ] Test Ryujinx startup, modes, quest/return and persistence with its exact revision and fresh log.
 - [ ] Trace the second check's broader gameplay role; retaining its `0x102` continuation does not prove complete behavior.
@@ -220,10 +170,6 @@ settings changes. Native Switch and clean shutdown are not established.
 
 
 ## Implementation and state audit
-
-The current release retains the R14 independent overlay and R15 quiet logging.
-The revision sections below explain earlier rendering changes; removed telemetry
-and transfer hooks are historical. Runtime acceptance is in [RUNTIME.md](DEVELOPMENT.md).
 
 ### Identity and hook inventory
 
@@ -248,13 +194,12 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-R10 retains r4's twenty-two detours and adds two fixed rendering detours in a
+The plugin has twenty-two detours plus two fixed rendering detours in a
 separate transaction: `0xA4FE50` (LDR/AND) and `0x86A330` (MOV/BX tail call).
 The twenty-four eight-byte detours journal 48 words (192 game-code bytes). Each publishes
 `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
 originals share one pooled 4 KiB CodeMemory arena. The main-count PC-relative
 literal is relocated explicitly; other stolen pairs use a checked whitelist.
-Better Input's occupied hook at `0x388EE8` is untouched.
 
 ### Modes, storage and callbacks
 
@@ -378,16 +323,16 @@ Accept only traced copies with matching contents. Lost scopes, overflow, overwri
 mailboxes, empty/incompatible entries or unknown routes suppress attribution.
 Last completed batch totals retain scalar generation evidence independently of
 live array invalidation. Partial coverage reports the extra total unavailable.
-No collection tracker is added; [RESEARCH.md](DEVELOPMENT.md) records native copy offsets.
+No collection tracker is added. Native copy offsets are in "Please do Better native research".
 
-R5 also snapshots state-1 main-array contents on entry to the existing update
+The plugin also snapshots state-1 main-array contents on entry to the existing update
 hook. Up to six eight-entry records fit its existing eight-record scope storage.
 At return, the new pointer/capacity and every copied prefix entry must match;
 only then publish a batch-tagged old/new index mapping. The old allocation is
 never read after native return. Count limits remain 48. No allocator/free is
 intercepted.
 
-R7 snapshots list-copy contents at native return in at most six eight-entry
+It snapshots list-copy contents at native return in at most six eight-entry
 mailbox records, tagged with the current batch serial. The first chunk clears
 only that exact list; capture failure publishes a clearing record. Delayed reads
 never compare earlier copy mappings with later native destination bytes. The
@@ -395,7 +340,7 @@ renderer accepts the two verified base/Festa texture vtables with inherited
 layout and draw methods; other classes stay rejected.
 
 State 1's `0x384AF0` resizes before its original `0x384FC0` call to builder
-`0x3874E0`, all inside the same paired update. R8 supersedes the outer preimage
+`0x3874E0`, all inside the same paired update. The plugin supersedes the outer preimage
 when that nested builder starts a new batch for the same UI object. Newly
 validated generation records already refer to the current destination. Their
 contents must not be compared with the old empty array. Genuine relocations
@@ -438,187 +383,29 @@ A lost conditional/observation owner disables forcing, capture and highlighting
 and invalidates the live binding fence. External bytes stay untouched; unsafe
 transaction status remains explicit. There is no live unpatching or enforcement.
 
-### R9 target and viewport correction
+### Target, viewport and scissor
 
-The native target resolver accepts the default sentinel and resolved presentation
-surface. The native viewport flag selects one of two rectangle banks; accept
-either only when clamping gives the full surface. Capture the matching clip from
-the immutable packet rather than assuming the renderer's normal clip bank.
-Reflected shader-list checks and bounded rejection diagnostics retain the
-original native target/viewport guards.
+The native target resolver accepts the default sentinel and the resolved presentation surface. The native viewport flag selects one of two rectangle banks; accept either only when clamping gives the full surface, and capture the matching clip from the immutable packet. Reflected shader-list checks and bounded rejection diagnostics keep the native guards.
 
-### R10 native texture identity
+Original BC12D8..BC1364 normalizes the selected viewport and scissor intersection, compares its signed rectangle with a shared sentinel, then substitutes the cached viewport on equality. The runtime pointer comes from relocated GOT entry main+0x183F2B0 (BC1314 PC-relative indirection); the offline pointer is main+0x191EAA0. All reads are guarded. Nonmatching empty rectangles and failed sentinel reads stay suppressed.
 
-The r9 user log identifies rejection class 3 for the verified XY shader, with
-four bound extras. Surface descriptors differ and the sampled current surface
-alternates. Comparing descriptor addresses against that transient global state
-cannot establish the presented image. R10 records the native draw image
-(`surface+0x10 -> wrapper+0x3C`) and compares it at the existing presentation
-boundary with the acquired resource
-(`owner+0x48CC`) converted to its NVN texture at resource+0x3C. The original acquire
-fragment verifies the three-entry table and cached index. Sentinel draws resolve
-through the native default surface at presentation. Nondefault texture views
-remain unsupported. Immutable snapshots keep the captured identity across a
-producer frame change. No new hooks, arena, TLS slot or game writes were added.
+### Independent overlay
 
-The first rejection for a live screen fence is retained, so alternating images
-do not make the displayed diagnostic unreadable. Later rejected draws still
-increase the internal counter. New screen fences allow a new diagnostic;
-completed reward totals stay retained.
+The rendering uses Forge's free-render callback and background draw list to submit its own gold border and procedural sparkle to Forge's acquired image. The guarded rendering transaction has two fixed hooks: geometry and native presentation. Native full-viewport shader math, exact slot, batch, array and node binding, owner, executed serial and index, per-boundary authorization, clip, screen fence, bounded snapshots and overflow guards remain. A nondefault view, reduced viewport, unknown shader or missing, changed or empty item stays unsupported. An intermediate offscreen UI image does not suppress the primitive when its projected geometry is valid for the presented frame. Local draw-call fixtures do not prove GPU success.
 
-### R12 native scissor semantics
+Logging: three startup safety records and one concise suppression-code record per class per reward screen. No normal capture, present or render frame logs, and no gateway logs or formats text. Fixtures verify log-free rendering over 240 boundaries. The config codec writes no version marker and reads existing `version=2` files without changing preferences.
 
-Original BC12D8..BC1364 normalizes the selected viewport/scissor intersection,
-compares its complete signed rectangle with a shared sentinel, then substitutes
-the cached viewport on equality. The runtime pointer comes from relocated GOT
-entry main+0x183F2B0 (BC1314 PC-relative indirection); the offline pointer is
-main+0x191EAA0. All pointer/range reads are guarded. R12 reproduces that tail
-instead of treating the default empty rectangle as a zero-area draw. Nonmatching
-empty rectangles and failed sentinel reads remain suppressed. No reward, RNG,
-settings, publication/rollback or resource-allocation behavior changes.
-Original ARM execution is compared with compiled capture/ImGui clip calls for
-both banks and nonzero sentinels; raw/effective values go only to emulator logs.
+### Do not
 
-
-### R13 native downsample provenance
-
-Add fixed gateways main+0xBBFB08 and main+0xBBFB44 for equal/differing-format
-branches, replaying MOV r1,r11 / MOV r2,r10. The untouched
-NVN callback load/call executes with original command/source/destination inputs.
-The native initializer and executor both resolve GOT entry main+0x18418F8 to
-nvnCommandBufferDownsample. Two immutable fixed snapshots record the exact
-native execution frame/serial, owner, fence, source, destination and extent.
-Only same-size whole-texture, non-subresource downsample into the acquired image
-is accepted. Rendering matches that route to the exact geometry/presentation;
-unsupported composition and unobserved offscreen sources stay suppressed.
-No additional trampoline/arena, TLS, contexts or heap allocation. Rendering
-installation is a guarded four-hook transaction with ownership-aware rollback;
-forcing and observation remain independent. GPU execution/alignment remain
-pending.
-
-### R14 independent overlay
-
-Use the existing Forge free-render callback/background draw list to submit our
-own gold border and procedural sparkle to Forge's acquired image. Damage Numbers
-uses the same callbacks and draw list, with projected coordinates rather than
-texture identity. The r13 user run confirms valid reward geometry but zero hits
-at either downsample hook. R14 removes those two fixed gateways, transfer snapshots
-and texture-equality/copy-route acceptance from rendering. The guarded rendering
-transaction returns to two fixed hooks: geometry and native presentation.
-
-Native full-viewport shader math, exact slot/batch/array/node binding, owner,
-executed serial/index, per-boundary authorization, clip, screen fence, bounded
-snapshots and overflow guards remain. Surface/view and successful native draw
-validation still protect capture; a nondefault view, reduced viewport, unknown
-shader or missing/changed/empty item remains unsupported. This changes overlay
-eligibility intentionally: an intermediate offscreen UI image does not suppress
-our primitive when its exact projected geometry is valid for the presented frame.
-No native texture/sprite asset, game draw-packet edit, new API, heap, arena or TLS
-is needed. Visible output/alignment requires a user-run r14 check; local draw-call
-fixtures do not prove GPU success.
-
-### R15 quiet release logging
-
-Remove the automatic render trace scope and periodic address/matrix/perimeter/
-shader/binding dumps. Retain three startup safety records and one concise
-suppression-code record per class per reward screen. No normal capture/present/
-render frame logs. Capture counters and immutable safety evidence remain internal;
-no gateway logs or formats text. Reward/geometry/hook/mode/settings code retains
-r14 behavior. Regression fixtures verify log-free rendering over 240 boundaries,
-with the existing complete native/compiled regression suites.
-
-R14 visible Eden acceptance and the later R17-config1/render1 setup confirmation
-are recorded in [RUNTIME.md](DEVELOPMENT.md). Later plugin revisions retain separate
-static evidence without a fresh gameplay run. The legacy Forge multi-list offset
-defect remains external to this plugin; [DEVELOPMENT.md](DEVELOPMENT.md) describes
-the separate loader correction. Accepted earlier package bytes are preserved. Shared delivery uses mods/please-do-better/DISTRIBUTION.json
-and scripts/mod_distribution.py; no installation or publication.
-
-
-## Runtime acceptance
-
-On 2026-10-07 the user confirmed: "finally it works", supplied an Eden reward-grid
-screenshot with a gold border/sparkle around the final populated slot, and approved
-local distribution after cleaning up log diagnostics. The installed r14 NRO
-matches e0d21d9fc848d425745833fe813fef638e6f118b37d9127757dec8099929c3e0.
-The matching Eden master-10bcd2d849 log records safe startup and bound=1/drawn=1
-on the observed reward screen. This establishes visible highlighting on this
-installation, alongside the earlier accepted forced reward observation.
-
-The screenshot/log are retained under work/please-do-better/r15-report/.
-Log SHA-256: efb1490aa1b49b4e42f00c6f111e0b23b3eb12ed1b3a0ac238ca872520496175.
-Screenshot SHA-256: d55744e57859cbf1b65f25ac0a9a70ef3a976eeeba03b78c5f5839f5ef85ce7c.
-
-R15 changes verbose logging only; overlay eligibility, coordinates, shape,
-forcing, preferences, reward attribution and hooks are retained. R15's binary
-has local compiled/static validation, with no new gameplay run claimed.
-
-The R14 session also exposed Forge menu corruption with the background overlay.
-The legacy loader's multi-list buffer-offset defect and subsequent render1
-correction are described in [DEVELOPMENT.md](DEVELOPMENT.md). The later
-2026-10-08 setup confirmation below uses that separate loader trial.
-
-This is scoped Eden acceptance, not exhaustive coverage. Natural positive luck,
-no luck, forced/live toggles across repeated batches, save loading/restart
-persistence, collection/quantity decreases, repeated grids/transitions/destruction,
-animations, Eden multicore/translation freshness, Ryujinx and the second check's
-broader gameplay role remain pending or incompletely traced. No clean-shutdown,
-rare-drop guarantee, native Switch or universal emulator compatibility claim.
-
-### r16 standalone/settings/log cleanup
-
-This binary has its own fresh compiled/static checks, recorded in CLEANUP_VALIDATION.json. No new gameplay test was run; the preceding observations retain their original version and scope. Forge remains unchanged.
-
-### 2026-10-08: primary-only config release acceptance
-
-The user reported "all works well" and requested promotion to ready to
-distribute, keeping Forge LOCAL_ONLY. The tested Eden installation matches
-r17-config1 NRO SHA-256 `bf2263640192b4b6bdb33b0cb507ea7dfe8a65fc86e27f3b90a91fee860eacbe`. The supplied reward-screen screenshot
-shows the Forge menu and PDB gold highlights visible together. Eden's retained
-log records Forge 1.4.1-render1, PDB r17-config1 and successful Damage Numbers
-settings saves. Damage Numbers still prints its older r20 startup label; its
-installed file hash identifies the tested r22-config1 bytes.
-
-[Release runtime evidence](EVIDENCE.json) records the
-log/screenshot hashes and scope. This is the user's confirmation of the tested
-setup, not exhaustive dropdown/transition/save-restart coverage or a clean
-shutdown claim. The newest Ryujinx log used older plugin bytes and is not
-confirmation of this release. Distribution preparation rebuilds no runtime,
-installs nothing and publishes nothing. Earlier entries remain historical.
-
-### 2026-10-08: r18-config2 config simplification
-
-The config codec now writes no version marker and reads existing `version=2`
-files without changing their preferences. Host tests execute production storage
-with a recording filesystem; compiled ARM32 fixtures cover old-file load,
-explicit versionless save and restart. These are simulated storage results,
-not a new emulator/game run. Earlier runtime reports keep their original
-version and binary scope. Nothing was installed or activated by this task.
-
-### 2026-10-08: r19-savehint save-location wording
-
-The success message names this plugin's INI and MHGU's save folder. Public
-instructions use the same location without referencing another plugin.
-Persistence, config fields, hooks and gameplay behavior are unchanged.
-Scoped validation is recorded in [SAVE_HINT_VALIDATION.json](EVIDENCE.json).
-No new gameplay run or installation was performed for this wording revision.
-
-### 2026-10-13: r23 distribution approval
-
-The user requested "good job, mark it ready to distribute". The latest Eden log
-records r23-reward-pages loading with forcing/highlights ready, and the installed
-NRO matches the preserved candidate SHA-256
-`e61e3bda1def28ea2cb03930c59196646573c6bcd27a3d288da0078ce2a4dc00`.
-Promotion rebuilds no runtime. [The release receipt](EVIDENCE.json)
-records the log fingerprint, original candidate ZIP and r19 rollback archive.
-
-This is explicit distribution approval plus fresh runtime loading evidence.
-Individual player-page multiplier, Palico exclusion, appraisal/collection,
-persistence and consecutive-quest checks were not separately reported. The log
-contains HLE/keyboard and Maxwell assertions and an unmapped-memory error; no
-clean-run or clean-shutdown claim is made, and those emulator messages are not
-attributed to this plugin. Ryujinx and physical Switch gameplay remain untested.
-
+- **Identify the presented image by comparing surface descriptors or transient global state.** Descriptors differ and the sampled surface alternates. Native draw image is `surface+0x10 -> wrapper+0x3C`; acquired resource is `owner+0x48CC`, its NVN texture at resource+0x3C. That route is unused now, and nondefault views stay unsupported.
+- **Route the overlay through downsample hooks.** Gateways at main+0xBBFB08 and main+0xBBFB44 (GOT main+0x18418F8, `nvnCommandBufferDownsample`) saw zero hits on valid reward geometry and were removed.
+- **Treat the default empty rectangle as a zero-area draw.** Reproduce the native sentinel tail instead.
+- **Compare a nested builder's new generation records with the outer empty array.** A same-object new batch supersedes the outer preimage.
+- **Read the secondary routine's return register as a count.** It returns void; derive the count from comparisons.
+- **Read the old allocation after native return, or compare earlier copy mappings with later destination bytes.**
+- **Select slots by item ID alone.** Bindings use exact UI, batch, list, group, index, frame-node and icon-node identity.
+- **Log per frame in release.** Run traces and address or matrix dumps were removed.
+- **Blame this plugin for Forge menu corruption seen with an older loader.** That was the legacy loader's multi-list buffer-offset defect, and stock Forge 1.5.1 is the baseline.
 
 ## Switch r23 reward-page multiplier
 
