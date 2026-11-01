@@ -135,15 +135,7 @@ subordinate to original instructions.
 
 ### Reproduce
 
-```bash
-python3 scripts/please_do_better_research.py export
-python3 scripts/please_do_better_research.py check
-tools/mwc-analysis-venv/bin/python scripts/please_do_better_display_probe.py
-```
-
-Export uses `-readOnly -noanalysis` and the shared Ghidra helper. Original bytes,
-shader input hashes and SPK bounds are checked; GZF/annotations are preserved.
-CPU fixtures do not establish GPU alignment, translation freshness or broader
+`./build.sh test` runs the `please_do_better_*_probe.py` fixtures. CPU fixtures do not establish GPU alignment, translation freshness or broader
 reward-category coverage.
 
 
