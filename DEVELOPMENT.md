@@ -23,15 +23,9 @@ Use settings-only panels. Format logs in Forge callbacks, outside native hooks. 
 Export only `EXPORT.json` entries. `source-export.json` records the parent commit and source/export hashes. Exports omit game assets, outputs, caches, backups, private configurations, historical asset editions and Git metadata. Initialize remotes and publish separately.
 
 
-### Forge rendering limits
+### Forge rendering
 
-The legacy NVN backend concatenates ImGui lists but omits preceding-list index
-and vertex offsets when submitting later lists. Menu windows/background overlays
-can consequently address the wrong geometry. The separate 1.4.1-render1 loader
-trial adds cumulative offsets while preserving command-local offsets, texture
-bindings, clipping and callbacks. Real-ImGui/NVN-call fixtures recorded 476 bad
-submissions in the original and zero in the fix across 201 frames/879 draws.
-Keep plugin rendering active with its settings panel closed.
+Keep plugin rendering active with its settings panel closed. Stock Forge 1.5.1's NVN backend accumulates list offsets (`source/forge/graphics/imgui_impl_nvn.cpp`), so older loaders' multi-list geometry defect does not apply to the baseline.
 
 
 ## Please do Better native research
@@ -50,7 +44,7 @@ has six comparisons, the last enabling slot eight. Absent tables generate no ite
 Fixtures execute both full native count bodies and selector with deterministic
 quest/player/table and RNG-source stubs. Across 1,092 cases, compiled natural mode
 matches original counts/consumed rolls; forced mode matches the original cheat.
-Native item selection is not rerun. R4 captures actual four-byte item/quantity
+Native item selection is not rerun. The plugin captures actual four-byte item/quantity
 entries at the native array-copy boundary; generator returns are diagnostic only.
 
 UI construction `0x3874E0` has these verified eight-entry copies. Fixtures execute
@@ -99,7 +93,7 @@ The displaced LDR r0,[r6] / AND r0,r0,#15 pair writes no flags. GUI publishers
 `0xA4EB9C` and `0xA3E3B0` provide model matrices; `0xA397D4` provides globals.
 CBGUIMatrix 0x2D7 and CBGUIGlobal 0x2D6 bind at renderer+0x18BC/+0x18B4.
 Scissor `0xA37C1C` applies draw-context offsets/scales and viewport intersections.
-R12 also reproduces the native sentinel rectangle fallback at `0xBC12D8..0xBC1364`.
+The plugin also reproduces the native sentinel rectangle fallback at `0xBC12D8..0xBC1364`.
 Current shader/full-viewport, clip and exact frame/slot identity guards are
 documented with the rendering hooks in the implementation audit.
 
@@ -425,7 +419,7 @@ companion's gathering row from save-state +0xAF0 and generates its stolen row
 through +0x382FFC. Companion count +0xB17 determines page 3's row count at
 UI+0x158 (two rows per companion). These records have no quantity writes here.
 Items already received during a quest into the pouch/box are outside result
-arrays and remain unchanged. Layout evidence is in REWARD_PAGE_LAYOUT.json.
+arrays and remain unchanged. Layout evidence is in `EVIDENCE.json`.
 
 One atomic mode word carries force_miraculous in bit 0 and multiplier-1 in
 bits 1..3 (valid multipliers 1..5). Native scopes latch both before generation.
