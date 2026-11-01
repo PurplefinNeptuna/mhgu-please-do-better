@@ -8,7 +8,9 @@ BINARY={'.arc','.tex','.mod','.lmt','.gmd','.nsp','.xci','.nca','.zip','.7z','.n
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def safe(name):
  p=Path(name)
- if p.is_absolute() or '..' in p.parts or any(x in FORBIDDEN for x in p.parts) or p.suffix.lower() in BINARY or p.name in ('build.local.json','source-export.json'):raise ValueError('Non-source export path: '+name)
+ # object's src/build/ is vendored Rust source, not this mod's generated build tree.
+ blocked=FORBIDDEN-{'build'} if p.parts[:2]==('vendor','crates') else FORBIDDEN
+ if p.is_absolute() or '..' in p.parts or any(x in blocked for x in p.parts) or p.suffix.lower() in BINARY or p.name in ('build.local.json','source-export.json'):raise ValueError('Non-source export path: '+name)
  return p
 def refresh(mod):
  folder=ROOT if (ROOT/'mod.json').is_file() else ROOT/'mods'/mod
@@ -19,6 +21,9 @@ def refresh(mod):
   except ValueError:continue
   if p.is_symlink():raise ValueError('Source symlink: '+name)
   if p.is_file() and p.name!='EXPORT.json':names.append(name)
+ pins=json.loads((folder/'dependencies.lock.json').read_text()).get('files',{})
+ missing=set(pins)-set(names)
+ if missing:raise ValueError('Pinned source omitted from export: '+str(sorted(missing)))
  (folder/'EXPORT.json').write_text(json.dumps({'schema_version':1,'mod':mod,'files':names},indent=2)+'\n')
 def export(mod,dest):
  folder=ROOT if (ROOT/'mod.json').is_file() else ROOT/'mods'/mod;record=json.loads((folder/'EXPORT.json').read_text())

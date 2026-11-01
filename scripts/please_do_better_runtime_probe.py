@@ -1,4 +1,3 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
 #!/usr/bin/env python3
 """Compiled startup/gateway fixtures; fake kernel, no game launch or disk I/O."""
 import itertools
@@ -56,7 +55,10 @@ class Probe:
         u.hook_add(unicorn.UC_HOOK_MEM_WRITE,self.mirror)
         u.hook_add(unicorn.UC_HOOK_INTR,self.svc)
     def address(self,name):return MODULE+self.symbols[name]
-    def private(self,name):return self.address(f'_ZN3pdbL{len(name)}{name}E')
+    def request_force(self,value):
+        # The luck bit of the published mode word, as the settings row sets it.
+        at=self.private('mode');self.write(at,(self.read(at)&~1)|int(bool(value)))
+    def private(self,name):return self.address('pdb_'+name)
     def read(self,addr,fmt='<I'):return struct.unpack(fmt,self.u.mem_read(addr,struct.calcsize(fmt)))[0]
     def write(self,addr,value,fmt='<I'):self.u.mem_write(addr,struct.pack(fmt,value))
     def string(self,addr):return bytes(self.u.mem_read(addr,1024)).split(b'\0',1)[0].decode()
@@ -135,6 +137,7 @@ class Probe:
             stack=bytes(u.mem_read(u.reg_read(a.UC_ARM_REG_SP),8))
             vals=struct.unpack('<4f',struct.pack('<3I',r[1],r[2],r[3])+stack[:4]);self.clips.append(vals);self.clip_history.append(vals);self.ret()
         elif name=='ImDrawList_PopClipRect':assert self.clips;self.clips.pop();self.ret()
+        elif name=='forge_log_getLevel':self.ret(0)
         elif name=='forge_log':
             fmt=self.string(r[1]);self.logs.append(fmt);values=[];position=2
             # ARM32 variadic arguments start at r2. Doubles and ll integers
@@ -152,6 +155,9 @@ class Probe:
                     if kind=='s':value=self.string(value)
                     elif kind in ('d','i') and value>=0x80000000:value-=0x100000000
                 values.append(value)
+            # forge-rs renders the message itself and always passes it through %s.
+            if fmt=='%s':
+                fmt=values[0];self.logs[-1]=fmt
             self.log_records.append((fmt,values));self.ret()
         elif name=='igTreeNode_Str':
             opened=self.tree.get(self.string(r[0]),False) if isinstance(self.tree,dict) else self.tree
@@ -252,7 +258,7 @@ def main():
         p=Probe(image,payload,fail_svc={op:nth});p.call('forge_onInit')
         check(p.read(p.private('pair_ready'))==1 and p.read(p.private('capture_ready'))==0,'Safe visual resource failure retains natural conditional pair')
         check(not p.aliases and all(s<0x50000000 or s>=0x50010000 for s,n,perm in p.regions),'Failed preparation releases mapped arena storage')
-        p.call('_ZN3pdb13request_forceEb',[1]);pc,f=p.frame(0,[DATA,251])
+        p.request_force(1);pc,f=p.frame(0,[DATA,251])
         check(pc==MAIN+0xe0da0,'Visual resource failure never silently enables always-forced mode')
     for fail in (3,4,8,22,23):
         p=Probe(image,payload,fail_flush=fail);p.call('forge_onInit')
@@ -271,7 +277,7 @@ def main():
     subject=DATA+0x1000;skills=DATA+0x2000
     p.write(subject+0x188,skills);p.write(subject+4+0x188,skills)
     for forced,equipped,site,unaligned in itertools.product((False,True),(False,True),(0,1),(False,True)):
-        p.call('_ZN3pdb13request_forceEb',[int(forced)])
+        p.request_force(int(forced))
         p.write(skills+0x3dc+(251//32)*4,(1<<(251%32)) if equipped else 0)
         offset=(0x3822dc,0x4d17f4)[site];end=MAIN+offset+8
         reference=MAIN+0x1f00000
@@ -354,7 +360,7 @@ def main():
     for skill,guaranteed,category,meal,sequence,forced in itertools.product(
             (None,251,252,321,253,254,255),(0,2,7,8),(0,1),(0,16,17),
             ([0]*12,[21,22,24,25,27,28,30,31,31,31,31,31],[31]*12),(False,True)):
-        observed.call('_ZN3pdb13request_forceEb',[int(forced)])
+        observed.request_force(int(forced))
         original.write(MAIN+0x3822dc,0xe3a00001 if forced else struct.unpack_from('<I',image,0x3822dc)[0])
         original.u.ctl_remove_cache(MAIN+0x3822dc,MAIN+0x3822e0)
         results=[]
@@ -369,7 +375,7 @@ def main():
         check(results[0]==results[1],'Main count and RNG stream agree with original/cheat across skills, meals and caps');rng_cases+=1
     for skill,sequence,forced,table_present in itertools.product((None,251,252,321,253,254,255),
             ([0]*6,[21,22,24,25,27,28],[31]*6),(False,True),(False,True)):
-        observed.call('_ZN3pdb13request_forceEb',[int(forced)])
+        observed.request_force(int(forced))
         original.write(MAIN+0x3822dc,0xe3a00001 if forced else struct.unpack_from('<I',image,0x3822dc)[0])
         original.u.ctl_remove_cache(MAIN+0x3822dc,MAIN+0x3822e0)
         results=[]
@@ -383,13 +389,13 @@ def main():
         check(results[0]==results[1],'Secondary count and RNG stream include final slot-eight comparison and absent tables');rng_cases+=1
     # Compiled scope/attribution/publication helpers. Actual native copies are
     # independently executed in the native research fixtures.
-    p=Probe(image,payload);p.call('forge_onInit');p.call('_ZN3pdb13request_forceEb',[1])
+    p=Probe(image,payload);p.call('forge_onInit');p.request_force(1)
     ui,source,target,container=DATA+0x10000,DATA+0x11000,DATA+0x12000,DATA+0x13000
     p.write(ui+0x5c,target);p.write(ui+0x64,target+0x1000);p.write(ui+0x3c,2)
     p.write(container,source);p.write(container+4,8)
     _,root=p.frame(12,[ui],at=DATA+0x4000)
     _,counter=p.frame(9,[0,1],caller=MAIN+0x387a98,at=DATA+0x4400)
-    p.call('_ZN3pdb13request_forceEb',[0])
+    p.request_force(0)
     pc,f=p.frame(0,[ui,251],at=DATA+0x4800)
     check(pc==MAIN+0x3822e4 and p.read(f+272)==1,'In-batch toggle retains latched force')
     p.frame(25,[31,0,0,0,2],at=DATA+0x4800)
@@ -427,16 +433,16 @@ def main():
           'Clearing diagnostics retain cumulative publication evidence after provenance is hidden')
     # Four observed scopes: overflow suppresses attribution while parent mode
     # remains latched; unwinding recovers and does not invent return addresses.
-    frames=[];p.call('_ZN3pdb13request_forceEb',[1])
+    frames=[];p.request_force(1)
     for i in range(4):_,f=p.frame(15,[ui],caller=STOP+4*i,at=DATA+0x4000+0x400*i);frames.append(f)
-    p.call('_ZN3pdb13request_forceEb',[0]);pc,f=p.frame(15,[ui],at=DATA+0x5800)
+    p.request_force(0);pc,f=p.frame(15,[ui],at=DATA+0x5800)
     check(p.read(f+324)==STOP,'Overflow leaves original caller LR untouched')
     pc,f=p.frame(0,[ui,251],at=DATA+0x5c00);check(pc==MAIN+0x3822e4,'Overflow keeps root force latch')
     for i,f in reversed(list(enumerate(frames))):check(p.leave(f)==STOP+4*i,'Nested leave preserves native caller')
     pc,f=p.frame(0,[ui,251]);check(pc==MAIN+0xe0da0,'Overflow quarantine recovers after root unwind')
-    p.call('_ZN3pdb13request_forceEb',[1]);_,root=p.frame(12,[ui],caller=STOP+64)
+    p.request_force(1);_,root=p.frame(12,[ui],caller=STOP+64)
     p.write(DATA+0x51000+0x48+17*4,0xdeadbeef) # Lost/foreign value in our reserved slot.
-    p.call('_ZN3pdb13request_forceEb',[0]);pc,f=p.frame(0,[ui,251],at=DATA+0x4400)
+    p.request_force(0);pc,f=p.frame(0,[ui,251],at=DATA+0x4400)
     check(pc==MAIN+0x3822e4,'Lost TLS preserves already-latched force through immutable native thread identity')
     check(p.leave(root)==STOP+64 and p.read(DATA+0x51000+0x48+17*4)==0xdeadbeef,'Lost TLS does not invent a caller or overwrite external bytes')
     p.call('forge_onUpdate',[0]);check(p.read(p.private('summary_status'))==2,'Lost TLS reports incomplete observation')
@@ -447,7 +453,7 @@ def main():
     p.call('forge_onUpdate',[0])
     check(p.read(p.private('summary_status'))==2 and p.read(p.private('drops'))>old_drops,'Publication overflow suppresses attribution and reports incomplete coverage')
     for thread in range(1,9):p.thread=thread;p.frame(0,[ui,251])
-    p.call('_ZN3pdb13request_forceEb',[1]);pc,f=p.frame(0,[ui,251])
+    p.request_force(1);pc,f=p.frame(0,[ui,251])
     check(pc==MAIN+0xe0da0,'Exhausted thread pool remains natural when batch latching is unavailable')
     # Plugin preference I/O operates only on in-memory fake files. Verify the
     # compiled SDK argument layout, counted mount and primary-only commit paths.

@@ -1,9 +1,5 @@
 {
-  "approval": {
-    "date": "2026-10-15",
-    "basis": "User approved implementation of the full compaction plan, including renamed ready releases and stock Forge maintenance. Earlier gameplay acceptance remains attached to the original hashes."
-  },
-  "archive": "please-do-better-r24-forge151.zip",
+  "archive": "please-do-better-r25-candidate.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -19,10 +15,10 @@
       "mods/please-do-better/EVIDENCE.json"
     ],
     "static_summary": "Current host/native/build evidence and original dated results are recorded in EVIDENCE.json.",
-    "manual_summary": "No new gameplay run. The user approved distribution of this maintenance build; historical gameplay reports and exact hashes remain under EVIDENCE.json historical records."
+    "manual_summary": "No gameplay run of this rewrite. Historical gameplay reports and exact hashes remain under EVIDENCE.json historical records."
   },
   "limitations": [
-    "This maintenance build has no new gameplay run. Earlier user acceptance applies only to the preserved original binaries; Ryujinx/native Switch coverage remains unconfirmed.",
+    "This rewrite has no gameplay run. Earlier user acceptance applies only to the preserved original binaries; Ryujinx/native Switch coverage remains unconfirmed.",
     "Fresh Eden log and installed hash confirm r23 loading. Individual player-page quantity, Palico exclusion, appraisal/collection, persistence and consecutive-quest checks were not separately reported.",
     "Log contains HLE/keyboard and Maxwell assertions plus an unmapped-memory error; no clean-run or clean-shutdown claim. These emulator messages are not attributed to the plugin.",
     "Native inventory capacity and the 150-entry appraisal queue remain; unsupported records or quantity products above 32767 suppress the entire multiplier attempt.",
@@ -31,31 +27,28 @@
   ],
   "mod": "please-do-better",
   "notices": [
+    "mods/please-do-better/DISTRIBUTION_NOTICES.md",
     "mods/please-do-better/LICENSE",
-    "mods/please-do-better/DISTRIBUTION_NOTICES.md"
+    "mods/please-do-better/vendor/forge-rs/LICENSE",
+    "mods/please-do-better/vendor/libnx/LICENSE-MIT",
+    "mods/please-do-better/licenses/FORGE-MIT.txt",
+    "mods/please-do-better/vendor/crates/log-0.4.34/LICENSE-MIT",
+    "mods/please-do-better/licenses/RUST-MIT.txt",
+    "mods/please-do-better/licenses/UNICODE-3.0.txt",
+    "mods/please-do-better/licenses/COMPILER_BUILTINS.txt"
   ],
   "package_name": "please-do-better",
-  "payloads": {
-    "romfs/nativeNX/plugins/please_do_better.nro": {
-      "source": "build/please-do-better/candidates/r24-forge151/delivery/Please do Better/romfs/nativeNX/plugins/please_do_better.nro",
-      "sha256": "d3d4a79ffd8c5780358bfbaa83def9f5caedbab9714b26493a0c24e93c1e2bfe"
-    }
-  },
   "publication": {
     "date": null,
     "published": false,
     "url": null
   },
   "readme": "mods/please-do-better/README.md",
-  "reason": "User explicitly approved the workspace compaction and distribution of the renamed/upstream-maintenance builds after static validation.",
+  "reason": "r25 development candidate: Rust/forge-rs rewrite of the C++ r24-forge151 with no intended behaviour change. Not approved for distribution; gameplay NOT RUN.",
   "schema_version": 1,
-  "status": "READY_TO_DISTRIBUTE",
-  "support": {
-    "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
-    "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
-  },
+  "status": "DEVELOPMENT",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx.",
-  "version": "r24-forge151",
+  "version": "r25",
   "gamebanana": {
     "ai_code": {
       "used": true,
@@ -63,6 +56,10 @@
         {
           "name": "OpenAI Codex",
           "url": "https://openai.com/codex/"
+        },
+        {
+          "name": "Claude Code",
+          "url": "https://claude.com/claude-code"
         }
       ],
       "scope": "writing, modifying and debugging this mod's code."
@@ -82,6 +79,12 @@
         "scope": "Original Forge code and API ancestry."
       },
       {
+        "name": "forge-rs",
+        "author": "Fexty",
+        "url": "https://github.com/Fexty12573/forge-rs",
+        "scope": "Rust runtime, callbacks and ImGui bindings."
+      },
+      {
         "name": "libnx",
         "author": "Hydrosphere Developers",
         "url": "https://github.com/switchbrew/libnx",
@@ -95,5 +98,7 @@
       }
     ]
   },
-  "runtime_test": "NOT_RUN"
+  "runtime_test": "NOT_RUN",
+  "candidate": "build/please-do-better/candidates/r25/delivery",
+  "candidate_builder": "scripts/build.py"
 }

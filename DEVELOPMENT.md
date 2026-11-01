@@ -1,6 +1,6 @@
 # Please do Better: development and research
 
-**Current state.** r24-forge151, READY_TO_DISTRIBUTE, unpublished, a stock Forge 1.5.1 maintenance build approved after static validation with no new gameplay run. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r25 DEVELOPMENT candidate (2026-11-02), a Rust/forge-rs 1.5.0 rewrite of the C++ r24-forge151. Rewards, luck, multiplier, overlay and settings behaviour are intended to be unchanged, and `src/gateway.S` and `src/svc.S` are byte-identical. All seven ARM probe suites pass with the same case counts as r24-forge151. Gameplay NOT RUN. Delivery: `build/please-do-better/candidates/r25/delivery/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots with a pulsing gold border and sparkle. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
@@ -10,13 +10,11 @@ Still unconfirmed: natural positive luck, no luck, forced and live toggles acros
 
 ## Developing please-do-better
 
-Run `./build.sh` from any directory; it defaults to `build`. Commands: `doctor`, `prepare`, `build`, `test --host`, `test`, `verify`, `package` and `export --output DEST`. Only `prepare --fetch` downloads dependencies. Default builds use the pinned compiler image offline and stage candidates.
+Run `./build.sh COMMAND` from any directory: `doctor`, `prepare`, `build`, `test --host`, `test`, `verify`, `package` and `export --output DEST`. Builds are offline with the pinned Rust nightly, vendored forge-rs 1.5.0 and the separately pinned cargo-forge 1.4.1 converter.
 
-Copy `build.local.example.json` to ignored `build.local.json`, then set explicit main, SDK and Forge inputs. Their supported SHA-256 values are in `dependencies.lock.json`; the main build ID and hook signatures are checked too. Changing dependencies or hook sites requires a reviewed lock update, ABI/import checks, focused fixtures and GE liveness revalidation.
+Copy `build.local.example.json` to ignored `build.local.json`, then set the tools and copied main/SDK/Forge inputs. Their supported SHA-256 values are in `dependencies.lock.json`; the main build ID and hook signatures are checked too. Changing dependencies or hook sites requires a reviewed lock update, import checks, focused fixtures and GE liveness revalidation. `core/` holds the portable logic and `core/tests/` its host tests. `src/` holds the gateways, reward capture, overlay and settings. The ARM probes in `scripts/` execute the compiled plugin and read its private state through hidden `pdb_*` symbols, which never reach the NRO's exports.
 
-Use the configured Python environment for the exact `requirements.txt` versions. Host tests need no game files, installed emulator or parent checkout. Complete ARM/resource fixtures require the supplied inputs. Forge headers and required helper snapshots live in this folder. Outputs stay under the coordinating workspace's root build/work, or this repo's ignored local build/work after export.
-
-`build --diagnostics` enables developer captures without diagnostic UI. It cannot be packaged with `package --release`. A release requires an approved, versioned `DISTRIBUTION.json`, matching payload hashes and completed tests; earlier releases stay immutable. Runtime acceptance remains scoped to its recorded version, even when cleanup builds pass static fixtures.
+Hooks stay on the private CodeMemory arena in `core/src/platform.rs`, not Forge's trampolines: Forge copies a target's first eight bytes without relocating them, and the second word at main+0x381fec is `ldr r0,[pc,#0x108]`. The arena relocates exactly that literal. Forge has no API for that, for a mapping query, a program ID or a process cache flush, which is what `src/svc.S` supplies.
 
 Use settings-only panels. Format logs in Forge callbacks, outside native hooks. Keep one startup summary, meaningful committed preference changes and readable actionable failures. Never reset failure reason masks; unchanged frames stay silent. Overlays and background work run with settings panels closed.
 

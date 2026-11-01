@@ -1,0 +1,13 @@
+{
+    global:
+        forge_onInit;
+        init;
+        fini;
+        forge_onLoad;
+        forge_onUpdate;
+        forge_onImGuiInit;
+        forge_onImGuiRender;
+        forge_onImGuiFreeRender;
+
+    local: *;
+};

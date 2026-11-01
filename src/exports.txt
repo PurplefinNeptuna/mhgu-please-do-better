@@ -1,4 +1,0 @@
-{
-    global: forge_on*; init; fini;
-    local: *;
-};

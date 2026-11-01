@@ -1,12 +1,8 @@
 {
-  "main": "work/inputs/main",
-  "sdk": "work/inputs/sdk",
-  "forge": "work/inputs/subsdk9",
-  "python": "python3",
-  "container_storage": "tools/forge-container/storage",
-  "inputs": "work/input-source",
-  "hd": "work/inputs/HD",
-  "library": "work/inputs/library",
-  "romfs": "work/inputs/romfs",
-  "salad": "work/inputs/SaladSoftware.py"
+  "rust_bin": "/path/to/nightly-2026-10-02/bin",
+  "cargo_home": "/path/to/private-cargo-home",
+  "cargo_forge": "/path/to/pinned/cargo-forge",
+  "devkitarm": "/path/to/devkitARM",
+  "python": "/path/to/python-with-requirements.txt",
+  "inputs": "/path/to/copied-native-inputs"
 }

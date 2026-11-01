@@ -1,44 +1,8 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
-"""Shared verified ARM32 NSO/ELF/NRO helpers and pinned native build inputs."""
-import ctypes
-import ctypes.util
-import hashlib
-import json
-import struct
-import subprocess
-from pathlib import Path
-from paths import ROOT, MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
-FORGE = FORGE
-DEPS = DEPS
-REVISION = "b23e114a23f41c9a8e2fd34b2f4df2a2102d0ee1"
-MAIN_SHA = "b3935415499549adaf4c0e89822831daa175cfd456a7990791c79be3997645ef"
-BUILD_ID = "fb08f1d20fd1204fe7070672777f869b00000000000000000000000000000000"
-IMAGE = "docker.io/devkitpro/devkita64@sha256:1fc388c3a0d34bd2045a6dadcb1020e069d5f876a187fd705de14b4440c00282"
-HOOKS = [0x3de064, 0x3af5b4, 0x388ee8, 0x5e8130, 0x3850b0, 0x7a3480]
-WINDOWS = {
-    "joy_update_BETTER_INPUT_OCCUPIED": 0x3de064,
-    "joy_digital_converter_shared": 0x3de4b0,
-    "player_quest_input_candidate": 0x2a79cc,
-    "player_command_classifier_shared_candidate": 0x27ca28,
-    "long_sword_new_instance": 0x2b489c,
-}
-
-def sha(data):
-    return hashlib.sha256(data).hexdigest()
-
-
-def run(args, **kwargs):
-    return subprocess.run(list(map(str, args)), check=True, **kwargs)
-
-
-def capture(args, **kwargs):
-    return run(args, capture_output=True, text=True, **kwargs).stdout.strip()
-
-
-def write_json(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n")
-
+"""Bounded verified NSO/NRO readers; inputs remain external to source exports."""
+import ctypes, ctypes.util, hashlib, struct
+MAIN_SHA="b3935415499549adaf4c0e89822831daa175cfd456a7990791c79be3997645ef"
+BUILD_ID="fb08f1d20fd1204fe7070672777f869b00000000000000000000000000000000"
+def sha(data): return hashlib.sha256(data).hexdigest()
 
 def main_image(data):
     if sha(data) != MAIN_SHA or data[:4] != b"NSO0" or data[0x40:0x60].hex() != BUILD_ID:
@@ -70,37 +34,6 @@ def main_image(data):
     for address, raw, _ in segments:
         image[address:address+len(raw)] = raw
     return bytes(image), segments
-
-
-def elf_to_nro(data):
-    if data[:7] != b"\x7fELF\x01\x01\x01" or struct.unpack_from("<H", data, 18)[0] != 40:
-        raise ValueError("Expected ELF32 little-endian ARM")
-    phoff = struct.unpack_from("<I", data, 28)[0]
-    phsize, count = struct.unpack_from("<HH", data, 42)
-    if phsize != 32 or phoff + count*phsize > len(data):
-        raise ValueError("Invalid ELF program headers")
-    segments = [struct.unpack_from("<8I", data, phoff+i*32) for i in range(count)]
-    segments = [s for s in segments if s[0] == 1]
-    if len(segments) != 3 or [s[6] for s in segments] != [5,4,6]:
-        raise ValueError("Expected RX/R/RW load segments")
-    align = lambda x: (x+4095)&~4095
-    cursor = 0
-    for s in segments:
-        if s[2] != cursor or s[1]+s[4] > len(data) or s[4] > s[5]:
-            raise ValueError("Unexpected ELF segment layout or bounds")
-        cursor += align(s[4])
-    image = bytearray(cursor)
-    for s in segments:
-        image[s[2]:s[2]+s[4]] = data[s[1]:s[1]+s[4]]
-    image[16:128] = bytes(112)
-    image[16:20] = b"NRO0"
-    struct.pack_into("<I", image, 24, len(image))
-    for i,s in enumerate(segments):
-        struct.pack_into("<II", image, 32+i*8, s[2], align(s[4]))
-    struct.pack_into("<I", image, 56, align(max(0,segments[2][5]-align(segments[2][4]))))
-    # Deterministic content fingerprint in the NRO build-id field.
-    image[64:96] = hashlib.sha256(data).digest()
-    return bytes(image)
 
 
 def elf_hash(name):
@@ -209,25 +142,6 @@ class Nro:
                 chains[current] = index
         return struct.pack(f"<{2 + self.buckets + self.count}I",
                            self.buckets, self.count, *buckets, *chains)
-
-
-def dynamic_exports(elf):
-    if elf[:7] != b"\x7fELF\x01\x01\x01" or struct.unpack_from("<H", elf, 18)[0] != 40:
-        raise ValueError("Expected ELF32 little-endian ARM")
-    offset = struct.unpack_from("<I", elf, 32)[0]
-    size, count = struct.unpack_from("<HH", elf, 46)
-    sections = [struct.unpack_from("<10I", elf, offset + i * size) for i in range(count)]
-    tables = [s for s in sections if s[1] == 11]
-    if len(tables) != 1:
-        raise ValueError("Expected one ELF dynamic symbol table")
-    table = tables[0]; strings = sections[table[6]]
-    names = elf[strings[4]:strings[4] + strings[5]]
-    exports = {}
-    for index in range(table[5] // 16):
-        name, value, length, info, visibility, defined = struct.unpack_from("<IIIBBH", elf, table[4] + index * 16)
-        if defined and info >> 4 in (1, 2) and visibility & 3 == 0:
-            exports[names[name:].split(b"\0", 1)[0]] = (value, length)
-    return exports
 
 
 def nso_segments(nso):

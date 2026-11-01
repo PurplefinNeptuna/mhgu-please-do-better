@@ -1,4 +1,3 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
 #!/usr/bin/env python3
 """ARM32 instruction/SVC ABI fixtures. This does not run Eden or the game."""
 import itertools

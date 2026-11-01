@@ -36,7 +36,7 @@ Static/host/build results are separate from exact binary gameplay acceptance.
 Commit validated work locally; never install, activate, launch, edit saves,
 publish or push implicitly. Preserve accepted artifacts and unrelated edits.
 
-Target upstream Forge 1.5.1, native ARM32 Hook 24 and the actual 70-byte metadata
+Target upstream Forge 1.5.1 through vendored forge-rs 1.5.0, native ARM32 Hook 24 and the actual 70-byte metadata
 record. Do not restore retired custom loader shims or patches.
 
 Release READMEs address mod users. Use Requirements, Installation, Usage,

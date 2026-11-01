@@ -1,4 +1,3 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
 #!/usr/bin/env python3
 """Compiled r6 geometry/presentation/gold draw fixtures. No game or GPU launch."""
 import json
@@ -8,6 +7,7 @@ import struct
 from unicorn import arm_const as a
 from please_do_better_runtime_probe import Probe, MAIN, DATA, STACK, STOP, REGS, MASK
 from please_do_better_native_probe import native_clip
+import re
 import please_do_better as recipe
 
 
@@ -438,7 +438,8 @@ def main():
     check(not any(any(marker in fmt for marker in verbose) for fmt in p.logs),
           'Release retains only startup and bounded unsupported-path messages')
     rejects=[(fmt,args) for fmt,args in p.log_records if 'unsupported reward draw path' in fmt]
-    check(len(rejects)==6 and all(len(args)==2 and 1<=args[0]<=7 and isinstance(args[1],str) and len(args[1])>4 for fmt,args in rejects),
+    reasons=[re.search(r'\((\d+): ([^)]+)\)',fmt) for fmt,_ in rejects]
+    check(len(rejects)==6 and all(m and 1<=int(m[1])<=7 and len(m[2])>4 for m in reasons),
           'Concise suppression reasons retain correct ARM variadic ABI')
     recipe.write_json(recipe.OUT/'highlight-tests.json',dict(checks=checks,native_clip_equivalence_cases=clip_cases,present_preservation_cases=preservation,active_geometry_preservation_cases=geometry_preservation,native_resource_mapping_cases=mapping_cases,native_frame_fragment_cases=frame_fragments,nro_sha256=recipe.sha(payload),gpu_gameplay_tested=False))
     print(f'PASS: {checks} compiled capture/present/gold draw checks; {preservation} present state cases; GPU/gameplay pending')

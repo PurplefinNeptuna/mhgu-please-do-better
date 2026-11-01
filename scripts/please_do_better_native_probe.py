@@ -1,4 +1,3 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
 #!/usr/bin/env python3
 """Pinned native copy/quad fixtures. World-space quads are not screen proof."""
 import itertools

@@ -15,7 +15,7 @@ import sys
 import tempfile
 import zipfile
 
-from paths import ROOT
+ROOT = Path(__file__).resolve().parents[1]
 STATES = {'DEVELOPMENT', 'LOCAL_ONLY', 'RETIRED', 'READY_TO_DISTRIBUTE', 'PUBLISHED'}
 READY = {'READY_TO_DISTRIBUTE', 'PUBLISHED'}
 ARCHIVED_SUPPORT = ('README.md',)
@@ -71,6 +71,8 @@ def spec_for(mod, root=ROOT):
     spec = json.loads(read(root, f'mods/{mod}/DISTRIBUTION.json'))
     require(spec.get('schema_version') == 1 and spec.get('mod') == mod, f'Invalid identity: {mod}')
     require(spec.get('status') in STATES, f'Invalid distribution status: {mod}')
+    platform = spec.get('runtime_platform', 'switch')
+    require(platform == 'switch', f'Invalid runtime platform: {mod}')
     require(isinstance(spec.get('reason'), str) and spec['reason'].strip(), f'Missing status reason: {mod}')
     require(isinstance(spec.get('publication'), dict), f'Missing publication record: {mod}')
     publication = spec['publication']
@@ -95,8 +97,13 @@ def spec_for(mod, root=ROOT):
     if spec['status'] not in READY:
         return spec
     for field in ('version', 'package_name'):
+        # Runtime folders may use the mod's public name ("Please do Better PC").
+        # Allow single spaces between name segments, while version identifiers
+        # retain their original grammar. Neither permits separators, traversal,
+        # leading/trailing spaces or filesystem-special characters.
+        pattern = r'[a-zA-Z0-9]+(?:[. -][a-zA-Z0-9]+)*' if field == 'package_name' else r'[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*'
         require(isinstance(spec.get(field), str) and
-                re.fullmatch(r'[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*', spec[field]),
+                re.fullmatch(pattern, spec[field]),
                 f'Invalid {field}: {mod}')
     archive = spec.get('archive', '')
     require(isinstance(archive, str) and
@@ -123,7 +130,8 @@ def spec_for(mod, root=ROOT):
     payloads = spec.get('payloads')
     require(isinstance(payloads, dict) and payloads, f'No declared payloads: {mod}')
     for path, record in payloads.items():
-        require(relative(path).parts[0] in ('romfs', 'exefs', 'cheats') and len(relative(path).parts) > 1,
+        parts = relative(path).parts
+        require(parts[0] in ('romfs', 'exefs', 'cheats') and len(parts) > 1,
                 f'Runtime files must start at romfs/, exefs/ or cheats/: {path}')
         require(relative(path).name.lower() not in
                 ('readme.md', 'readme.html', 'gamebanana_readme.html', 'notices.txt', 'notices.html',
@@ -389,6 +397,8 @@ def expected_files(spec, root=ROOT):
         'evidence': {**spec['evidence'], 'file_sha256': evidence},
         'installed_by_recipe': False, 'published_by_recipe': False,
     }
+    if 'runtime_platform' in spec:
+        manifest['runtime_platform'] = spec['runtime_platform']
     files.update(support)
     files[spec['archive']] = zipped
     files['release-manifest.json'] = json_bytes(manifest)
@@ -429,8 +439,53 @@ def verify_release(spec, root=ROOT):
     return directory / spec['archive']
 
 
+def verify_candidate(spec, root=ROOT):
+    """Check an explicitly registered development delivery without granting release status."""
+    prefix = f'build/{spec["mod"]}/candidates/{spec["version"]}/'
+    candidate = str(relative(spec['candidate'].rstrip('/')))
+    require(candidate.startswith(prefix), 'Candidate must stay in its versioned candidate directory')
+    directory = local(root, candidate)
+    files = inventory(directory)
+    require(all(name in files for name in (*DELIVERY_DOCUMENTS, 'manifest.json', 'SHA256SUMS', spec['archive'])),
+            'Incomplete development candidate delivery')
+    sums = {}
+    for line in files['SHA256SUMS'].decode().splitlines():
+        expected, name = line.split('  ', 1)
+        relative(name)
+        require(name not in sums and re.fullmatch('[0-9a-f]{64}', expected), 'Invalid candidate checksum record')
+        sums[name] = expected
+    require(sums == {name: digest(blob) for name, blob in files.items() if name != 'SHA256SUMS'},
+            'Development candidate checksums differ')
+    manifest = json.loads(files['manifest.json'])
+    require(manifest['mod'] == spec['mod'] and manifest['version'] == spec['version']
+            and manifest['status'] == 'DEVELOPMENT' and manifest['package_name'] == spec['package_name'],
+            'Candidate manifest identity/status differs')
+    payloads = manifest['payloads']
+    require(manifest['archive_sha256'] == digest(files[spec['archive']]), 'Candidate ZIP hash differs')
+    runtime = {name[len(spec['package_name']) + 1:]: digest(blob) for name, blob in files.items()
+               if name.startswith(spec['package_name'] + '/')}
+    require(runtime == payloads and payloads, 'Candidate runtime inventory differs')
+    with zipfile.ZipFile(io.BytesIO(files[spec['archive']])) as archive:
+        names = archive.namelist()
+        expected = {'README.md', *(spec['package_name'] + '/' + name for name in payloads)}
+        require(len(names) == len(set(names)) and set(names) == expected and archive.testzip() is None,
+                'Candidate ZIP inventory/content failed')
+        require(archive.read('README.md') == files['README.md'], 'Candidate archived guide differs')
+        for name, expected in payloads.items():
+            relative(name)
+            require(digest(archive.read(spec['package_name'] + '/' + name)) == expected, 'Candidate ZIP payload differs')
+    return directory / spec['archive']
+
+
 def package(mod, root=ROOT, refresh_support=False):
     spec = spec_for(mod, root)
+    if spec['status'] == 'DEVELOPMENT' and spec.get('candidate_builder'):
+        # The owned builder performs its exact-build tests/receipts check before
+        # producing files. This path never changes distribution approval/status.
+        builder = relative(spec['candidate_builder'])
+        folder = root if (root / 'mod.json').is_file() else root / 'mods' / mod
+        subprocess.run([sys.executable, folder / builder, 'package'], cwd=folder, check=True)
+        return verify_candidate(spec, root)
     require(spec['status'] in READY, f'Mod is not approved for distribution: {mod}')
     files = expected_files(spec, root)
     directory = release_dir(spec, root)
@@ -478,6 +533,8 @@ def check(root=ROOT, source_only=False):
         archive = None
         if spec['status'] in READY and not source_only:
             archive = verify_release(spec, root)
+        elif spec['status'] == 'DEVELOPMENT' and spec.get('candidate_builder') and not source_only:
+            archive = verify_candidate(spec, root)
         if not source_only:
             releases = local(root, f'build/{mod}/releases')
             if releases.exists():

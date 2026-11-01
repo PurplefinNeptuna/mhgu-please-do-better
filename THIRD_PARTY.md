@@ -7,14 +7,18 @@ Skill-name research uses [Skill IDs](https://github.com/RTHKKona/MHGU-Modding/wi
 Game-derived inputs/decompilation and external emulator snapshots are local
 reference data and are not included in the candidate ZIP.
 
-The plugin uses owned ARM32 scaffolding from Key Quest Markers and a narrow
-adaptation of Modern Controls' native backend, also compiled by Damage Numbers.
+The plugin is Rust, built from vendored forge-rs 1.5.0 (revision
+`d1865b68e9b194eb3eacc8bd71bbf601a5fac63e`, MIT, Fexty) and the registry sources in
+`vendor/crates`, pinned by `Cargo.lock` and `dependencies.lock.json`. The Rust runtime
+is `core` and `alloc` built from source by `build-std`; see `licenses/`. The cargo-forge
+1.4.1 converter and devkitARM binutils are host tools, not shipped.
+
+The hook backend is a narrow adaptation of Modern Controls' earlier native backend.
 R2 adapts owned Damage Numbers gateway, bounded mailbox and ARM32 SDK declaration
 patterns. Its fixture-only SDK reader is reused from the owned
 `scripts/damage_numbers_sdk_tls_probe.py`, fingerprinted in the manifest.
 No game executable, shader program, texture or decompiled source is bundled.
-Build headers/dependencies are the maintained Forge, pinned libnx and cimgui.
-The runtime imports existing Forge/cimgui implementations; it bundles no loader.
+The runtime imports existing Forge and ImGui implementations; it bundles no loader.
 Input/source SHA-256 values are recorded in the adjacent candidate manifest.
 
 `src/svc.S` adapts libnx `nx/source/kernel/svc32.s`, using its MIT terms:

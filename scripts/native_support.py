@@ -1,7 +1,6 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
-import ctypes, ctypes.util, struct, hashlib
+"""Validate ARM32 NSO exports from copied loader and SDK inputs."""
+import ctypes, ctypes.util, struct
 from mhgu_binary import nso_segments
-from paths import input_path
 def nso_exports(source):
     data = source.read_bytes() if hasattr(source, "read_bytes") else source
     """Read the actual ARM32 MOD0 dynamic table after segment hash validation."""
@@ -54,7 +53,3 @@ def nso_exports(source):
         if section and info >> 4 in (1, 2):
             exports.add(names[name:names.index(b'\0', name)].decode('ascii'))
     return exports
-def snapshot():
-    path=input_path('forge')
-    data=path.read_bytes()
-    return [{'emulator':'configured','path':str(path),'sha256':hashlib.sha256(data).hexdigest(),'exports':sorted(nso_exports(data)),'activation':'not inferred'}]

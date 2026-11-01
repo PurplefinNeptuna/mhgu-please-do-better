@@ -1,1 +1,2 @@
-vendor/** -whitespace
+# Preserve exact upstream bytes and Cargo file checksums.
+vendor/** -text -whitespace

@@ -1,4 +1,3 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
 #!/usr/bin/env python3
 """R5 native display-copy/collection fixtures. No GPU, launch or disk settings."""
 import itertools

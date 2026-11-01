@@ -4,7 +4,13 @@
 
 [Fexty's MHGU Forge fork](https://github.com/Fexty12573/forge), based on
 [Jeffi's original Forge](https://github.com/jeffi6375/forge), provides plugin
-loading and rendering.
+loading and rendering. Plugin code uses
+[forge-rs 1.5.0](https://github.com/Fexty12573/forge-rs) by Fexty (MIT). Forge
+retains the Skyline Project and Jeffi license credits.
+
+The compiled plugin also includes log and Rust core/alloc/compiler-builtins
+support, and Unicode whitespace data by Unicode, Inc. through Rust core, under
+Unicode License V3. Applicable license texts follow in the combined notices.
 
 ## Great Luck credit
 

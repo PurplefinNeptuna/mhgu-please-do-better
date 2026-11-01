@@ -1,4 +1,3 @@
-from paths import MOD, SCRIPTS, FORGE, DEPS, PYTHON, CONTAINER_STORAGE, input_path
 #!/usr/bin/env python3
 """Execute compiled copy taps and pinned counters. Fake item selection, no launch."""
 import itertools
@@ -95,7 +94,7 @@ def main():
     batch_cases=0
     def native_count(route,tier,first,rolls,forced=False,missing=False):
         kind,start,end,reg,field,offset,caller,category=route
-        p.call('_ZN3pdb13request_forceEb',[int(forced)])
+        p.request_force(int(forced))
         p.write(ui+field,target);p.write(ui+0x3c,18);u.mem_write(source,bytes(32));u.mem_write(target,b'\xaa'*96)
         _,root=p.frame(12,[ui],at=DATA+0x4000)
         p.write(table+category,first,'<B');u.mem_write(skills+0x3dc,bytes(64))
