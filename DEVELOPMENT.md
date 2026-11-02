@@ -391,14 +391,7 @@ Logging: three startup safety records and one concise suppression-code record pe
 - **Log per frame in release.** Run traces and address or matrix dumps were removed.
 - **Blame this plugin for Forge menu corruption seen with an older loader.** That was the legacy loader's multi-list buffer-offset defect, and stock Forge 1.5.1 is the baseline.
 
-## Switch r23 reward-page multiplier
-
-r23-reward-pages is READY_TO_DISTRIBUTE and unpublished. Distribution approval
-and scoped Eden loading evidence are in R23_RELEASE_APPROVAL.json. Promotion
-uses the original candidate NRO without rebuilding. The r20/r21/r22 candidates
-and scoped receipts remain preserved; r19's release and source support are in
-the verified rollback archive named in the approval receipt. PC is unchanged.
-No emulator is installed, configured or launched by this promotion.
+## Reward-page multiplier
 
 ### Native data flow
 
