@@ -2988,5 +2988,14 @@
       }
     },
     "manual_test": "NOT RUN"
+  },
+  "user_runtime_report_2026_11_02": {
+    "version": "r25",
+    "emulator": "Eden master-7a6d055094",
+    "report": "hmm, please do better and modern weapon controls works perfectly, promote them to ready to distribute.",
+    "installed_nro_sha256": "84902446e37c6abbd41516a751e66d0adb76262c9531bcf642664095979a8c32",
+    "log_sha256": "d386dbe0e15b1bc82fdbace945a673237e395e51c5f11af341d3603a6c53328e",
+    "log_copy": "work/shared/runs/eden-2026-11-02.txt",
+    "scope": "Unitemized user report. The log has no line naming this plugin. It does record ForceStop at 2704.179978 and a host SIGSEGV at 2704.668354 after it, with no guest exception."
   }
 }
