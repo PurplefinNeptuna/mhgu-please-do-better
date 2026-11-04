@@ -1,6 +1,6 @@
 # Please do Better: development and research
 
-**Current state.** r25, READY_TO_DISTRIBUTE (2026-11-02), unpublished, a Rust/forge-rs 1.5.0 rewrite of the C++ r24-forge151. Rewards, luck, multiplier, overlay and settings behaviour are intended to be unchanged, and `src/gateway.S` and `src/svc.S` are byte-identical. All seven ARM probe suites pass with the same case counts as r24-forge151. The user reported it working on Eden on 2026-11-02, unitemized; the installed NRO hash matches. Release: `build/please-do-better/releases/r25/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r26 DEVELOPMENT candidate at `build/please-do-better/candidates/r26/`, gameplay not run. r26 is r25 with one compatibility change: seven paired entry hooks accept another plugin's Forge hook on the same function. r25 is the approved release, preserved in `backups/accepted/please-do-better/r25-before-chaining/`, with its ZIP in `build/please-do-better/candidates/r25/` as the rollback. r25 is a Rust/forge-rs 1.5.0 rewrite of the C++ r24-forge151. Rewards, luck, multiplier, overlay and settings behaviour are intended to be unchanged, and `src/gateway.S` and `src/svc.S` are byte-identical. All seven ARM probe suites pass with the same case counts as r24-forge151. The user reported it working on Eden on 2026-11-02, unitemized; the installed NRO hash matches. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots with a pulsing gold border and sparkle. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
@@ -246,6 +246,12 @@ originals and check arena flush first. Publish scalar literals before LDR-PC
 instructions, with checked readback and synchronization. No heap buffer or
 permission transition is used. Forge's startup boundary precedes original_sApp_run;
 this is not thread suspension or an atomic two-address update.
+
+Paired entries other than `0x381FEC` set `chains`: they enter a scope, swap only LR, run the original once and
+write after it returns, so they stack on another plugin's Forge hook (see "Chaining" in the forge-modding hooks reference).
+The foreign pair becomes that row's original words, so the arena runs it and a rollback restores it, and a later
+Forge hook over the entry is not a conflict. `0x381FEC` has a PC-relative second word, and the luck, comparison,
+copy, threshold and rendering sites are interior or branch-over sites; all of those stay exact.
 
 Rollback visits owned words in reverse order, restoring only owned replacements.
 Already-restored originals still require checked sync. Foreign/unreadable bytes,

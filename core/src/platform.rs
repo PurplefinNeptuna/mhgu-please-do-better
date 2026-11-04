@@ -223,7 +223,8 @@ impl<K: Kernel> Platform for KernelPlatform<K> {
             };
             words[1] = 0xe59f000c;
             words[6] = value;
-        } else {
+        } else if first != LDR_PC {
+            // A foreign Forge branch moves as it stands: its literal travels with it.
             let push = first & 0xffff_0000 == 0xe92d_0000 && first & 0xa000 == 0;
             let stack = second & 0xffff_f000 == 0xe24d_d000;
             let moved = second & 0xffff_0ff0 == 0xe1a0_0000 && (second >> 12) & 15 != 15 && second & 15 != 15;

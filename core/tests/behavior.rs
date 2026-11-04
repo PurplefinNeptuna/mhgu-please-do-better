@@ -551,8 +551,8 @@ impl Platform for Fake {
     }
 }
 const HS: [Hook; 2] = [
-    Hook { site: 0x10c, window: 0x100, detour: 0x800000, words: [1, 2, 3, 4, 5, 6, 7, 8], paired: true },
-    Hook { site: 0x20c, window: 0x200, detour: 0x800100, words: [9, 10, 11, 12, 13, 14, 15, 16], paired: true },
+    Hook { site: 0x10c, window: 0x100, detour: 0x800000, words: [1, 2, 3, 4, 5, 6, 7, 8], paired: true, chains: false },
+    Hook { site: 0x20c, window: 0x200, detour: 0x800100, words: [9, 10, 11, 12, 13, 14, 15, 16], paired: true, chains: false },
 ];
 const BASE: u32 = 0x100000;
 fn fresh() -> Fake {
@@ -873,4 +873,54 @@ fn trampolines_relocate_only_the_pinned_literal_and_refuse_other_pc_uses() {
     assert!(!p.prepare(65, target, 0xe92d4ff0, 0xe24dd014));
     assert!(!p.create(4096));
     assert!(p.close() && !p.owns_arena());
+}
+
+#[test]
+fn a_chaining_entry_stacks_on_a_foreign_forge_hook_and_restores_it() {
+    let mut hs = HS;
+    hs[0].chains = true;
+    let mut f = fresh();
+    f.memory.insert(BASE + 0x10c, LDR_PC);
+    f.memory.insert(BASE + 0x110, 0x0320_1000);
+    f.memory.insert(BASE + 0x114, 0xdead_beef);
+    let mut t = Hooks::new();
+    assert_eq!(t.install(&mut f, BASE, &hs).state, State::Rejected, "past the pair the window stays exact");
+    assert_eq!(f.writes, 0);
+    let mut f = fresh();
+    f.memory.insert(BASE + 0x10c, LDR_PC);
+    f.memory.insert(BASE + 0x110, 0x0320_1000);
+    let mut t = Hooks::new();
+    assert_eq!(t.install(&mut f, BASE, &hs).state, State::Applied);
+    assert!(f.memory[&(BASE + 0x10c)] == LDR_PC && f.memory[&(BASE + 0x110)] == hs[0].detour);
+}
+
+#[test]
+fn only_paired_entries_chain_and_the_pc_relative_entry_does_not() {
+    let chained: Vec<u32> = SITES.iter().filter(|h| h.chains).map(|h| h.site).collect();
+    assert_eq!(chained, [0x382e1c, 0x38211c, 0x3874e0, 0x381d30, 0x623c08, 0x384848, 0x384408]);
+    assert!(SITES.iter().filter(|h| h.chains).all(|h| h.site == h.window));
+    assert!(!HIGHLIGHT_BOUNDARY.chains && !PRESENTATION.chains);
+}
+
+#[test]
+fn a_foreign_hook_on_a_strict_entry_is_refused() {
+    let mut f = fresh();
+    f.memory.insert(BASE + 0x10c, LDR_PC);
+    f.memory.insert(BASE + 0x110, 0x0320_1000);
+    let mut t = Hooks::new();
+    assert_eq!(t.install(&mut f, BASE, &HS).state, State::Rejected);
+    assert_eq!(f.writes, 0);
+}
+
+#[test]
+fn a_later_forge_hook_over_a_chaining_entry_is_not_a_conflict() {
+    let mut hs = HS;
+    hs[0].chains = true;
+    let mut f = fresh();
+    let mut t = Hooks::new();
+    assert_eq!(t.install(&mut f, BASE, &hs).state, State::Applied);
+    f.memory.insert(BASE + 0x110, 0x0320_1000);
+    assert_eq!(t.install(&mut f, BASE, &[]).state, State::Applied);
+    f.memory.insert(BASE + 0x10c, 0xdead_beef);
+    assert_eq!(t.install(&mut f, BASE, &[]).state, State::Unsafe, "anything else over the entry is still a conflict");
 }

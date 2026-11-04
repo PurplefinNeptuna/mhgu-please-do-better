@@ -4,7 +4,8 @@
 use crate::hooks::Hook;
 
 pub const fn row(site: u32, window: u32, words: [u32; 8], paired: bool) -> Hook {
-    Hook { site, window, detour: 0, words, paired }
+    // The main-count entry's second word is PC-relative, so a Forge hook could not be stacked there.
+    Hook { site, window, detour: 0, words, paired, chains: paired && site != 0x00381fec }
 }
 pub const SITES: [Hook; 22] = [
     row(0x003822dc, 0x003822d0, [0xe2804004, 0xe3a010fb, 0xe1a00004, 0xebf57aaf, 0xe3a0501f, 0xe3500000, 0x1a00001c, 0xe1a00004], false),

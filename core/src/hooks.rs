@@ -36,9 +36,12 @@ pub struct Hook {
     pub detour: u32,
     pub words: [u32; 8],
     pub paired: bool,
+    /// Runs the original once with its arguments and returns its result, so another plugin's Forge
+    /// hook may sit on this entry, found there at install or laid over ours later.
+    pub chains: bool,
 }
 impl Hook {
-    pub const EMPTY: Self = Self { site: 0, window: 0, detour: 0, words: [0; 8], paired: false };
+    pub const EMPTY: Self = Self { site: 0, window: 0, detour: 0, words: [0; 8], paired: false, chains: false };
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -88,10 +91,13 @@ impl Hooks {
     pub const fn report(&self) -> HookReport {
         self.report
     }
-    fn signature<P: Platform>(&self, p: &P, i: usize, installed: bool) -> bool {
+    fn signature<P: Platform>(&self, p: &P, i: usize, installed: bool, covered: bool) -> bool {
         let h = &self.recipe[i];
         (0..8).all(|j| {
             let offset = h.window + j * 4;
+            if covered && offset == h.site + 4 {
+                return true; // The literal of whichever Forge hook is now on top.
+            }
             let expected = if installed && offset == h.site {
                 LDR_PC
             } else if installed && offset == h.site + 4 {
@@ -172,7 +178,7 @@ impl Hooks {
         if self.report.state != State::Fresh {
             if self.report.state == State::Applied {
                 for i in 0..self.count {
-                    if !self.signature(p, i, true) {
+                    if !self.signature(p, i, true, self.recipe[i].chains) {
                         self.report.state = State::Unsafe;
                         self.report.failure = Failure::Changed;
                         self.report.site = i as u32 + 1;
@@ -196,6 +202,15 @@ impl Hooks {
             self.recipe[i] = hooks[i];
             let h = self.recipe[i];
             let start = main as u64 + h.window as u64;
+            // The foreign pair becomes this entry's original: the arena's continuation runs it, and
+            // a rollback puts it back. Every other word in the window stays exact.
+            if h.chains && h.site >= h.window && h.site + 8 <= h.window + 32 && p.read(main + h.site) == Some(LDR_PC) {
+                if let Some(literal) = p.read(main + h.site + 4) {
+                    let at = (h.site - h.window) as usize / 4;
+                    self.recipe[i].words[at] = LDR_PC;
+                    self.recipe[i].words[at + 1] = literal;
+                }
+            }
             if (h.site | h.window | h.detour) & 3 != 0 || h.detour == 0 || h.site < h.window
                 || h.site as u64 + 8 > h.window as u64 + 32 || start + 32 > 0x1_0000_0000
                 || !p.executable(main + h.window, 32) || h.detour as u64 + 4 > 0x1_0000_0000
@@ -205,7 +220,7 @@ impl Hooks {
             {
                 return self.fail(p, Failure::Address, i as u32 + 1);
             }
-            if !self.signature(p, i, false) {
+            if !self.signature(p, i, false, false) {
                 return self.fail(p, Failure::Signature, i as u32 + 1);
             }
             need_arena = need_arena || h.paired;
@@ -230,7 +245,7 @@ impl Hooks {
             }
         }
         for i in 0..hooks.len() {
-            if !self.signature(p, i, false) {
+            if !self.signature(p, i, false, false) {
                 return self.fail(p, Failure::Signature, i as u32 + 1);
             }
             // Literal first, instruction last. This is startup-only publication.
@@ -252,7 +267,7 @@ impl Hooks {
             }
         }
         for i in 0..hooks.len() {
-            if !self.signature(p, i, true) {
+            if !self.signature(p, i, true, false) {
                 return self.fail(p, Failure::Readback, i as u32 + 1);
             }
         }

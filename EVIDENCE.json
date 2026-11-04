@@ -558,7 +558,7 @@
           },
           {
             "name": "Great Luck patch",
-            "author": "\u82b1\u82b1\u82b1\u82b1\u82b1\u6930\u83dc",
+            "author": "花花花花花椰菜",
             "url": "https://github.com/RTHKKona/MHGU-Modding/wiki/Cheat-Codes",
             "scope": "Original Great Luck patch."
           }
@@ -2997,5 +2997,14 @@
     "log_sha256": "d386dbe0e15b1bc82fdbace945a673237e395e51c5f11af341d3603a6c53328e",
     "log_copy": "work/shared/runs/eden-2026-11-02.txt",
     "scope": "Unitemized user report. The log has no line naming this plugin. It does record ForceStop at 2704.179978 and a host SIGSEGV at 2704.668354 after it, with no guest exception."
+  },
+  "static_r26": {
+    "version": "r26",
+    "date": "2026-11-04",
+    "summary": "r26: pinned toolchain build; 26 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test; verify: \"PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory\". Stacking on a foreign Forge hook is covered by host fixtures and Forge's hook.c source, with no ARM execution of a stacked chain and no run on any emulator.",
+    "nro_sha256": {
+      "please_do_better.nro": "170fe64a179a4c2f3ebace7b03ae433fa50106fda537abc99d80fe4f6dd353aa"
+    },
+    "runtime": "NOT RUN"
   }
 }
