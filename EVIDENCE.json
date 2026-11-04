@@ -3014,10 +3014,11 @@
       "suyu v14.1.0-v14.1.0 (Android), the other player; its installed hashes were not available"
     ],
     "installed_nro_sha256": "170fe64a179a4c2f3ebace7b03ae433fa50106fda537abc99d80fe4f6dd353aa",
-    "scope": "Logs only. Two-player session with one quest. No player report of what appeared on screen.",
+    "scope": "Two-player session with one quest, with a player report for the named feature on Eden. The report does not itemize settings or edge cases.",
     "lines_eden": [],
-    "note": "No line from this mod: Forge's config.ini has level = error and this mod logs below it, so the log shows neither a loaded line nor a refusal. The hooks are not shown installed.",
+    "note": "No line from this mod: Forge's config.ini has level = error and this mod logs below it, so the log shows neither a loaded line nor a refusal. The log does not show the hooks installed; the player report is the evidence that the feature ran.",
     "foreign_plugins": "Foreign plugins active on Eden: 11 NRO loads match the 11 NROs in the load folder, including BetterBox, better-inputs and MHGU-DPS-Meter-v1.2.0; only 'finish cheat' is disabled. No foreign hook is shown over an entry at this mod's install. KatLib and UIScale were not installed.",
-    "exceptions": "No exception, data abort or panic text in either log. Eden stopped through ForceStop."
+    "exceptions": "No exception, data abort or panic text in either log. Eden stopped through ForceStop.",
+    "user_report": "Damage numbers, quest badges, the ZR remap and luck highlights, asked together: \"all working well\""
   }
 }
