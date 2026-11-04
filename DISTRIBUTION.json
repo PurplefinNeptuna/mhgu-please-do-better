@@ -18,7 +18,7 @@
     "manual_summary": "User report on 2026-11-02 for Eden: \"hmm, please do better and modern weapon controls works perfectly, promote them to ready to distribute.\" Installed NRO 84902446e37c6abbd41516a751e66d0adb76262c9531bcf642664095979a8c32 is the r25 payload. The Eden log of that day (sha256 d386dbe0e15b1bc82fdbace945a673237e395e51c5f11af341d3603a6c53328e, master-7a6d055094) has no line naming this plugin, which logs nothing in normal operation, so the report is tied to these bytes by the installed hash. Weapons, styles, screens and platforms were not itemized."
   },
   "limitations": [
-    "r26 has no run on any emulator: loading beside another plugin's hook on the same entry rests on Forge's hook.c and host fixtures",
+    "r26 ran on Eden master-07677aa500-master with logs only and no player report; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
     "Individual player-page quantity, Palico exclusion, appraisal/collection, persistence and consecutive-quest checks were not separately reported.",
     "Log contains HLE/keyboard and Maxwell assertions plus an unmapped-memory error; no clean-run or clean-shutdown claim. These emulator messages are not attributed to the plugin.",
@@ -99,7 +99,7 @@
       }
     ]
   },
-  "runtime_test": "NOT RUN for r26. User report on 2026-11-02 for Eden: \"hmm, please do better and modern weapon controls works perfectly, promote them to ready to distribute.\" Installed NRO 84902446e37c6abbd41516a751e66d0adb76262c9531bcf642664095979a8c32 is the r25 payload. The Eden log of that day (sha256 d386dbe0e15b1bc82fdbace945a673237e395e51c5f11af341d3603a6c53328e, master-7a6d055094) has no line naming this plugin, which logs nothing in normal operation, so the report is tied to these bytes by the installed hash. Weapons, styles, screens and platforms were not itemized.",
+  "runtime_test": "LOG ONLY for r26: Eden master-07677aa500-master, 2026-11-05, installed NRO matches, no player report. See EVIDENCE.json runtime_r26_2026_11_05.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
