@@ -3020,5 +3020,12 @@
     "foreign_plugins": "Foreign plugins active on Eden: 11 NRO loads match the 11 NROs in the load folder, including BetterBox, better-inputs and MHGU-DPS-Meter-v1.2.0; only 'finish cheat' is disabled. No foreign hook is shown over an entry at this mod's install. KatLib and UIScale were not installed.",
     "exceptions": "No exception, data abort or panic text in either log. Eden stopped through ForceStop.",
     "user_report": "Damage numbers, quest badges, the ZR remap and luck highlights, asked together: \"all working well\""
+  },
+  "recomp_abort_r26_2026_11_05": {
+    "version": "r26",
+    "emulator": "MHGURecomp 0.14.0 Linux",
+    "lines": [
+      "FATAL: unimplemented svc 0x4b at 342a03c (r0=efffd1f4 r1=3445000 r2=1000)"
+    ]
   }
 }

@@ -479,3 +479,7 @@ formats use natural Luck and 1x defaults.
 Files are rewritten only by explicit Save. The integer slider clamps dragging
 and typed values to 1..5; gameplay scopes latch one atomic settings record.
 Closing the menu leaves the chosen settings active.
+
+## Open items
+
+- **MHGURecomp.** Not supported: the private arena calls svc 0x4B, which aborts the game there at load. Interior branch-over sites would also need checking against recompiled code. Running there means replacing the arena with Forge's hooks, and `0x381FEC`'s PC-relative word is the first obstacle.
