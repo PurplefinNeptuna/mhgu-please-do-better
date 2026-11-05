@@ -29,7 +29,7 @@ Open **Plugin UI > Please do Better** in Forge's overlay.
 | Setting | Default | Effect |
 | --- | --- | --- |
 | Force Miraculous Luck | Off | Uses Miraculous Luck the next time rewards are generated. |
-| Reward multiplier | 1x | Set an integer multiplier from 1x to 5x for each occupied slot on all player reward pages. Palico quantities stay unchanged. |
+| Reward multiplier | 1x | Set an integer multiplier from 1x to 5x for each occupied slot on all player reward pages. |
 
 The multiplier covers main A/B, special, break/capture, subquest, free-hunt
 and other items on the player reward pages, including the player's extra-item
