@@ -3027,5 +3027,13 @@
     "lines": [
       "FATAL: unimplemented svc 0x4b at 342a03c (r0=efffd1f4 r1=3445000 r2=1000)"
     ]
+  },
+  "approval_r26_2026_11_05": {
+    "version": "r26",
+    "user_request": "\"ok, make notes about them and promote all the lenient patched mods to ready to distribute, and maybe other mods that still has dev status that i use in eden, while notes the recomp incompabilities when exists (like in please do better)\"",
+    "nro_sha256": {
+      "romfs/nativeNX/plugins/please_do_better.nro": "170fe64a179a4c2f3ebace7b03ae433fa50106fda537abc99d80fe4f6dd353aa"
+    },
+    "basis": "The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load."
   }
 }

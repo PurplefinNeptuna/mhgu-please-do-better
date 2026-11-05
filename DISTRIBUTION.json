@@ -1,5 +1,5 @@
 {
-  "archive": "please-do-better-r26-candidate.zip",
+  "archive": "please-do-better-r26.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -15,9 +15,10 @@
       "mods/please-do-better/EVIDENCE.json"
     ],
     "static_summary": "r26: pinned toolchain build; 26 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test; verify: \"PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory\". Stacking on a foreign Forge hook is covered by host fixtures and Forge's hook.c source, with no ARM execution of a stacked chain and no run on any emulator.",
-    "manual_summary": "User report on 2026-11-02 for Eden: \"hmm, please do better and modern weapon controls works perfectly, promote them to ready to distribute.\" Installed NRO 84902446e37c6abbd41516a751e66d0adb76262c9531bcf642664095979a8c32 is the r25 payload. The Eden log of that day (sha256 d386dbe0e15b1bc82fdbace945a673237e395e51c5f11af341d3603a6c53328e, master-7a6d055094) has no line naming this plugin, which logs nothing in normal operation, so the report is tied to these bytes by the installed hash. Weapons, styles, screens and platforms were not itemized."
+    "manual_summary": "The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load."
   },
   "limitations": [
+    "does not run on MHGURecomp: the private CodeMemory arena calls svc 0x4B, which aborts the game at load",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
     "Individual player-page quantity, Palico exclusion, appraisal/collection, persistence and consecutive-quest checks were not separately reported.",
@@ -45,9 +46,9 @@
     "url": null
   },
   "readme": "mods/please-do-better/README.md",
-  "reason": "r26 is r25 with one compatibility change. Seven of its paired entry hooks now accept another plugin's Forge hook on the same function entry, at load and later. The main-count entry (PC-relative second word), the luck sites and every interior site stay exact. Not approved. The user reported luck highlights working on Eden.",
+  "reason": "r26 approved for distribution. Seven paired entry hooks accept another plugin's Forge hook on the same function.",
   "schema_version": 1,
-  "status": "DEVELOPMENT",
+  "status": "READY_TO_DISTRIBUTE",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx.",
   "version": "r26",
   "gamebanana": {
@@ -99,7 +100,7 @@
       }
     ]
   },
-  "runtime_test": "USER REPORTED for r26 on Eden, 2026-11-05, installed NRO matches: Damage numbers, quest badges, the ZR remap and luck highlights, asked together: \"all working well\". See EVIDENCE.json runtime_r26_2026_11_05.",
+  "runtime_test": "The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
@@ -110,6 +111,8 @@
       "sha256": "170fe64a179a4c2f3ebace7b03ae433fa50106fda537abc99d80fe4f6dd353aa"
     }
   },
-  "candidate": "build/please-do-better/candidates/r26/delivery",
-  "candidate_builder": "scripts/build.py"
+  "approval": {
+    "date": "2026-11-05",
+    "basis": "The user approved this on 2026-11-05: \"ok, make notes about them and promote all the lenient patched mods to ready to distribute, and maybe other mods that still has dev status that i use in eden, while notes the recomp incompabilities when exists (like in please do better)\". The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load. Ryujinx and Switch hardware are unconfirmed."
+  }
 }
