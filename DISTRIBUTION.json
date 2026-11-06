@@ -1,5 +1,5 @@
 {
-  "archive": "please-do-better-r29-candidate.zip",
+  "archive": "please-do-better-r29.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -46,9 +46,9 @@
     "url": null
   },
   "readme": "mods/please-do-better/README.md",
-  "reason": "r29: installs all 22 hooks through Forge instead of a private CodeMemory arena, so the plugin can load on MHGURecomp.",
+  "reason": "r29 approved for distribution. Extra-luck slots get a white native frame, and every hook goes through Forge, so it runs on MHGURecomp.",
   "schema_version": 1,
-  "status": "DEVELOPMENT",
+  "status": "READY_TO_DISTRIBUTE",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx/MHGURecomp.",
   "version": "r29",
   "gamebanana": {
@@ -111,6 +111,8 @@
       "sha256": "3583061f373aea64e2340a226c0e57d268e00b9be3534fa318f208f22b139621"
     }
   },
-  "candidate": "build/please-do-better/candidates/r29/delivery",
-  "candidate_builder": "scripts/build.py"
+  "approval": {
+    "date": "2026-11-06",
+    "basis": "The user approved this on 2026-11-06: \"ok, works perfectly\\nso promote both\". The run evidence is the earlier report on these exact bytes, \"woo, its working for both\", on Eden and MHGURecomp 0.14.3, unitemized; it does not separately confirm natural luck, the multiplier pages, persistence, Ryujinx or Switch hardware."
+  }
 }

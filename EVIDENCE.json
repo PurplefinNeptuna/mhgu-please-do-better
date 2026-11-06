@@ -3115,5 +3115,9 @@
       }
     },
     "foreign": "The same Recomp log has KatSmithy's '[SmithyRise] ... smithy_win main+0x6f1ae8 GUARD MISMATCH: found E51FF004 03494FBC ... NOT hooked'; 0x03494FBC lies in Wishlist (loaded at 0x03490000), not this plugin."
+  },
+  "approval_r29_2026_11_06": {
+    "user_words": "ok, works perfectly\nso promote both",
+    "payload_nro_sha256": "3583061f373aea64e2340a226c0e57d268e00b9be3534fa318f208f22b139621"
   }
 }
