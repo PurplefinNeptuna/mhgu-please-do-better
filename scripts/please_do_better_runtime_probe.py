@@ -11,20 +11,22 @@ import please_do_better as recipe
 from mhgu_binary import Nro
 
 MAIN, MODULE, DATA, STACK, STOP = 0x04000000, 0x10000000, 0x30000000, 0x30100000, 0x30200000
+# Forge's trampoline pool (read/execute) and its patch-buffer heap in the fixture.
+FORGE, HEAP = 0x34000000, 0x35000000
 REGS = [getattr(a, f'UC_ARM_REG_R{i}') for i in range(13)]
 MASK = 0xf80f0000
 SDK_IMAGE = sdk_image()
 
 
 class Probe:
-    def __init__(self, image, payload, title=True, conflict=None, fail_flush=0,fail_svc=None):
+    def __init__(self, image, payload, title=True, conflict=None, fail_flush=0,fail_svc=None,fail_hook=0,on_hook=None):
         self.u = u = unicorn.Uc(unicorn.UC_ARCH_ARM, unicorn.UC_MODE_ARM)
         u.ctl_set_cpu_model(a.UC_CPU_ARM_MAX)
         u.reg_write(a.UC_ARM_REG_C1_C0_2, 0xf00000)
         u.reg_write(a.UC_ARM_REG_FPEXC, 0x40000000)
         self.nro = n = Nro(payload)
         self.regions = [(MAIN, 0x2400000, 5), (MODULE, (len(payload)+n.u32(56)+4095)&~4095, 7),
-                        (DATA, 0x210000, 7), (0x32000000, 0x20000, 5)]
+                        (DATA, 0x210000, 7), (0x32000000, 0x20000, 5), (FORGE, 0x10000, 5), (HEAP, 0x10000, 3)]
         for start, size, _ in self.regions: u.mem_map(start, size)
         u.mem_write(MAIN, image); u.mem_write(MODULE, payload)
         u.mem_map(0x60000000,(len(SDK_IMAGE)+4095)&~4095);u.mem_write(0x60000000,SDK_IMAGE)
@@ -41,9 +43,11 @@ class Probe:
                     value=MODULE+e[1] if e[5] else imports[name.decode()]
                     if kind==2:value+=addend
                 self.write(MODULE+target,value)
-        self.title=title; self.flushes=0; self.fail_flush=fail_flush; self.allocations=0; self.tls_allocations=0
-        self.fail_svc=fail_svc or {};self.svc_calls={};self.closes=0
-        self.aliases=[]; self.thread=0; self.tree=False; self.tree_depth=0; self.edits={}; self.messages=[];self.logs=[];self.log_records=[]
+        self.title=title; self.flushes=0; self.fail_flush=fail_flush; self.tls_allocations=0
+        self.fail_svc=fail_svc or {};self.svc_calls={}
+        self.hooks=[];self.hook_calls=0;self.fail_hook=fail_hook;self.on_hook=on_hook;self.patches=0
+        self.forge_next=FORGE;self.heap_next=HEAP
+        self.thread=0; self.tree=False; self.tree_depth=0; self.edits={}; self.messages=[];self.logs=[];self.log_records=[]
         self.skill_calls=0; self.scope_entries=[]; self.fs_calls=0;self.text=[]
         self.save_available=False;self.mounts=0;self.handles={};self.files={};self.paths=[];self.commits=0
         self.fail_commit=0;self.fail_write=0;self.writes=0;self.guard=0;self.button=False
@@ -53,7 +57,6 @@ class Probe:
         self.tints=[]
         if conflict:self.write(MAIN+conflict,0xe3a00001)
         u.hook_add(unicorn.UC_HOOK_CODE,self.trace)
-        u.hook_add(unicorn.UC_HOOK_MEM_WRITE,self.mirror)
         u.hook_add(unicorn.UC_HOOK_INTR,self.svc)
     def address(self,name):return MODULE+self.symbols[name]
     def request_force(self,value):
@@ -64,9 +67,8 @@ class Probe:
     def write(self,addr,value,fmt='<I'):self.u.mem_write(addr,struct.pack(fmt,value))
     def string(self,addr):return bytes(self.u.mem_read(addr,1024)).split(b'\0',1)[0].decode()
     def ret(self,value=0):self.u.reg_write(REGS[0],value);self.u.reg_write(a.UC_ARM_REG_PC,self.u.reg_read(a.UC_ARM_REG_LR))
-    def mirror(self,u,access,addr,size,value,_):
-        for owner,slave in self.aliases:
-            if owner<=addr<owner+4096:u.mem_write(slave+addr-owner,value.to_bytes(size,'little'));return
+    def code(self,addr,data):
+        self.u.mem_write(addr,data);self.u.ctl_remove_cache(addr,addr+len(data))
     def svc(self,u,interrupt,_):
         assert interrupt==2
         pc=u.reg_read(a.UC_ARM_REG_PC);op=self.read(pc-4)&0xffffff
@@ -84,23 +86,9 @@ class Probe:
             values={18:0x0100770008dd8000 if self.title else 0,12:0x50000000,13:0x10000,
                     2:0x51000000,3:0x10000,4:0x52000000,5:0x10000}
             value=values[r[1]];u.reg_write(REGS[1],value&0xffffffff);u.reg_write(REGS[2],value>>32)
-        elif op==0x4b:
-            assert r[2:4]==[4096,0];self.allocations+=1;u.reg_write(REGS[1],7)
-        elif op==0x4c:
-            assert r[0]==7 and r[3:6]==[0,4096,0]
-            if failing:pass
-            elif r[1]<2:
-                assert r[6]==(3 if r[1]==0 else 5)
-                u.mem_map(r[2],4096);self.regions.append((r[2],4096,r[6]))
-                if r[1]==0:self.owner=r[2]
-                else:self.aliases.append((self.owner,r[2]))
-            else:
-                self.regions=[x for x in self.regions if x[0]!=r[2]];u.mem_unmap(r[2],4096)
-                self.aliases=[x for x in self.aliases if r[2] not in x]
         elif op==0x5f:
             assert r[0]==0xffff8001 and r[3]==0 and r[4]==0
             self.flushes+=1
-        elif op==0x16:self.closes+=1
         else:raise AssertionError(f'Unexpected SVC {op:x}')
         u.reg_write(REGS[0],99 if failing or (op==0x5f and self.flushes==self.fail_flush) else 0)
     def trace(self,u,addr,size,_):
@@ -117,6 +105,29 @@ class Probe:
         if addr not in self.imports:return
         name=self.imports[addr];r=[u.reg_read(x) for x in REGS]
         if name=='forge_mem_getMainTextAddr':self.ret(MAIN)
+        elif name=='forge_hook_create':
+            # Forge 1.5.1 ARM: an optional 16-byte trampoline (the two words found, ldr pc, site+8),
+            # then ldr pc,[pc,#-4] and the detour over the site. The Hook returns through r0.
+            out,target,detour,slot=r[0],r[1],r[2],r[3];self.hook_calls+=1;original=0
+            if self.on_hook:self.on_hook(self,self.hook_calls)
+            if self.hook_calls!=self.fail_hook:
+                if slot:
+                    original=self.forge_next;self.forge_next+=16
+                    self.code(original,bytes(u.mem_read(target,8))+struct.pack('<2I',0xe51ff004,target+8))
+                self.code(target,struct.pack('<2I',0xe51ff004,detour));self.hooks.append((target,detour,original))
+            if slot:self.write(slot,original)
+            u.mem_write(out,struct.pack('<6I',target,detour,original,0,0,0));self.ret(out)
+        elif name=='forge_patch_create':
+            out,address,data,length=r[0],r[1],r[2],r[3];enable=self.read(u.reg_read(a.UC_ARM_REG_SP))&0xff
+            assert length==8 and not enable;self.patches+=1
+            new,old=self.heap_next,self.heap_next+8;self.heap_next+=16
+            u.mem_write(new,bytes(u.mem_read(data,8)));u.mem_write(old,bytes(u.mem_read(address,8)))
+            u.mem_write(out,struct.pack('<4IB3x',address,8,new,old,0));self.ret(out)
+        elif name in ('forge_patch_enable','forge_patch_disable'):
+            address,size,new,old,enabled=struct.unpack('<4IB',u.mem_read(r[0],17))
+            if name=='forge_patch_enable' and not enabled:self.code(address,bytes(u.mem_read(new,size)));self.write(r[0]+16,1,'<B')
+            if name=='forge_patch_disable' and enabled:self.code(address,bytes(u.mem_read(old,size)));self.write(r[0]+16,0,'<B')
+            self.ret()
         elif name=='nnosAllocateTlsSlot':self.tls_allocations+=1;self.write(r[0],17);self.ret()
         elif name in ('nnosGetTlsValue','nnosSetTlsValue','_ZN2nn2os16GetCurrentThreadEv'):
             if name!='_ZN2nn2os16GetCurrentThreadEv':assert r[0]==17
@@ -249,35 +260,45 @@ def main():
     def check(ok,label):
         nonlocal checks
         assert ok,label;checks+=1
-    for conflict in (None,0x3822dc,0x4d17f4):
-        p=Probe(image,payload,conflict=conflict);p.call('forge_onInit')
-        check(p.allocations==(0 if conflict else 1),'One arena only after valid conditional pair')
-        check(p.tls_allocations==(0 if conflict else 1),'One native TLS slot')
-        p.call('forge_onInit');check(p.allocations<=1 and p.tls_allocations<=1,'Repeated init does not allocate')
-    p=Probe(image,payload,title=False);p.call('forge_onInit');check(not p.flushes and not p.allocations,'Wrong title has no writes/cache/allocation')
-    for fail in (1,2):
-        p=Probe(image,payload,fail_flush=fail);p.call('forge_onInit')
-        check(bytes(p.u.mem_read(MAIN+0x3822dc,8))==image[0x3822dc:0x3822e4] and
-              bytes(p.u.mem_read(MAIN+0x4d17f4,8))==image[0x4d17f4:0x4d17fc],'Conditional flush failure restores both words')
-    for op,nth in ((0x4b,1),(0x4c,1),(0x4c,2)):
-        p=Probe(image,payload,fail_svc={op:nth});p.call('forge_onInit')
-        check(p.read(p.private('pair_ready'))==1 and p.read(p.private('capture_ready'))==0,'Safe visual resource failure retains natural conditional pair')
-        check(not p.aliases and all(s<0x50000000 or s>=0x50010000 for s,n,perm in p.regions),'Failed preparation releases mapped arena storage')
+    hooked=Probe(image,payload);hooked.call('forge_onInit')
+    sites=[target-MAIN for target,_,_ in hooked.hooks]
+    chaining={0x382e1c,0x38211c,0x3874e0,0x381d30,0x623c08,0x384848,0x384408}
+    check(len(sites)==22 and hooked.read(hooked.private('pair_ready'))==1 and hooked.read(hooked.private('capture_ready'))==1,
+          'Compiled startup hooks all 22 sites through Forge and publishes readiness')
+    check(all((original!=0)==(target-MAIN in chaining) for target,_,original in hooked.hooks),'Only chaining entries take a Forge trampoline')
+    check(hooked.patches==22 and hooked.tls_allocations==1,'One snapshot per site and one native TLS slot')
+    check(hooked.read(hooked.private('main_count_resume'))==MAIN+0x381ff4 and
+          hooked.read(hooked.private('main_count_literal'))==struct.unpack_from('<I',image,0x382100)[0],
+          'Main-count stub cells hold the site literal and the resume address')
+    hooked.call('forge_onInit');check(len(hooked.hooks)==22 and hooked.tls_allocations==1,'Repeated init hooks and allocates nothing more')
+    def unhooked(p):return all(bytes(p.u.mem_read(MAIN+s,8))==image[s:s+8] for s in sites)
+    p=Probe(image,payload,title=False);p.call('forge_onInit');check(not p.hooks and not p.patches and unhooked(p),'Wrong title hooks nothing')
+    for fail in (1,2,9,22):
+        p=Probe(image,payload,fail_hook=fail);p.call('forge_onInit')
+        check(not p.read(p.private('pair_ready')) and not p.read(p.private('capture_ready')) and unhooked(p),
+              'A failed Forge hook rolls every site back and disables forcing and capture')
         p.request_force(1);pc,f=p.frame(0,[DATA,251])
-        check(pc==MAIN+0xe0da0,'Visual resource failure never silently enables always-forced mode')
-    for fail in (3,4,8,22,23):
+        check(pc==MAIN+0xe0da0,'A failed install never enables always-forced mode')
+    for fail in (1,22):
         p=Probe(image,payload,fail_flush=fail);p.call('forge_onInit')
-        check(p.read(p.private('pair_ready'))==1 and not p.read(p.private('capture_ready')) and not p.aliases,
-              'Visual cache failure safely rolls back and retains conditional-only natural behavior')
-    for site in (0x3820b4,0x3875bc,0x3878e0,0x387b00,0x388084):
+        check(not p.read(p.private('capture_ready')) and unhooked(p),'A failed cache flush rolls every site back')
+    for site in (0x3822dc,0x4d17f4,0x381fec,0x3820b4,0x3875bc,0x3878e0,0x387b00,0x388084):
         p=Probe(image,payload,conflict=site);p.call('forge_onInit')
-        check(p.read(p.private('pair_ready'))==1 and not p.read(p.private('capture_ready')) and not p.allocations,
-              'Conflict at each new observation tap rejects observation before arena allocation')
-    p=Probe(image,payload,fail_flush=4,fail_svc={0x5f:5});p.call('forge_onInit');p.tree=True;p.call('forge_onImGuiRender')
-    check(not p.read(p.private('capture_ready')) and len(p.aliases)==1,'Unsafe restoration retains reachable executable arena')
-    check(any('unsafe restore' in str(args) for fmt,args in p.log_records),'Unsafe restoration is explicitly reported once through Forge logs')
-    p=Probe(image,payload);p.call('forge_onInit')
-    check(p.read(p.private('pair_ready'))==1 and p.read(p.private('capture_ready'))==1,'Compiled startup publishes both transactions')
+        check(not p.hooks and not p.read(p.private('capture_ready')) and p.read(MAIN+site)==0xe3a00001,
+              'A conflict at any site refuses before Forge hooks anything and leaves the foreign word')
+    p=Probe(image,payload);p.code(MAIN+0x382e1c,struct.pack('<2I',0xe51ff004,FORGE+0x8000));p.call('forge_onInit')
+    trampoline=next(o for target,_,o in p.hooks if target==MAIN+0x382e1c)
+    check(len(p.hooks)==22 and struct.unpack('<4I',p.u.mem_read(trampoline,16))==(0xe51ff004,FORGE+0x8000,0xe51ff004,MAIN+0x382e24),
+          'A chaining entry stacks on a foreign Forge hook, whose branch becomes its original')
+    p=Probe(image,payload);p.code(MAIN+0x381fec,struct.pack('<2I',0xe51ff004,FORGE+0x8000));p.call('forge_onInit')
+    check(not p.hooks,'The main-count entry refuses a foreign hook its stub would skip')
+    def foreign(p,n):
+        if n==5:p.code(MAIN+sites[0]+4,struct.pack('<I',FORGE+0x9000))
+    p=Probe(image,payload,fail_hook=6,on_hook=foreign);p.call('forge_onInit')
+    check(not p.read(p.private('capture_ready')) and p.read(MAIN+sites[0]+4)==FORGE+0x9000 and
+          all(bytes(p.u.mem_read(MAIN+s,8))==image[s:s+8] for s in sites[1:5]),'Rollback restores its own sites and leaves a foreign word')
+    check(any('rollback failed' in str(args) for fmt,args in p.log_records),'A partial rollback is reported')
+    p=hooked
     # Execute exact native hasSkill bytes, not a synthetic successful-return stub.
     subject=DATA+0x1000;skills=DATA+0x2000
     p.write(subject+0x188,skills);p.write(subject+4+0x188,skills)

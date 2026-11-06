@@ -438,430 +438,36 @@ fn comparison_flags_match_cmp() {
     assert_eq!(comparison_nzcv(0x8000_0000, 1), 0x3000_0000); // C, V
 }
 
-// ---- hook publication ----
-#[derive(Clone)]
-struct Fake {
-    memory: BTreeMap<u32, u32>,
-    writes: u32,
-    flushes: u32,
-    prepares: u32,
-    creates: u32,
-    fail_write: u32,
-    fail_flush: u32,
-    rollback_after: u32,
-    poststore: bool,
-    external: bool,
-    rollback_fail: bool,
-    allocate: bool,
-    prepared: bool,
-    owned: bool,
-    bad_mapping: bool,
-    fail_close: bool,
-    title: u64,
-}
-impl Platform for Fake {
-    fn program(&self) -> Option<u64> {
-        Some(self.title)
-    }
-    fn executable(&self, a: u32, n: u32) -> bool {
-        !self.bad_mapping && (a >= 0x800000 || (self.memory.contains_key(&a) && self.memory.contains_key(&(a + n - 4))))
-    }
-    fn read(&self, a: u32) -> Option<u32> {
-        self.memory.get(&a).copied()
-    }
-    fn write(&mut self, a: u32, expected: u32, value: u32, stored: &mut bool) -> bool {
-        self.writes += 1;
-        *stored = false;
-        if self.rollback_fail && self.writes > self.rollback_after {
-            return false;
-        }
-        if self.writes == self.fail_write && !self.poststore {
-            return false;
-        }
-        if self.memory[&a] != expected {
-            return false;
-        }
-        self.memory.insert(a, value);
-        *stored = true;
-        self.writes != self.fail_write
-    }
-    fn sync(&mut self, a: u32, _n: u32) -> u32 {
-        self.flushes += 1;
-        if self.external && self.flushes == 1 {
-            self.memory.insert(a, 0xe1a00000);
-        }
-        if self.flushes == self.fail_flush { 99 } else { 0 }
-    }
-    fn create(&mut self, n: u32) -> bool {
-        assert_eq!(n, 4096);
-        self.creates += 1;
-        self.owned = self.allocate;
-        self.allocate
-    }
-    fn close(&mut self) -> bool {
-        if self.fail_close {
-            return false;
-        }
-        self.owned = false;
-        true
-    }
-    fn owns_arena(&self) -> bool {
-        self.owned
-    }
-    fn rx_base(&self) -> u32 {
-        0x900000
-    }
-    fn prepare(&mut self, off: u32, _t: u32, _a: u32, _b: u32) -> bool {
-        assert_eq!(off % 32, 0);
-        self.prepares += 1;
-        self.prepared
-    }
-    fn make_executable(&mut self) -> bool {
-        self.prepared
-    }
-}
-const HS: [Hook; 2] = [
-    Hook { site: 0x10c, window: 0x100, detour: 0x800000, words: [1, 2, 3, 4, 5, 6, 7, 8], paired: true, chains: false },
-    Hook { site: 0x20c, window: 0x200, detour: 0x800100, words: [9, 10, 11, 12, 13, 14, 15, 16], paired: true, chains: false },
-];
-const BASE: u32 = 0x100000;
-fn fresh() -> Fake {
-    let mut memory = BTreeMap::new();
-    for h in HS {
-        for j in 0..8 {
-            memory.insert(BASE + h.window + 4 * j, h.words[j as usize]);
-        }
-    }
-    Fake {
-        memory, writes: 0, flushes: 0, prepares: 0, creates: 0, fail_write: 0, fail_flush: 0, rollback_after: 2,
-        poststore: false, external: false, rollback_fail: false, allocate: true, prepared: true, owned: false,
-        bad_mapping: false, fail_close: false, title: PROGRAM_ID,
-    }
+// ---- hook recipes and windows ----
+fn installed(h: &Hook, detour: u32) -> [u32; 8] {
+    let mut w = h.words;
+    w[h.at()] = LDR_PC;
+    w[h.at() + 1] = detour;
+    w
 }
 
 #[test]
-fn a_clean_install_never_writes_twice() {
-    let mut f = fresh();
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &HS).state, State::Applied);
-    assert!(f.creates == 1 && f.prepares == 2 && f.flushes == 2 && t.original(&f, 0) == 0x900000);
-    let writes = f.writes;
-    assert!(t.install(&mut f, BASE, &HS).state == State::Applied && f.writes == writes);
-}
-
-#[test]
-fn write_and_flush_failures_restore_everything() {
-    for fail in 1..=4 {
-        for after in [false, true] {
-            let mut f = fresh();
-            let before = f.memory.clone();
-            f.fail_write = fail;
-            f.poststore = after;
-            let mut t = Hooks::new();
-            assert_ne!(t.install(&mut f, BASE, &HS).state, State::Applied);
-            assert!(f.memory == before && !f.owned);
-        }
-    }
-    for fail in 1..=2 {
-        let mut f = fresh();
-        let before = f.memory.clone();
-        f.fail_flush = fail;
-        let mut t = Hooks::new();
-        assert_eq!(t.install(&mut f, BASE, &HS).state, State::RolledBack);
-        assert!(f.memory == before && !f.owned);
-    }
-}
-
-#[test]
-fn foreign_edits_and_failed_rollback_are_unsafe_and_keep_the_arena() {
-    let mut f = fresh();
-    f.fail_flush = 1;
-    f.external = true;
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &HS).state, State::Unsafe);
-    assert!(f.owned && f.memory[&0x10010c] == 0xe1a00000);
-    let mut f = fresh();
-    f.fail_flush = 1;
-    f.rollback_fail = true;
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &HS).state, State::Unsafe);
-    assert!(f.owned);
-}
-
-#[test]
-fn rejection_happens_before_any_write_or_allocation() {
-    for i in 0..2 {
-        for j in 0..8 {
-            let mut f = fresh();
-            *f.memory.get_mut(&(BASE + HS[i].window + 4 * j)).unwrap() ^= 1;
-            let mut t = Hooks::new();
-            assert_eq!(t.install(&mut f, BASE, &HS).state, State::Rejected);
-            assert!(f.writes == 0 && f.creates == 0);
-        }
-    }
-    for which in 0..3 {
-        let mut f = fresh();
-        match which {
-            0 => f.title = 0,
-            1 => f.allocate = false,
-            _ => f.prepared = false,
-        }
-        let mut t = Hooks::new();
-        assert_eq!(t.install(&mut f, BASE, &HS).state, State::Rejected);
-        assert!(f.writes == 0 && !f.owned);
-    }
-    for which in 0..7 {
-        let mut f = fresh();
-        let mut wrong = HS;
-        let mut base = BASE;
-        match which {
-            0 => base = 0xffff_fffc,
-            1 => wrong[0].site |= 1,
-            2 => wrong[0].window += 16,
-            3 => wrong[0].detour = 0,
-            4 => wrong[0].detour = base + wrong[0].site,
-            5 => wrong[1].site = wrong[0].site,
-            _ => f.bad_mapping = true,
-        }
-        let mut t = Hooks::new();
-        assert_eq!(t.install(&mut f, base, &wrong).state, State::Rejected, "which {which}");
-        assert!(f.writes == 0 && f.creates == 0);
-    }
-    let mut f = fresh();
-    f.prepared = false;
-    f.fail_close = true;
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &HS).state, State::Unsafe);
-    assert!(f.owned && f.writes == 0);
-}
-
-#[test]
-fn a_later_conflict_is_reported_without_a_write() {
-    let mut f = fresh();
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &HS).state, State::Applied);
-    f.memory.insert(0x10010c, 0xdead_beef);
-    let (writes, creates) = (f.writes, f.creates);
-    let r = t.install(&mut f, BASE, &HS);
-    assert!(r.state == State::Unsafe && r.failure == Failure::Changed && r.unsafe_words != 0);
-    assert!(f.writes == writes && f.creates == creates && f.memory[&0x10010c] == 0xdead_beef);
-}
-
-#[test]
-fn a_failing_later_group_cannot_roll_back_a_working_group() {
-    for failure in 0..=6 {
-        let mut f = fresh();
-        let mut core = Hooks::new();
-        assert_eq!(core.install(&mut f, BASE, &HS).state, State::Applied);
-        let mut boundary = SITES[17];
-        boundary.detour = 0x800200;
-        for j in 0..8 {
-            f.memory.insert(BASE + boundary.window + j * 4, boundary.words[j as usize]);
-        }
-        let before = f.memory.clone();
-        let created = f.creates;
-        match failure {
-            1 => *f.memory.get_mut(&(BASE + boundary.window)).unwrap() ^= 1,
-            2 => f.fail_write = f.writes + 1,
-            3 => f.fail_write = f.writes + 2,
-            _ => {}
-        }
-        if failure >= 4 {
-            f.fail_flush = f.flushes + 1;
-        }
-        if failure == 5 {
-            f.external = true;
-            f.flushes = 0;
-            f.fail_flush = 1;
-        }
-        if failure == 6 {
-            f.rollback_fail = true;
-            f.rollback_after = f.writes + 2;
-        }
-        let mut optional = Hooks::new();
-        let r = optional.install(&mut f, BASE, &[boundary]);
-        let expected = match failure {
-            0 => State::Applied,
-            1 | 2 => State::Rejected,
-            5 | 6 => State::Unsafe,
-            _ => State::RolledBack,
-        };
-        assert_eq!(r.state, expected, "failure {failure}");
-        assert!(f.creates == created && core.report().state == State::Applied);
-        for h in HS {
-            for j in 0..8 {
-                let a = BASE + h.window + j * 4;
-                assert_eq!(f.memory[&a], before[&a]);
-            }
-        }
-    }
-}
-
-#[test]
-fn every_recipe_keeps_its_two_displaced_words_inside_its_window() {
+fn every_recipe_is_valid_and_keeps_its_site_inside_its_window() {
+    let hooks: Vec<Hook> = SITES.iter().enumerate().map(|(i, h)| Hook { detour: 0x0320_0000 + 4 * i as u32, ..*h }).collect();
+    assert!(valid_recipe(&hooks));
     for h in SITES.iter() {
         assert!(h.site >= h.window && h.site + 8 <= h.window + 32);
     }
     assert_eq!(site_offset(0), 0x3822dc);
     assert_eq!(site_offset(1), 0x4d17f4);
-}
-
-// ---- kernel-backed platform ----
-struct FakeKernel {
-    words: BTreeMap<u32, u32>,
-    mapping: MemoryInfo,
-    query_rc: u32,
-    info_rc: u32,
-    flush_rc: u32,
-    flushes: u32,
-}
-impl Kernel for FakeKernel {
-    fn query(&self, _address: u64) -> Result<MemoryInfo, u32> {
-        if self.query_rc != 0 { Err(self.query_rc) } else { Ok(self.mapping) }
-    }
-    fn get_info(&self, id: u32, _sub: u64) -> Result<u64, u32> {
-        if self.info_rc != 0 {
-            return Err(self.info_rc);
-        }
-        Ok(if id == 18 { PROGRAM_ID } else { 0 })
-    }
-    fn flush(&mut self, _a: u64, _n: u64) -> u32 {
-        self.flushes += 1;
-        self.flush_rc
-    }
-    fn create_code(&mut self, _p: u32, _n: u64) -> Result<u32, u32> {
-        Ok(7)
-    }
-    fn control_code(&mut self, _h: u32, _o: u32, _a: u64, _n: u64, _p: u32) -> u32 {
-        0
-    }
-    fn close(&mut self, _h: u32) -> u32 {
-        0
-    }
-    fn source_page(&self) -> u32 {
-        0x1000
-    }
-    fn load(&self, a: u32) -> u32 {
-        self.words[&a]
-    }
-    fn store(&mut self, a: u32, v: u32) {
-        self.words.insert(a, v);
-    }
-}
-const PAGE: u32 = 0x40000;
-
-#[test]
-fn the_platform_checks_the_mapping_before_every_code_access() {
-    let mapping = MemoryInfo { address: PAGE as u64, size: 4096, kind: 3, permissions: 5, ..Default::default() };
-    let kernel = FakeKernel { words: BTreeMap::from([(PAGE, 0xebf57aaf)]), mapping, query_rc: 0, info_rc: 0, flush_rc: 0, flushes: 0 };
-    let mut p = KernelPlatform::new(kernel);
-    assert_eq!(p.program(), Some(PROGRAM_ID));
-    p.kernel.info_rc = 9;
-    assert_eq!(p.program(), None);
-    p.kernel.info_rc = 0;
-    assert!(p.executable(PAGE, 32));
-    assert!(!p.executable(0, 4) && !p.executable(PAGE + 1, 4) && !p.executable(PAGE, 0));
-    assert!(!p.executable(0xffff_fffc, 8) && !p.executable(PAGE + 4092, 8));
-    p.kernel.query_rc = 7;
-    assert_eq!(p.read(PAGE), None);
-    p.kernel.query_rc = 0;
-    p.kernel.mapping.kind = 0;
-    assert!(!p.executable(PAGE, 4));
-    p.kernel.mapping.kind = 3;
-    p.kernel.mapping.permissions = 1;
-    assert_eq!(p.read(PAGE), None);
-    p.kernel.mapping.permissions = 5;
-    p.kernel.mapping.address = PAGE as u64 + 4;
-    assert_eq!(p.read(PAGE), None);
-    p.kernel.mapping.address = PAGE as u64;
-    p.kernel.mapping.size = 0x1_0000_0000;
-    assert_eq!(p.read(PAGE), None);
-    p.kernel.mapping.size = 4096;
-    assert_eq!(p.read(PAGE), Some(0xebf57aaf));
-    let mut stored = true;
-    assert!(!p.write(PAGE, 0x1234, 0xe3a00001, &mut stored) && !stored);
-    assert_eq!(p.kernel.words[&PAGE], 0xebf57aaf);
-    assert!(p.write(PAGE, 0xebf57aaf, 0xe3a00001, &mut stored) && stored);
-    assert_eq!(p.sync(PAGE, 4), 0);
-    assert_eq!(p.kernel.flushes, 1);
-    p.kernel.flush_rc = 0x4321;
-    assert_eq!(p.sync(PAGE, 4), 0x4321);
-    p.kernel.mapping.permissions = 1;
-    assert_eq!(p.sync(PAGE, 4), u32::MAX);
-    assert_eq!(p.kernel.flushes, 2);
-    assert!(!p.write(PAGE, 0xe3a00001, 0, &mut stored) && !stored);
-}
-
-// Code below this address, unmapped address space above it, with ASLR at 16 MiB.
-struct ArenaKernel {
-    words: BTreeMap<u32, u32>,
-}
-impl Kernel for ArenaKernel {
-    fn query(&self, address: u64) -> Result<MemoryInfo, u32> {
-        Ok(if address >= 0x100_0000 {
-            MemoryInfo { address: 0x100_0000, size: 0x10_0000, kind: 0, ..Default::default() }
-        } else {
-            MemoryInfo { address: 0, size: 0x100_0000, kind: 3, permissions: 5, ..Default::default() }
-        })
-    }
-    fn get_info(&self, id: u32, _sub: u64) -> Result<u64, u32> {
-        Ok(match id {
-            12 => 0x100_0000,
-            13 => 0x10_0000,
-            18 => PROGRAM_ID,
-            _ => 0,
-        })
-    }
-    fn flush(&mut self, _a: u64, _n: u64) -> u32 { 0 }
-    fn create_code(&mut self, _p: u32, _n: u64) -> Result<u32, u32> { Ok(7) }
-    fn control_code(&mut self, _h: u32, _o: u32, _a: u64, _n: u64, _p: u32) -> u32 { 0 }
-    fn close(&mut self, _h: u32) -> u32 { 0 }
-    fn source_page(&self) -> u32 { 0x1000 }
-    fn load(&self, a: u32) -> u32 { *self.words.get(&a).unwrap_or(&0) }
-    fn store(&mut self, a: u32, v: u32) { self.words.insert(a, v); }
-}
-
-#[test]
-fn trampolines_relocate_only_the_pinned_literal_and_refuse_other_pc_uses() {
-    let target = 0x50000u32;
-    let literal = target + 12 + 0x108;
-    let mut p = KernelPlatform::new(ArenaKernel { words: BTreeMap::from([(literal, 0xcafe_f00d)]) });
-    // Not mapped yet: nothing may be prepared.
-    assert!(!p.prepare(0, target, 0xe92d4070, 0xe24dd008));
-    assert!(p.create(4096) && p.owns_arena() && p.make_executable());
-    let rw = 0x100_0000;
-    // `ldr r0,[pc,#0x108]` becomes `ldr r0,[pc,#0xc]`, which reaches word 6 of its own slot.
-    assert!(p.prepare(0, target, 0xe92d4070, 0xe59f0108));
-    let slot: Vec<u32> = (0..8).map(|i| p.kernel.load(rw + i * 4)).collect();
-    assert_eq!(slot, [0xe92d4070, 0xe59f000c, LDR_PC, target + 8, 0, 0, 0xcafe_f00d, 0]);
-    // An ordinary prologue is copied as it stands.
-    assert!(p.prepare(32, target, 0xe92d4ff0, 0xe24dd014));
-    assert_eq!(p.kernel.load(rw + 36), 0xe24dd014);
-    // Any other PC-relative second word, a non-push first word and a bad slot are refused.
-    assert!(!p.prepare(64, target, 0xe92d4ff0, 0xe59f0108));
-    assert!(!p.prepare(64, target, 0xe59f0000, 0xe24dd014));
-    assert!(!p.prepare(65, target, 0xe92d4ff0, 0xe24dd014));
-    assert!(!p.create(4096));
-    assert!(p.close() && !p.owns_arena());
-}
-
-#[test]
-fn a_chaining_entry_stacks_on_a_foreign_forge_hook_and_restores_it() {
-    let mut hs = HS;
-    hs[0].chains = true;
-    let mut f = fresh();
-    f.memory.insert(BASE + 0x10c, LDR_PC);
-    f.memory.insert(BASE + 0x110, 0x0320_1000);
-    f.memory.insert(BASE + 0x114, 0xdead_beef);
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &hs).state, State::Rejected, "past the pair the window stays exact");
-    assert_eq!(f.writes, 0);
-    let mut f = fresh();
-    f.memory.insert(BASE + 0x10c, LDR_PC);
-    f.memory.insert(BASE + 0x110, 0x0320_1000);
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &hs).state, State::Applied);
-    assert!(f.memory[&(BASE + 0x10c)] == LDR_PC && f.memory[&(BASE + 0x110)] == hs[0].detour);
+    let mut bad = hooks.clone();
+    bad[3].detour = 0;
+    assert!(!valid_recipe(&bad), "a missing detour");
+    let mut bad = hooks.clone();
+    bad[3].site += 2;
+    assert!(!valid_recipe(&bad), "a misaligned site");
+    let mut bad = hooks.clone();
+    bad[3].site = bad[3].window + 28;
+    assert!(!valid_recipe(&bad), "displaced words past the window");
+    let mut bad = hooks;
+    bad[4].site = bad[3].site + 4;
+    bad[4].window = bad[3].window;
+    assert!(!valid_recipe(&bad), "overlapping sites");
 }
 
 #[test]
@@ -869,27 +475,99 @@ fn only_paired_entries_chain_and_the_pc_relative_entry_does_not() {
     let chained: Vec<u32> = SITES.iter().filter(|h| h.chains).map(|h| h.site).collect();
     assert_eq!(chained, [0x382e1c, 0x38211c, 0x3874e0, 0x381d30, 0x623c08, 0x384848, 0x384408]);
     assert!(SITES.iter().filter(|h| h.chains).all(|h| h.site == h.window));
+    let main_count = SITES.iter().find(|h| h.site == 0x381fec).unwrap();
+    assert!(main_count.paired && !main_count.chains);
+    assert_eq!(main_count.words[..2], [0xe92d4070, 0xe59f0108], "push {{r4,r5,r6,lr}}; ldr r0,[pc,#0x108]");
 }
 
 #[test]
-fn a_foreign_hook_on_a_strict_entry_is_refused() {
-    let mut f = fresh();
-    f.memory.insert(BASE + 0x10c, LDR_PC);
-    f.memory.insert(BASE + 0x110, 0x0320_1000);
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &HS).state, State::Rejected);
-    assert_eq!(f.writes, 0);
+fn a_window_before_install_is_the_original_or_a_foreign_hook_on_a_chaining_entry() {
+    for h in SITES.iter() {
+        let h = Hook { detour: 0x0320_0100, ..*h };
+        assert!(window_matches(&h, &h.words, false));
+        let foreign = installed(&h, 0x0400_0000);
+        assert_eq!(window_matches(&h, &foreign, false), h.chains, "foreign hook at {:x}", h.site);
+        for j in 0..8 {
+            let mut w = h.words;
+            w[j] ^= 1;
+            assert!(!window_matches(&h, &w, false), "changed word {j} at {:x}", h.site);
+            if h.chains && j != h.at() && j != h.at() + 1 {
+                let mut w = foreign;
+                w[j] ^= 1;
+                assert!(!window_matches(&h, &w, false), "a foreign hook does not excuse other words");
+            }
+        }
+        let mut w = h.words;
+        w[h.at()] = 0xe3a00001;
+        assert!(!window_matches(&h, &w, false), "a cheat over the site is a conflict");
+    }
 }
 
 #[test]
-fn a_later_forge_hook_over_a_chaining_entry_is_not_a_conflict() {
-    let mut hs = HS;
-    hs[0].chains = true;
-    let mut f = fresh();
-    let mut t = Hooks::new();
-    assert_eq!(t.install(&mut f, BASE, &hs).state, State::Applied);
-    f.memory.insert(BASE + 0x110, 0x0320_1000);
-    assert_eq!(t.install(&mut f, BASE, &[]).state, State::Applied);
-    f.memory.insert(BASE + 0x10c, 0xdead_beef);
-    assert_eq!(t.install(&mut f, BASE, &[]).state, State::Unsafe, "anything else over the entry is still a conflict");
+fn a_window_after_install_holds_our_branch_or_a_later_forge_hook_on_a_chaining_entry() {
+    for h in SITES.iter() {
+        let h = Hook { detour: 0x0320_0100, ..*h };
+        assert!(window_matches(&h, &installed(&h, h.detour), true));
+        assert!(!window_matches(&h, &h.words, true), "an unhooked site after install");
+        assert_eq!(window_matches(&h, &installed(&h, 0x0400_0000), true), h.chains);
+        let mut w = installed(&h, h.detour);
+        w[(h.at() + 2) % 8] ^= 1;
+        assert!(!window_matches(&h, &w, true));
+    }
+}
+
+#[test]
+fn forge_trampolines_must_hold_the_found_words_and_return_after_the_site() {
+    let found = [0xe92d48f0, 0xe24dd008];
+    assert!(trampoline_matches(0x0438_2e1c, found, &[found[0], found[1], LDR_PC, 0x0438_2e24]));
+    assert!(trampoline_matches(0x0438_2e1c, [LDR_PC, 0x0400_0000], &[LDR_PC, 0x0400_0000, LDR_PC, 0x0438_2e24]),
+        "a foreign branch moves with its literal");
+    assert!(!trampoline_matches(0x0438_2e1c, found, &[found[0], found[1], LDR_PC, 0x0438_2e20]));
+    assert!(!trampoline_matches(0x0438_2e1c, found, &[found[1], found[0], LDR_PC, 0x0438_2e24]));
+    assert!(!trampoline_matches(0x0438_2e1c, found, &[found[0], found[1], 0, 0x0438_2e24]));
+}
+
+// ---- kernel queries ----
+struct FakeKernel {
+    regions: Vec<(u64, u64, u32, u32)>,
+    memory: BTreeMap<u32, u32>,
+    program: u64,
+    flush: u32,
+}
+impl Kernel for FakeKernel {
+    fn query(&self, address: u64) -> Result<MemoryInfo, u32> {
+        let (start, size, kind, permissions) =
+            self.regions.iter().copied().find(|&(s, n, _, _)| s <= address && address < s + n).unwrap_or((address, 4096, 0, 0));
+        Ok(MemoryInfo { address: start, size, kind, permissions, ..Default::default() })
+    }
+    fn get_info(&self, id: u32, _: u64) -> Result<u64, u32> {
+        if id == 18 { Ok(self.program) } else { Err(1) }
+    }
+    fn flush(&self, _: u64, _: u64) -> u32 {
+        self.flush
+    }
+    fn load(&self, address: u32) -> u32 {
+        self.memory.get(&address).copied().unwrap_or(0)
+    }
+}
+
+#[test]
+fn queries_check_the_program_and_the_whole_executable_span() {
+    let mut k = FakeKernel { regions: vec![(0x1000, 0x1000, 3, PERM_RX), (0x2000, 0x1000, 3, 3)], memory: BTreeMap::new(), program: 0, flush: 0 };
+    assert!(!is_mhgu(&k));
+    k.program = 0x0100770008dd8000;
+    assert!(is_mhgu(&k));
+    assert!(executable(&k, 0x1000, 32) && executable(&k, 0x1fe0, 32));
+    assert!(!executable(&k, 0x1fe4, 32), "a span running off the region");
+    assert!(!executable(&k, 0x2000, 4), "writable but not executable");
+    assert!(!executable(&k, 0x1002, 4) && !executable(&k, 0, 4) && !executable(&k, 0x1000, 0));
+    for i in 0..8 {
+        k.memory.insert(0x1100 + i * 4, i);
+    }
+    assert_eq!(window(&k, 0x1100), Some([0, 1, 2, 3, 4, 5, 6, 7]));
+    assert_eq!(window(&k, 0x2000), None);
+    assert!(sync(&k, 0x1100, 8));
+    assert!(!sync(&k, 0x2000, 8));
+    k.flush = 99;
+    assert!(!sync(&k, 0x1100, 8));
 }

@@ -18,24 +18,6 @@ ENTRY pdb_svc_query
  str r1, [r2]
  add sp, sp, #4
  bx lr
-ENTRY pdb_svc_create
- str r0, [sp, #-4]!
- svc 0x4b
- ldr r2, [sp]
- str r1, [r2]
- add sp, sp, #4
- bx lr
-ENTRY pdb_svc_control
- push {r4-r6}
- ldr r4, [sp, #12]
- ldr r5, [sp, #16]
- ldr r6, [sp, #20]
- svc 0x4c
- pop {r4-r6}
- bx lr
-ENTRY pdb_svc_close
- svc 0x16
- bx lr
 ENTRY pdb_svc_get_info
  str r0, [sp, #-4]!
  ldr r0, [sp, #4]
@@ -53,4 +35,5 @@ ENTRY pdb_svc_flush
  svc 0x5f
  pop {r4}
  bx lr
+.purgem ENTRY
 .section .note.GNU-stack,"",%progbits

@@ -11,7 +11,7 @@ CONFIG=json.loads((MOD/'build.local.json').read_text()) if (MOD/'build.local.jso
 for key in ('rust_bin','cargo_home','cargo_forge','devkitarm','inputs','python'):
     if key in CONFIG and not Path(CONFIG[key]).is_absolute(): CONFIG[key]=str(MOD/CONFIG[key])
 NAME='please-do-better'
-VERSION='r28'
+VERSION='r29'
 BUILD_ROOT=ROOT/('build/please-do-better/candidates/'+VERSION)
 WORK_ROOT=ROOT/('work/please-do-better/candidates/'+VERSION)
 CARGO_TARGET=WORK_ROOT/'cargo-target'

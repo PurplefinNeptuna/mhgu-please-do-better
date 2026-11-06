@@ -1,6 +1,6 @@
 # Please do Better: development and research
 
-**Current state.** r28 DEVELOPMENT candidate at `build/please-do-better/candidates/r28/`, user-reported working on Eden ("ok, working on eden", unitemized; installed NRO matches). It highlights each extra-luck slot by setting its native background frame's four vertex colours to white through `0xA4E0B8`, called from the Forge update for every displayed highlighted slot. The ImGui gold border, its two render hooks (`0xA4FE50`, `0x86A330`) and their geometry and presentation capture are removed. A frame is never set back, so a taken item's slot stays white, by the user's choice. The r27 probe showed the white frames on Ryubing 1.3.3, unchanged by the cursor and item pickup. r26 is the gameplay-accepted build for luck highlights on Eden, its release preserved in `backups/accepted/please-do-better/r26-before-native-tint-probe/` and its ZIP in `build/please-do-better/candidates/r26/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r29 DEVELOPMENT candidate at `build/please-do-better/candidates/r29/`, gameplay NOT RUN. It is r28 with every hook installed through Forge's hook API instead of a private CodeMemory arena, so it no longer calls svc 0x4B and can load on MHGURecomp. The seven chaining entries continue through Forge's trampolines, the interior sites take Forge hooks with no original, and `0x381FEC` resumes through a fixed stub (see *Identity and hook inventory*). Highlights are r28's white native frames. r28 is the gameplay-accepted build on Eden ("ok, working on eden"), its ZIP in `build/please-do-better/candidates/r28/`; r26's release is preserved in `backups/accepted/please-do-better/r26-before-native-tint-probe/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots by turning their native frame white. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
@@ -14,7 +14,7 @@ Run `./build.sh COMMAND` from any directory: `doctor`, `prepare`, `build`, `test
 
 Copy `build.local.example.json` to ignored `build.local.json`, then set the tools and copied main/SDK/Forge inputs. Their supported SHA-256 values are in `dependencies.lock.json`; the main build ID and hook signatures are checked too. Changing dependencies or hook sites requires a reviewed lock update, import checks, focused fixtures and GE liveness revalidation. `core/` holds the portable logic and `core/tests/` its host tests. `src/` holds the gateways, reward capture, overlay and settings. The ARM probes in `scripts/` execute the compiled plugin and read its private state through hidden `pdb_*` symbols, which never reach the NRO's exports.
 
-Hooks stay on the private CodeMemory arena in `core/src/platform.rs`, not Forge's trampolines: Forge copies a target's first eight bytes without relocating them, and the second word at main+0x381fec is `ldr r0,[pc,#0x108]`. The arena relocates exactly that literal. Forge has no API for that, for a mapping query, a program ID or a process cache flush, which is what `src/svc.S` supplies.
+Forge's hook API places every hook. Forge copies a target's first eight bytes without relocating them, and the second word at main+0x381fec is `ldr r0,[pc,#0x108]`, so that entry's original is the fixed stub `pdb_main_count_original` in `src/gateway.S`. Forge has no mapping query, program ID or process cache flush, which is what `src/svc.S` supplies.
 
 Use settings-only panels. Format logs in Forge callbacks, outside native hooks. Keep one startup summary, meaningful committed preference changes and readable actionable failures. Never reset failure reason masks; unchanged frames stay silent. Overlays and background work run with settings panels closed.
 
@@ -168,10 +168,14 @@ Ghidra's imported base `0x009C9000` is not a runtime base.
 | `0x3820B4` | MOV r5,r0; CMP r4,#7: selected threshold and initial main count |
 | `0x3875BC`, `0x3878E0`, `0x387B00`, `0x388084` | LDR destination; LDRH first item: capture verified native array copies |
 
-The plugin has twenty-two eight-byte detours, journalling 44 words (176 game-code bytes). Each publishes
-`ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO gateway address. Eight callable
-originals share one pooled 4 KiB CodeMemory arena. The main-count PC-relative
-literal is relocated explicitly; other stolen pairs use a checked whitelist.
+The plugin has twenty-two Forge hooks, each `ldr pc,[pc,#-4]` (`0xE51FF004`) and a fixed NRO
+gateway address. The seven chaining entries ask Forge for an original and the gateway continues
+into its trampoline (the two words found, `ldr pc`, site + 8, checked after creation). Interior
+sites take no original: their gateways replay the displaced pair. `0x381FEC` takes no original
+either; `pdb_main_count_original` replays `push {r4,r5,r6,lr}`, loads the literal at
+main+0x382100 (copied at install into `pdb_main_count_literal`) into r0 and jumps to
+`0x381FF4` through `pdb_main_count_resume`. On MHGURecomp that jump lands inside a function
+Recomp interprets because `0x3820D0` and `0x3820B4` are Forge hooks in it.
 
 ### Modes, storage and callbacks
 
@@ -220,33 +224,27 @@ Forge provides lifecycle, main-base lookup, logging, counted mount and ImGui.
 The native plugin-load struct is 70 bytes with name at offset 6; static assertions
 cover pointers, RawFrame and SDK handle ABI. Its main-base header needs C linkage.
 
-Forge's patch wrapper snapshots arbitrary current bytes and exposes no checked
-write/cache/rollback results. Its hook wrapper also lacks checked publication/cache
-results and ownership-aware restoration. Private Hooks/NativePlatform fill those
-verified gaps using the reviewed Modern Controls backend. Installed Forge lacks
-the required memory-query/program-ID exports; private pinned libnx ARM32 bindings
-cover QueryMemory 6, CloseHandle 0x16, GetInfo 0x29, CreateCodeMemory 0x4B,
-ControlCodeMemory 0x4C and FlushProcessDataCache 0x5F.
+Installed Forge lacks memory-query, program-ID and process-flush exports; private pinned libnx
+ARM32 bindings cover QueryMemory 6, GetInfo 0x29 and FlushProcessDataCache 0x5F, the only SVCs
+in the binary. MHGURecomp implements all three.
 
-Verify title, all original windows, alignment, address arithmetic, executable
-ranges and relocation forms before publication. Prepare/read back callable
-originals and check arena flush first. Publish scalar literals before LDR-PC
-instructions, with checked readback and synchronization. No heap buffer or
-permission transition is used. Forge's startup boundary precedes original_sApp_run;
-this is not thread suspension or an atomic two-address update.
+`install_hooks` in `src/runtime.rs` checks the title, the recipe and all 22 windows before Forge
+hooks anything, and takes a disabled Forge `Patch` snapshot of each site. It then creates the
+hooks in order, checking each returned Hook, trampoline, branch and flush. Forge's startup boundary
+precedes original_sApp_run; this is not thread suspension or an atomic update.
 
 Paired entries other than `0x381FEC` set `chains`: they enter a scope, swap only LR, run the original once and
 write after it returns, so they stack on another plugin's Forge hook (see "Chaining" in the forge-modding hooks reference).
-The foreign pair becomes that row's original words, so the arena runs it and a rollback restores it, and a later
-Forge hook over the entry is not a conflict. `0x381FEC` has a PC-relative second word, and the luck, comparison,
+Forge copies the foreign pair into our trampoline, so the original runs it, and a later Forge hook over the entry
+is not a conflict. `0x381FEC` has a PC-relative second word, and the luck, comparison,
 copy and threshold sites are interior or branch-over sites; all of those stay exact.
 
-Rollback visits owned words in reverse order, restoring only owned replacements.
-Already-restored originals still require checked sync. Foreign/unreadable bytes,
-failed restore/flush and failed cleanup produce UNSAFE status and masks. Keep
-storage reachable from residual hooks. Repeat init checks retained signatures
-without allocation/writes and disables effective forcing/capture on conflict.
-Concurrent cheats are not made safe by expected-word checks.
+On any failure, rollback walks the snapshots newest first and restores a site only when each of
+its two words is still ours or the original; a foreign word is left and the failure is logged as
+needing a restart. Forge's trampolines stay allocated, and a continuation already stored stays
+valid for a gateway that remains reachable. Repeat init rechecks every window without hooking
+again and disables forcing and capture on conflict. Concurrent cheats are not made safe by
+expected-word checks.
 
 ### Cache and instruction-state audit
 
@@ -402,7 +400,7 @@ the item ID to the array at save-state+0xB08; +0xB16 is its current count.
 It stops at 150 entries. This native cap is preserved and can truncate a full
 appraisal queue. Real inventory/appraisal acceptance remains manual.
 
-No hook, assembly, GE continuation or CodeMemory allocation is added. Writable
+No hook, assembly or GE continuation is added. Writable
 range checks reuse the accepted SVC query adapter: the pinned Forge binary does
 not export `forge_mem_queryMemory`, although its headers declare it. The native
 SDK reader/TLS bindings remain in use for observation and paired ownership.
@@ -435,4 +433,4 @@ Closing the menu leaves the chosen settings active.
 
 ## Open items
 
-- **MHGURecomp.** Not supported: the private arena calls svc 0x4B, which aborts the game at load, and Recomp ignores this plugin's own code stores. A Forge hook inside a function makes Recomp interpret that whole function, so the branch-over gateways can resume mid-function there; a jump into a still-recompiled function is fatal. The port: the seven chaining entries take Forge originals, every interior site takes a Forge hook with no original, and `0x381FEC` keeps an entry hook whose fixed stub replays `push {r4,r5,r6,lr}` and the literal load, then jumps to `0x381FF4` (interpreted on Recomp because `0x3820D0` and `0x3820B4` sit in that function). No render hook remains.
+- **MHGURecomp.** r29 has no Recomp run. Its hooks follow Recomp's rules: every interior site sits at least 12 bytes before the next function, so Recomp interprets those functions and the gateways may resume mid-function, and the trampoline and main-text checks pass there as they do for Damage Numbers. The launcher's `run.sh` excludes this mod from Recomp until the user removes it from `EXCLUDE`.

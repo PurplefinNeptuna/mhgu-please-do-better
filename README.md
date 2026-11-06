@@ -12,7 +12,7 @@ on all player reward pages. Palico rewards keep their normal quantities.
 ## Installation
 
 1. Close the emulator.
-2. Extract `please-do-better-r28-candidate.zip`.
+2. Extract `please-do-better-r29-candidate.zip`.
 3. Copy the whole `please-do-better` folder into your emulator's MHGU mod directory:
    - Eden: `~/.local/share/eden/load/0100770008DD8000/`
    - Ryujinx: `mods/contents/0100770008dd8000/` inside its data directory.
@@ -74,4 +74,4 @@ A highlighted slot keeps its white frame after you take the item.
 
 It can load alongside plugins that hook some of the same game functions.
 
-Please do Better doesn't work on MHGURecomp: the game stops while loading, so don't install it there.
+This version hasn't been tested on MHGURecomp yet.

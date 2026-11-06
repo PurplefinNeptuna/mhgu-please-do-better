@@ -1,10 +1,11 @@
-//! Exact-build hook recipes. `SITES` are checked against the running code before any write and
+//! Exact-build hook recipes. `SITES` are checked against the running code before Forge hooks them and
 //! against the pinned NSO by `scripts/verify.py`. Each row is (site, window, 8 words at window, paired).
 //! Index = gateway order in the plugin: 0..=16 are gateways 0..=16, 17..=20 are 21..=24, 21 is 25.
 use crate::hooks::Hook;
 
 pub const fn row(site: u32, window: u32, words: [u32; 8], paired: bool) -> Hook {
-    // The main-count entry's second word is PC-relative, so a Forge hook could not be stacked there.
+    // The main-count entry's second word is PC-relative, so a Forge trampoline cannot run it: the
+    // gateway resumes through a fixed stub that replays both words, which would skip a foreign hook.
     Hook { site, window, detour: 0, words, paired, chains: paired && site != 0x00381fec }
 }
 pub const SITES: [Hook; 22] = [

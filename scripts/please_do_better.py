@@ -65,7 +65,7 @@ def inspect_binary(payload):
     msr_words=re.findall(r'\b([0-9a-f]{8})\s+msr\s',disassembly,re.I)
     require(msr_words and set(msr_words)=={'e128f002'},'Only audited NZCVQ restore may write flags')
     svcs=re.findall(r'\bsvc\s+(0x[0-9a-f]+)',disassembly)
-    require(sorted(int(x,16) for x in svcs)==[6,0x16,0x29,0x4b,0x4c,0x5f],'Unexpected SVC scope')
+    require(sorted(int(x,16) for x in svcs)==[6,0x29,0x5f],'Unexpected SVC scope')
     require('dsb\tsy' in disassembly and re.search(r'\bisb\b',disassembly),'Missing executable barriers')
     bss=struct.unpack_from('<I',payload,56)[0]
     # BSS keeps the C++ build's bound. The Rust image carries core/alloc support, so its own bound is 96 KiB.

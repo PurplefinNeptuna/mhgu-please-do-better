@@ -1,18 +1,19 @@
 //! Gateway logic. `pdb_gateway_dispatch` and `pdb_gateway_leave` run inside native routines on any
 //! game thread: no locks, no I/O, no logging. Only fixed atomics and immutable snapshots cross to
 //! Forge callbacks, which do the formatting.
-use crate::native::{NativePlatform, SvcKernel, copy, copy_to, field, half, readable, word, writable};
+use crate::native::{SvcKernel, copy, copy_to, field, half, readable, word, writable};
 use core::cell::UnsafeCell;
 use core::ffi::c_void;
+use forge::patch::Patch;
 use core::sync::atomic::{AtomicBool, AtomicU32, Ordering::{AcqRel, Acquire, Relaxed, Release}};
 use please_do_better_core::Once;
 use please_do_better_core::attribution::{Attribution, Provenance, Reward, compatible_refresh};
 use please_do_better_core::frame::RawFrame;
 use please_do_better_core::highlight::*;
-use please_do_better_core::hooks::{Hook, HookReport, Hooks, State};
+use please_do_better_core::hooks::{Hook, LDR_PC, trampoline_matches, valid_recipe, window_matches};
 use please_do_better_core::mailbox::Mailbox;
 use please_do_better_core::mode::{Mode, Preferences};
-use please_do_better_core::platform::KernelPlatform;
+use please_do_better_core::platform;
 use please_do_better_core::quantity::*;
 use please_do_better_core::signatures::{SITES, VERTEX_COLOR, site_offset};
 
@@ -42,6 +43,7 @@ unsafe extern "C" {
     fn pdb_gateway_24();
     fn pdb_gateway_25();
     fn pdb_gateway_after();
+    fn pdb_main_count_original();
     // Verified against the fingerprinted MHGU 1.4.0 SDK, not Forge's Result-return declaration for
     // SetTlsValue. The wrapper resolves to the void native setter at SDK + 0x9d80c.
     fn nnosAllocateTlsSlot(slot: *mut i32, destructor: *const c_void) -> u32;
@@ -207,6 +209,8 @@ visible! {
     pdb_bonus_count: AtomicU32 = counter();
     pdb_generated_count: AtomicU32 = counter();
     pdb_summary_status: AtomicU32 = counter();
+    pdb_main_count_literal: AtomicU32 = counter();
+    pdb_main_count_resume: AtomicU32 = counter();
     pdb_observed: Records = Records(UnsafeCell::new([[EMPTY_RECORD; 8]; 8]));
     pdb_displayed: Records = Records(UnsafeCell::new([[EMPTY_RECORD; 8]; 8]));
 }
@@ -607,13 +611,18 @@ fn copy_boundary(kind: u32, f: &mut RawFrame, base: u32) -> u32 {
     base + SITES[kind as usize - 4].site + 8
 }
 
-fn visual_original(index: usize) -> u32 {
-    // SAFETY: read-only after install; `capture_ready` is published only once VISUAL is applied.
-    unsafe { (*VISUAL.0.get()).original(&*PLATFORM.0.get(), index) }
+/// Where a paired gateway continues: Forge's trampoline, or for the main-count entry the fixed stub
+/// in gateway.S, whose cells install fills before any hook is published.
+fn paired_original(kind: u32) -> u32 {
+    if SITES[kind as usize].site == MAIN_COUNT_SITE {
+        pdb_main_count_original as *const () as u32
+    } else {
+        ORIGINALS[kind as usize].load(Acquire)
+    }
 }
 
 fn enter_scope(kind: u32, f: &mut RawFrame) -> u32 {
-    let original = visual_original(kind as usize - 2);
+    let original = paired_original(kind);
     let Some(context) = context() else {
         return original;
     };
@@ -953,32 +962,121 @@ pub fn request_preferences(p: Preferences) {
 core::arch::global_asm!(".hidden pdb_gateway_dispatch\n.hidden pdb_gateway_leave");
 
 struct Global<T>(UnsafeCell<T>);
-// SAFETY: written only from the single forge_onInit path before capture_ready is published.
+// SAFETY: each Global names its single writer; forge_onInit finishes before any reader runs.
 unsafe impl<T> Sync for Global<T> {}
-static PLATFORM: Global<NativePlatform> = Global(UnsafeCell::new(KernelPlatform::new(SvcKernel)));
-static CONDITIONAL: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
-static VISUAL: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
 const WHITE: u32 = 0xffff_ffff;
+const MAIN_COUNT_SITE: u32 = 0x381fec;
+/// main+0x381FF0 `ldr r0,[pc,#0x108]` reads this literal.
+const MAIN_COUNT_LITERAL: u32 = 0x381ff8 + 0x108;
 
+// Forge's trampoline for each chaining entry, by SITES index; zero elsewhere.
+static ORIGINALS: [AtomicU32; 22] = [const { AtomicU32::new(0) }; 22];
+// Disabled Forge snapshots of each site's first eight bytes: the rollback record. They live for the
+// process, since Forge keeps their buffers and a hook may remain reachable.
+static SNAPSHOTS: Global<[Option<Patch>; 22]> = Global(UnsafeCell::new([const { None }; 22]));
+static HOOKED: AtomicBool = AtomicBool::new(false);
 
-fn install_failure(feature: &str, r: HookReport) {
-    const REASONS: [&str; 8] = [
-        "unavailable", "wrong game", "unreadable address", "signature or conflicting patch", "write failed", "cache synchronization failed", "readback failed", "external patch changed",
-    ];
-    let reason = REASONS.get(r.failure as usize).copied().unwrap_or("native resource failure");
-    let state = if r.state == State::Unsafe { "unsafe restore; arena retained" } else { "safely disabled" };
-    log::warn!("[please-do-better] {feature} unavailable: {reason} ({state}); remove conflicting mods, verify game/Forge, then restart");
+/// Every site is checked before Forge hooks any of them; a later failure restores what was hooked.
+fn install_hooks(text: u32) -> Result<(), &'static str> {
+    let k = SvcKernel;
+    if !platform::is_mhgu(&k) {
+        return Err("not MHGU");
+    }
+    let hooks: [Hook; 22] = core::array::from_fn(hook);
+    if text == 0 || text & 3 != 0 || !valid_recipe(&hooks) {
+        return Err("invalid hook recipe");
+    }
+    let mut found = [[0u32; 2]; 22];
+    for (i, h) in hooks.iter().enumerate() {
+        let Some(w) = platform::window(&k, text + h.window) else {
+            return Err("unreadable game code");
+        };
+        if !window_matches(h, &w, false) || !readable(h.detour, 4) {
+            return Err("MHGU 1.4.0 code mismatch or a conflicting patch");
+        }
+        found[i] = [w[h.at()], w[h.at() + 1]];
+    }
+    let literal = text + MAIN_COUNT_LITERAL;
+    if !platform::executable(&k, literal, 4) {
+        return Err("unreadable game code");
+    }
+    pdb_main_count_literal.store(word(literal), Release);
+    pdb_main_count_resume.store(text + MAIN_COUNT_SITE + 8, Release);
+    // SAFETY: forge_onInit is the only writer, before any gateway can run.
+    let snapshots = unsafe { &mut *SNAPSHOTS.0.get() };
+    for (i, h) in hooks.iter().enumerate() {
+        let mut branch = [0u8; 8];
+        branch[..4].copy_from_slice(&LDR_PC.to_le_bytes());
+        branch[4..].copy_from_slice(&h.detour.to_le_bytes());
+        snapshots[i] = Some(Patch::new(text + h.site, &branch, false));
+    }
+    for (i, h) in hooks.iter().enumerate() {
+        let target = text + h.site;
+        let mut original = core::ptr::null();
+        let out = if h.chains { &mut original as *mut *const c_void } else { core::ptr::null_mut() };
+        // SAFETY: the window was checked above; an interior site's gateway replays its displaced
+        // words and needs no callable original. Forge runs this before original_sApp_run.
+        let created = unsafe { forge::sys::hook::forge_hook_create(target as *const c_void, h.detour as *const c_void, out) };
+        let continuation = original as u32;
+        let trampoline = !h.chains
+            || (continuation & 3 == 0 && platform::executable(&k, continuation, 16) && {
+                let words: [u32; 4] = core::array::from_fn(|j| word(continuation + j as u32 * 4));
+                trampoline_matches(target, found[i], &words)
+            });
+        if trampoline && h.chains {
+            // Kept even if a later step fails: a reachable gateway needs a valid continuation.
+            ORIGINALS[i].store(continuation, Release);
+        }
+        let branch = platform::window(&k, text + h.window).is_some_and(|w| window_matches(h, &w, true) && w[h.at() + 1] == h.detour);
+        if !trampoline || created.target as u32 != target || created.detour as u32 != h.detour
+            || created.original as u32 != continuation || !branch || !platform::sync(&k, target, 8)
+        {
+            return Err(if rollback() { "Forge hook installation failed" } else { "hook rollback failed; restart required" });
+        }
+    }
+    HOOKED.store(true, Release);
+    Ok(())
+}
+/// Restore every site still holding our branch, newest first. A word that is neither ours nor the
+/// original belongs to someone else and is left alone, which fails the rollback.
+fn rollback() -> bool {
+    let k = SvcKernel;
+    // SAFETY: forge_onInit is the only writer, before any gateway can run.
+    let snapshots = unsafe { &mut *SNAPSHOTS.0.get() };
+    let mut restored = true;
+    for patch in snapshots.iter_mut().rev().flatten() {
+        let at = patch.addr();
+        let original: [u8; 8] = patch.original_bytes().try_into().unwrap_or([0; 8]);
+        let replacement: [u8; 8] = patch.patch_bytes().try_into().unwrap_or([0; 8]);
+        let mut current = [0u8; 8];
+        if !platform::executable(&k, at, 8) || !copy(at, current.as_mut_ptr(), 8) {
+            restored = false;
+            continue;
+        }
+        if current != original {
+            if !(0..8).step_by(4).all(|j| current[j..j + 4] == original[j..j + 4] || current[j..j + 4] == replacement[j..j + 4]) {
+                restored = false;
+                continue;
+            }
+            // Patch has no conditional restore: enabling records ownership and disabling writes the
+            // snapshot back.
+            patch.enable();
+            patch.disable();
+        }
+        restored &= platform::sync(&k, at, 8) && copy(at, current.as_mut_ptr(), 8) && current == original;
+    }
+    restored
 }
 fn install() {
-    // SAFETY: forge_onInit is the only writer, before any reader can observe capture_ready.
-    let (platform, conditional, visual) = unsafe { (&mut *PLATFORM.0.get(), &mut *CONDITIONAL.0.get(), &mut *VISUAL.0.get()) };
     if INITIALIZED.swap(true, Relaxed) {
-        // Recheck owned signatures, without republishing or allocating. A conflict cancels effective
-        // forcing and further attribution.
-        let base = base();
-        let r = conditional.install(platform, base, &[]);
-        let v = if visual.report().state == State::Fresh { visual.report() } else { visual.install(platform, base, &[]) };
-        if r.state != State::Applied || v.state != State::Applied {
+        // Recheck every site without hooking again. A conflict cancels forcing and attribution.
+        let text = base();
+        let k = SvcKernel;
+        let intact = (0..22).all(|i| {
+            let h = hook(i);
+            platform::window(&k, text + h.window).is_some_and(|w| window_matches(&h, &w, true))
+        });
+        if HOOKED.load(Acquire) && !intact {
             pdb_pair_ready.store(0, Release);
             pdb_capture_ready.store(0, Release);
         }
@@ -986,11 +1084,6 @@ fn install() {
     }
     let text = forge::mem::text_addr();
     BASE.store(text, Relaxed);
-    let r = conditional.install(platform, text, &[hook(0), hook(1)]);
-    if r.state != State::Applied {
-        return install_failure("Luck hooks", r);
-    }
-    pdb_pair_ready.store(1, Release);
     let mut slot = -1;
     // SAFETY: a fixed SDK export with a live output and no destructor.
     if unsafe { nnosAllocateTlsSlot(&mut slot, core::ptr::null()) } != 0 || slot < 0 {
@@ -999,11 +1092,11 @@ fn install() {
         return;
     }
     TLS.store(slot as u32, Relaxed);
-    let taps: [Hook; 20] = core::array::from_fn(|i| hook(i + 2));
-    let v = visual.install(platform, text, &taps);
-    if v.state != State::Applied {
-        return install_failure("Reward capture hooks", v);
+    if let Err(reason) = install_hooks(text) {
+        log::warn!("[please-do-better] Hooks unavailable: {reason}; remove conflicting mods, verify game/Forge, then restart");
+        return;
     }
+    pdb_pair_ready.store(1, Release);
     pdb_capture_ready.store(1, Release);
     let (at, words) = VERTEX_COLOR;
     let setter = text + at;

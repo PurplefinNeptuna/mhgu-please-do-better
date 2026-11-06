@@ -86,4 +86,30 @@ pdb_gateway_after:
  mov sp, r4
  RESTORE
 .size pdb_gateway_after, .-pdb_gateway_after
+/* The callable original of the main-count entry main+0x381FEC. Its second word,
+ * ldr r0,[pc,#0x108], reads a literal relative to the site, so a copied trampoline
+ * cannot run it. Replay push {r4,r5,r6,lr}, load that literal (copied at install)
+ * into r0 and continue at site+8. r12 is free at a call boundary; nothing here
+ * writes flags. Both cells are reached PC-relatively, so the text needs no
+ * relocation.
+ */
+.section .text.pdb_main_count_original,"ax",%progbits
+.balign 4
+.global pdb_main_count_original
+.hidden pdb_main_count_original
+.type pdb_main_count_original,%function
+pdb_main_count_original:
+ push {r4, r5, r6, lr}
+ ldr r0, 3f
+1: add r0, pc, r0
+ ldr r0, [r0]
+ ldr r12, 4f
+2: add r12, pc, r12
+ ldr pc, [r12]
+3: .word pdb_main_count_literal - (1b + 8)
+4: .word pdb_main_count_resume - (2b + 8)
+.size pdb_main_count_original, .-pdb_main_count_original
+.purgem SAVE
+.purgem RESTORE
+.purgem ENTRY
 .section .note.GNU-stack,"",%progbits

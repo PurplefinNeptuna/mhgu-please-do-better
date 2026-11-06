@@ -88,14 +88,6 @@ def main():
             check(regs[:4] == [0x11223344, 18, 0xffff8001, 0x55667788], 'GetInfo ARM32 arguments')
             u.reg_write(arm.UC_ARM_REG_R1, 0x08dd8000)
             u.reg_write(arm.UC_ARM_REG_R2, 0x01007700)
-        elif current['svc']==0x4b:
-            check(regs[:4]==[DATA,0xabcdef00,4096,0],'CreateCodeMemory ARM32 output/source/u64 size')
-            u.reg_write(arm.UC_ARM_REG_R1,7)
-        elif current['svc']==0x4c:
-            check(regs[:7]==[7,1,0xabcdef00,0x12,0x11223344,0x55667788,5],'ControlCodeMemory aligned u64 address/size/permission')
-            for i in range(4,7):u.reg_write(REGS[i],0xdead0000+i)
-        elif current['svc']==0x16:
-            check(regs[0]==7,'CloseHandle argument')
         else:
             check(regs[:5] == [0xffff8001, 0x11223344, 0xabcdef00, 0x12, 0x55667788],
                   'FlushProcessDataCache ARM32 64-bit arguments')
@@ -108,8 +100,7 @@ def main():
 
     uc.hook_add(unicorn.UC_HOOK_INTR, svc)
     uc.hook_add(unicorn.UC_HOOK_CODE, stop)
-    for name, number in [('pdb_svc_query',6),('pdb_svc_get_info',0x29),('pdb_svc_flush',0x5f),
-                         ('pdb_svc_create',0x4b),('pdb_svc_control',0x4c),('pdb_svc_close',0x16)]:
+    for name, number in [('pdb_svc_query',6),('pdb_svc_get_info',0x29),('pdb_svc_flush',0x5f)]:
         for result in (0, 0x1234):
             current.update(svc=number, result=result)
             for i, reg in enumerate(REGS):
@@ -122,8 +113,6 @@ def main():
             uc.mem_write(sp, struct.pack('<III', 0x11223344, 0x55667788,5))
             args = ([DATA, DATA+0x80, 0xabcdef00, 0x12] if number == 6 else
                     [DATA,18,0xffff8001,0] if number == 0x29 else
-                    [DATA,0xabcdef00,4096,0] if number == 0x4b else
-                    [7,1,0xabcdef00,0x12] if number == 0x4c else [7] if number == 0x16 else
                     [0xffff8001, 0, 0xabcdef00, 0x12])
             for reg, value in zip(REGS, args):
                 uc.reg_write(reg, value)
@@ -138,13 +127,12 @@ def main():
             if number == 0x29:
                 check(struct.unpack('<Q', bytes(uc.mem_read(DATA, 8)))[0] == 0x0100770008dd8000,
                       'GetInfo 64-bit output pointer restored')
-            if number==0x4b:check(struct.unpack('<I',uc.mem_read(DATA,4))[0]==7,'Create output pointer stores kernel output even on failure')
-    report = {'checks': checks, 'instruction_cases': 512, 'continuation_cases': 2, 'svc_cases': 12,
+    report = {'checks': checks, 'instruction_cases': 512, 'continuation_cases': 2, 'svc_cases': 6,
               'nro_sha256': recipe.sha(payload), 'unicorn': unicorn.__version__,
               'coverage': 'Exact MOV, immediate continuations and compiled private SVC wrappers',
               'limit': 'Fake kernel; does not validate Eden JIT/cache behavior or gameplay'}
     recipe.write_json(recipe.OUT / 'arm-tests.json', report)
-    print(f'PASS: {checks} ARM32 checks (512 cheat flag cases, 2 continuations, 12 compiled SVC cases)')
+    print(f'PASS: {checks} ARM32 checks (512 cheat flag cases, 2 continuations, 6 compiled SVC cases)')
 
 
 if __name__ == '__main__':

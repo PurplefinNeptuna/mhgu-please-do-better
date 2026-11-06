@@ -2,7 +2,7 @@
   "schema_version": 1,
   "mod": "please-do-better",
   "kind": "plugin",
-  "version": "r28",
+  "version": "r29",
   "candidate": true,
   "package_name": "please-do-better"
 }

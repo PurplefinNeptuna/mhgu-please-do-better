@@ -3082,5 +3082,19 @@
     "itemized": false,
     "installed_nro_sha256": "630f07f01df7ea415b090d288bb91f47ef125616de6111b1bc38df26f636636b",
     "log": "eden_log.txt (2026-11-06 17:25) has no please-do-better lines, as expected at Forge's shipped error level."
+  },
+  "static_r29": {
+    "version": "r29",
+    "user_request": "\"proceed\", after the plan to port the private hook arena to Forge's hooks for MHGURecomp",
+    "change": "All 22 hooks installed through forge_hook_create with disabled Forge Patch snapshots for rollback; chaining entries continue through Forge trampolines, interior sites take no original, 0x381FEC resumes through the fixed stub pdb_main_count_original; the CodeMemory arena and svc 0x4B/0x4C/0x16 are removed",
+    "tests": "18 Rust host tests; ARM32 (2090), runtime/gateway (100505), native copy (172), observation (28841), display (177), frame-tint (331) and quantity (455) suites passed",
+    "verify": "PASS: pinned inputs, 22 hook windows and the frame colour setter, NZCVQ/GE audit, exports and payload inventory",
+    "svcs": "svc 0x6, 0x29, 0x5f only",
+    "instruction_scan": "No QADD/QSUB/QDADD/QDSUB/QASX/QSAX and no VADDW/VSUBW/VADDL/VSUBL/VMLAL/VMULL in the r29 disassembly",
+    "recomp_source": "MHGURecomp 0.14.3 runtime/forge.c implements forge_hook_create and forge_patch_* with the same ABI; its trampoline pools map read/execute (kernel_map_region perm 5)",
+    "nro_sha256": {
+      "romfs/nativeNX/plugins/please_do_better.nro": "3583061f373aea64e2340a226c0e57d268e00b9be3534fa318f208f22b139621"
+    },
+    "runtime_test": "NOT RUN"
   }
 }
