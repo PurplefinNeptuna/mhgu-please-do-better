@@ -150,3 +150,52 @@ pub fn screen_quad(vertices: &[f32; 24], model: &[f32; 16], global: &[f32; 4], w
     let area = (out[2] - out[0]) * (out[5] - out[1]) - (out[3] - out[1]) * (out[4] - out[0]);
     (area.is_finite() && area.abs() > 1.0).then_some(out)
 }
+
+/// Reward frames the white-tint probe has coloured. Each frame is tinted once, and a later change
+/// away from the tint is reported once. Owned by the Forge update callback only.
+pub struct Tints {
+    nodes: [u32; 64],
+    len: usize,
+    reported: u64,
+}
+pub enum Tint {
+    /// First sight of this frame: log its colours and tint it.
+    New,
+    /// Already tinted; the index is for `report_change`.
+    Known(usize),
+    /// No room left: leave the frame alone.
+    Full,
+}
+impl Tints {
+    pub const fn new() -> Self {
+        Self { nodes: [0; 64], len: 0, reported: 0 }
+    }
+    pub fn note(&mut self, node: u32) -> Tint {
+        if let Some(i) = self.nodes[..self.len].iter().position(|&n| n == node) {
+            return Tint::Known(i);
+        }
+        if self.len == self.nodes.len() {
+            return Tint::Full;
+        }
+        self.nodes[self.len] = node;
+        self.len += 1;
+        Tint::New
+    }
+    /// True the first time only.
+    pub fn report_change(&mut self, i: usize) -> bool {
+        let bit = 1u64 << i;
+        let first = self.reported & bit == 0;
+        self.reported |= bit;
+        first
+    }
+    /// The reward screen is gone: its frames may be freed and their addresses reused.
+    pub fn clear(&mut self) {
+        self.len = 0;
+        self.reported = 0;
+    }
+}
+impl Default for Tints {
+    fn default() -> Self {
+        Self::new()
+    }
+}

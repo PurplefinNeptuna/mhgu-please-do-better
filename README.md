@@ -12,7 +12,7 @@ on all player reward pages. Palico rewards keep their normal quantities.
 ## Installation
 
 1. Close the emulator.
-2. Extract `please-do-better-r26.zip`.
+2. Extract `please-do-better-r27-candidate.zip`.
 3. Copy the whole `please-do-better` folder into your emulator's MHGU mod directory:
    - Eden: `~/.local/share/eden/load/0100770008DD8000/`
    - Ryujinx: `mods/contents/0100770008dd8000/` inside its data directory.

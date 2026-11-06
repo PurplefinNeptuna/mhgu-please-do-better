@@ -15,7 +15,7 @@ use please_do_better_core::mailbox::Mailbox;
 use please_do_better_core::mode::{Mode, Preferences};
 use please_do_better_core::platform::KernelPlatform;
 use please_do_better_core::quantity::*;
-use please_do_better_core::signatures::{HIGHLIGHT_BOUNDARY, PRESENTATION, SITES, site_offset};
+use please_do_better_core::signatures::{HIGHLIGHT_BOUNDARY, PRESENTATION, SITES, VERTEX_COLOR, site_offset};
 
 unsafe extern "C" {
     fn pdb_gateway_0();
@@ -240,6 +240,7 @@ static DRAW_CYCLE: AtomicU32 = AtomicU32::new(1);
 static PRESENT_PENDING: AtomicU32 = counter();
 static REJECTION_LOGGED: AtomicU32 = counter();
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
+static TINT_READY: AtomicBool = AtomicBool::new(false);
 static REPORTED: AtomicBool = AtomicBool::new(false);
 
 fn base() -> u32 {
@@ -1303,6 +1304,41 @@ static PLATFORM: Global<NativePlatform> = Global(UnsafeCell::new(KernelPlatform:
 static CONDITIONAL: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
 static VISUAL: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
 static HIGHLIGHT: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
+// Read and written only by the Forge update callback (`bind_slots`, `update`).
+static TINTS: Global<Tints> = Global(UnsafeCell::new(Tints::new()));
+const WHITE: u32 = 0xffff_ffff;
+
+/// Probe: tint a highlighted reward frame white through the native setter once, logging the colours
+/// it had, and log once if anything later replaces the tint. `node` was validated as a live
+/// `cGUIObjTexture` (vtable, 0x130 readable bytes) in this same callback.
+fn tint(group: u32, index: u32, node: u32) {
+    if !TINT_READY.load(Relaxed) {
+        return;
+    }
+    // SAFETY: only the update callback reaches TINTS.
+    let tints = unsafe { &mut *TINTS.0.get() };
+    let colours = [word(node + 0xa4), word(node + 0xa8), word(node + 0xac), word(node + 0xb0)];
+    let [a, b, c, d] = colours;
+    match tints.note(node) {
+        Tint::New => {
+            // SAFETY: VERTEX_COLOR's bytes were checked at install; the setter takes the object, a
+            // pointer to one colour word and a vertex index, and returns nothing.
+            let set: unsafe extern "C" fn(u32, *const u32, u32) =
+                unsafe { core::mem::transmute((base() + VERTEX_COLOR.0) as usize) };
+            for vertex in 0..4 {
+                unsafe { set(node, &WHITE, vertex) };
+            }
+            let back = word(node + 0xa4);
+            log::error!(
+                "[please-do-better] probe: group {group} slot {index} frame colours {a:08x} {b:08x} {c:08x} {d:08x}; set white, reads {back:08x}"
+            );
+        }
+        Tint::Known(i) if colours != [WHITE; 4] && tints.report_change(i) => {
+            log::error!("[please-do-better] probe: group {group} slot {index} tint replaced by {a:08x} {b:08x} {c:08x} {d:08x}");
+        }
+        _ => {}
+    }
+}
 
 fn install_failure(feature: &str, r: HookReport) {
     const REASONS: [&str; 8] = [
@@ -1359,6 +1395,13 @@ fn install() {
         Hook { detour: pdb_gateway_26 as *const () as u32, ..HIGHLIGHT_BOUNDARY },
         Hook { detour: pdb_gateway_27 as *const () as u32, ..PRESENTATION },
     ];
+    let (at, words) = VERTEX_COLOR;
+    let setter = text + at;
+    if readable(setter, 32) && (0..8).all(|i| word(setter + i * 4) == words[i as usize]) {
+        TINT_READY.store(true, Relaxed);
+    } else {
+        log::warn!("[please-do-better] probe: vertex colour setter differs; frames are not tinted");
+    }
     let h = highlight.install(platform, text, &rendering);
     if h.state == State::Applied {
         pdb_highlight_ready.store(1, Release);
@@ -1432,6 +1475,10 @@ pub fn update() {
     }
     let bound = bind_slots(displayed);
     pdb_binding_count.store(bound, Release);
+    if bound == 0 {
+        // SAFETY: only the update callback reaches TINTS.
+        unsafe { (*TINTS.0.get()).clear() };
+    }
 }
 
 fn consume(r: &Record, thread: usize, observed: &mut [[Record; 8]; 8], displayed: &mut [[Record; 8]; 8], epochs: &mut [u32; 8], owners: &mut [u32; 8]) {
@@ -1606,6 +1653,7 @@ fn bind_slots(displayed: &[[Record; 8]; 8]) -> u32 {
                 count(&pdb_render_faults);
                 return 0;
             }
+            tint(group, index, node);
             bound += 1;
         }
     }

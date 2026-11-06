@@ -50,6 +50,7 @@ class Probe:
         self.read_corrupt=False
         self.singleton=0;self.draws=[];self.clips=[];self.clip_history=[];self.time=0;self.draw_enabled=True
         self.native={};self.rolls=[];self.rng=[];self.generated=[]
+        self.tints=[]
         if conflict:self.write(MAIN+conflict,0xe3a00001)
         u.hook_add(unicorn.UC_HOOK_CODE,self.trace)
         u.hook_add(unicorn.UC_HOOK_MEM_WRITE,self.mirror)
@@ -105,6 +106,10 @@ class Probe:
     def trace(self,u,addr,size,_):
         if addr==STOP:u.emu_stop();return
         if addr==MAIN+0xe0da0:self.skill_calls+=1
+        if addr==MAIN+0xa4e0b8:
+            # Native vertex-colour setter: record the call and store the corner as the game does.
+            r=[u.reg_read(x) for x in REGS];assert r[2]<4
+            colour=self.read(r[1]);self.tints.append((r[0],r[2],colour));self.write(r[0]+0xa4+4*r[2],colour);self.ret();return
         if addr in self.native:
             result=self.native[addr]
             if callable(result):result=result()

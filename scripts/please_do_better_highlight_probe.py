@@ -84,6 +84,17 @@ def main():
             b=struct.unpack('<11I',u.mem_read(p.private('bindings'),44))
             check(p.read(p.private('binding_count'))==1 and b[4:10]==(lst,group,index,node,icon,case['frame_id']),'Compiled mapping agrees with exact original GUI ordinal/object ID')
             mapping_cases+=1
+    white=[(node,v,0xffffffff) for v in range(4)]
+    check(p.tints==white,'Probe tints the bound frame white once, on all four corners')
+    check(sum('set white' in s for s in p.logs)==1,'Probe logs the original frame colours once')
+    p.write(node+0xa4,0xff0000ff);p.call('forge_onUpdate',[0]);p.call('forge_onUpdate',[0])
+    check(sum('tint replaced' in s for s in p.logs)==1 and p.tints==white,'A replaced tint is logged once and not reapplied')
+    u.mem_write(displayed,bytes(72));p.call('forge_onUpdate',[0]);p.write(lst+0x4c,1);p.write(node+0x50,12)
+    record=[DATA+0x10000,7,31,1,lst,1,7,lst+0x60+4*4,1,1,123|(3<<16)]+[0]*7
+    p.write(ids+4*4,2+4);p.write(icon_nodes+(2+4)*4,icon);p.write(frame_nodes+(4+4)*4,node);p.write(node+0x50,8+4)
+    p.write(lst+0x160+0x28,19);p.write(lst+0x164+0x28,12);p.write(lst+0x16c+0x28,ids);p.write(roots+19*4,root_icon);p.write(roots+12*4,root_frame)
+    u.mem_write(displayed,struct.pack('<18I',*record));p.call('forge_onUpdate',[0])
+    check(len(p.tints)==8,'A new reward screen tints its frames again')
     u.mem_write(displayed,bytes(72));p.call('forge_onUpdate',[0]);p.write(lst+0x4c,1);p.write(node+0x50,12)
     def binding(index=4,batch=7):
         # Snapshot ticket and ten atomic payload words; no fixture invokes a

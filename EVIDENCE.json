@@ -3035,5 +3035,17 @@
       "romfs/nativeNX/plugins/please_do_better.nro": "170fe64a179a4c2f3ebace7b03ae433fa50106fda537abc99d80fe4f6dd353aa"
     },
     "basis": "The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load."
+  },
+  "static_r27": {
+    "version": "r27",
+    "user_request": "\"yes\", to: build that probe now: a white tint on the highlighted frames, plus the colour log, as an Eden test build of PDB",
+    "change": "bind_slots tints each newly bound highlighted reward frame white through the native setter main+0xa4e0b8 (four corners), logging its original +0xa4..+0xb0 colours, and logs once if the colour later stops being white",
+    "tests": "27 Rust host tests; ARM32, runtime/gateway, native, observation, display, highlight and quantity suites passed",
+    "verify": "PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory",
+    "instruction_scan": "No QADD/QSUB/QDADD/QDSUB/QASX/QSAX and no VADDW/VSUBW/VADDL/VSUBL/VMLAL/VMULL in the r27 disassembly",
+    "nro_sha256": {
+      "romfs/nativeNX/plugins/please_do_better.nro": "bb57a10a1ac829d4626a465e70c3f717453d3beadabf2d70850340e11079c3ba"
+    },
+    "runtime_test": "NOT RUN"
   }
 }

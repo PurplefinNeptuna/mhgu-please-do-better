@@ -37,6 +37,12 @@ pub const HIGHLIGHT_BOUNDARY: Hook = row(0x00a4fe50, 0x00a4fe50, [0xe5960000, 0x
 /// index, then tail-calls the installed Forge interceptor with all native state intact.
 pub const PRESENTATION: Hook = row(0x0086a330, 0x0086a31c, [0xe3041740, 0xe0801001, 0xe59f000c, 0xe79f0000, 0xe5903000, 0xe1a0000c, 0xe12fff13, 0x00fd7000], false);
 
+/// `cGUIObjTexture` per-vertex colour setter `(object, *const u32 colour, vertex 0..3)`: stores
+/// +0xa4 + 4 * vertex when it differs, then marks the quad dirty through vtable slot 0x50.
+/// Called only, never hooked.
+pub const VERTEX_COLOR: (u32, [u32; 8]) =
+    (0x00a4e0b8, [0xe92d4010, 0xe1a04000, 0xe3520003, 0x88bd8010, 0xe0840102, 0xe5911000, 0xe5b020a4, 0xe1510002]);
+
 /// The two original luck sites replaced by the wiki cheat; the BL is the site's first word.
 pub const fn site_offset(i: usize) -> u32 {
     SITES[i].site

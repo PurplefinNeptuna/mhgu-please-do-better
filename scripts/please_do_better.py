@@ -35,6 +35,10 @@ def validate_inputs():
         require(len(words)==8 and image[start:start+32]==struct.pack('<8I',*words),f'Original window differs: {window}')
         require(start<=int(site,16)<=start+24,'Displaced words escape signature window')
     require([r[0] for r in rows[22:]]==['0x00a4fe50','0x0086a330'],'Unexpected rendering inventory')
+    setter=re.search(r'VERTEX_COLOR: \(u32, \[u32; 8\]\) =\s*\((0x[0-9a-f]+), \[([^\]]+)\]\)',(RECIPE/'core/src/signatures.rs').read_text())
+    require(setter is not None,'Missing vertex colour setter window')
+    start=int(setter[1],16)
+    require(image[start:start+32]==struct.pack('<8I',*[int(x,16) for x in setter[2].split(',')]),'Vertex colour setter window differs')
     require(struct.unpack_from('<3I',image,0x4d1804)==(0xe1a00004,0xe3001102,0xebf6797d),'Second site 0x102 continuation differs')
     cheat=MOD/'vendor/wiki-cheats'/'Always Lucky/cheats/FB08F1D20FD1204F.txt'
     require(sha(cheat.read_bytes())=='378d0df1a25845bdf3d315dd38b6d6de1dedaf4c34d25475de4e8a6c2d9a4351','Two-site cheat input changed')

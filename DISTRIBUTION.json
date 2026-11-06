@@ -1,5 +1,5 @@
 {
-  "archive": "please-do-better-r26.zip",
+  "archive": "please-do-better-r27-candidate.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -14,10 +14,11 @@
     "manual": [
       "mods/please-do-better/EVIDENCE.json"
     ],
-    "static_summary": "r26: pinned toolchain build; 26 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test; verify: \"PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory\". Stacking on a foreign Forge hook is covered by host fixtures and Forge's hook.c source, with no ARM execution of a stacked chain and no run on any emulator.",
-    "manual_summary": "The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load."
+    "static_summary": "r27: pinned toolchain build; 27 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test, including fixtures that the probe tints a bound frame white once on all four corners, logs a replaced tint once and tints again on a new screen; verify: \"PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory\", plus the vertex-colour setter window against the pinned NSO.",
+    "manual_summary": "Gameplay NOT RUN. r26 is the gameplay-accepted build for luck highlights on Eden."
   },
   "limitations": [
+    "r27 is a probe: it never restores a tinted frame while the reward screen stays open, and the overlay border still draws over the tinted frames",
     "does not run on MHGURecomp: the private CodeMemory arena calls svc 0x4B, which aborts the game at load",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
@@ -46,11 +47,11 @@
     "url": null
   },
   "readme": "mods/please-do-better/README.md",
-  "reason": "r26 approved for distribution. Seven paired entry hooks accept another plugin's Forge hook on the same function.",
+  "reason": "r27 probe: tints highlighted reward frames white through the native vertex-colour setter and logs their colours, to learn whether a native tint can replace the overlay.",
   "schema_version": 1,
-  "status": "READY_TO_DISTRIBUTE",
+  "status": "DEVELOPMENT",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx.",
-  "version": "r26",
+  "version": "r27",
   "gamebanana": {
     "ai_code": {
       "used": true,
@@ -100,19 +101,17 @@
       }
     ]
   },
-  "runtime_test": "The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load.",
+  "runtime_test": "Gameplay NOT RUN. r26 is the gameplay-accepted build for luck highlights on Eden.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
   },
   "payloads": {
     "romfs/nativeNX/plugins/please_do_better.nro": {
-      "source": "build/please-do-better/candidates/r26/package/romfs/nativeNX/plugins/please_do_better.nro",
-      "sha256": "170fe64a179a4c2f3ebace7b03ae433fa50106fda537abc99d80fe4f6dd353aa"
+      "source": "build/please-do-better/candidates/r27/package/romfs/nativeNX/plugins/please_do_better.nro",
+      "sha256": "bb57a10a1ac829d4626a465e70c3f717453d3beadabf2d70850340e11079c3ba"
     }
   },
-  "approval": {
-    "date": "2026-11-05",
-    "basis": "The user approved this on 2026-11-05: \"ok, make notes about them and promote all the lenient patched mods to ready to distribute, and maybe other mods that still has dev status that i use in eden, while notes the recomp incompabilities when exists (like in please do better)\". The user reported luck highlights working on Eden: \"all working well\". It cannot run on MHGURecomp, where its svc 0x4B aborts the game at load. Ryujinx and Switch hardware are unconfirmed."
-  }
+  "candidate": "build/please-do-better/candidates/r27/delivery",
+  "candidate_builder": "scripts/build.py"
 }

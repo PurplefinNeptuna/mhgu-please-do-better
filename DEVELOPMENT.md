@@ -1,6 +1,6 @@
 # Please do Better: development and research
 
-**Current state.** r26 READY_TO_DISTRIBUTE (2026-11-05), unpublished, release at `build/please-do-better/releases/r26/`, the gameplay-accepted build for luck highlights on Eden, on the user's report (see `EVIDENCE.json`); it logs nothing at Forge's error level. r26 is r25 with one compatibility change: seven paired entry hooks accept another plugin's Forge hook on the same function. r25 is the approved release, preserved in `backups/accepted/please-do-better/r25-before-chaining/`, with its ZIP in `build/please-do-better/candidates/r25/` as the rollback. r25 is a Rust/forge-rs 1.5.0 rewrite of the C++ r24-forge151. Rewards, luck, multiplier, overlay and settings behaviour are intended to be unchanged, and `src/gateway.S` and `src/svc.S` are byte-identical. All seven ARM probe suites pass with the same case counts as r24-forge151. The user reported it working on Eden on 2026-11-02, unitemized; the installed NRO hash matches. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r27 DEVELOPMENT candidate at `build/please-do-better/candidates/r27/`, a probe, gameplay NOT RUN. It is r26 plus one change: `bind_slots` sets each newly bound highlighted reward frame white through the vertex-colour setter `0xA4E0B8`, logs the frame's original corner colours, and logs once if the colour later stops being white. It decides whether a native frame tint can replace the ImGui overlay, whose `0xA4FE50` hook would leave the GUI texture draw interpreted on MHGURecomp. The overlay still draws. r26 is the gameplay-accepted build for luck highlights on Eden, its release preserved in `backups/accepted/please-do-better/r26-before-native-tint-probe/` and its ZIP in `build/please-do-better/candidates/r26/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots with a pulsing gold border and sparkle. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
@@ -94,6 +94,13 @@ Scissor `0xA37C1C` applies draw-context offsets/scales and viewport intersection
 The plugin also reproduces the native sentinel rectangle fallback at `0xBC12D8..0xBC1364`.
 Current shader/full-viewport, clip and exact frame/slot identity guards are
 documented with the rendering hooks in the implementation audit.
+
+Frame colours are sequence data. Layout setup `0x623A6C` starts sequence `0xF4242` plus a variant on the group's
+background root (`0x56E538` to `0x546C74` to root `0xA3896C`, which restarts only on a different ID), which colours
+Base rows red and Wound/Cap rows blue. The cursor's yellow cell comes from a path not yet read. List refresh
+`0x623C68` only assigns icons (`0x56E62C`) and visibility (`0x56E530`), so a frame keeps its `(group, index)` for
+the screen's life. Setter `0xA4E0B8(object, *colour, vertex)` stores `+0xA4 + 4 * vertex` and marks the quad dirty
+through vtable slot 0x50.
 
 State-1 `0x384AF0` can grow the main reward array to 16 or 48 entries before
 opening the grid. Copy loops `0x384BF0..0x384C24` and `0x384C7C..0x384CB0` preserve
@@ -482,4 +489,4 @@ Closing the menu leaves the chosen settings active.
 
 ## Open items
 
-- **MHGURecomp.** Not supported: the private arena calls svc 0x4B, which aborts the game there at load. Interior branch-over sites would also need checking against recompiled code. Running there means replacing the arena with Forge's hooks, and `0x381FEC`'s PC-relative word is the first obstacle.
+- **MHGURecomp.** Not supported: the private arena calls svc 0x4B, which aborts the game at load, and Recomp ignores this plugin's own code stores. A Forge hook inside a function makes Recomp interpret that whole function, so the branch-over gateways can resume mid-function there; a jump into a still-recompiled function is fatal. The port: the seven chaining entries take Forge originals, every interior site takes a Forge hook with no original, and `0x381FEC` keeps an entry hook whose fixed stub replays `push {r4,r5,r6,lr}` and the literal load, then jumps to `0x381FF4` (interpreted on Recomp because `0x3820D0` and `0x3820B4` sit in that function). The `0xA4FE50` render hook would leave the GUI texture draw interpreted for the session, which the r27 tint probe is meant to remove.

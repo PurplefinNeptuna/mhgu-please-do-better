@@ -924,3 +924,21 @@ fn a_later_forge_hook_over_a_chaining_entry_is_not_a_conflict() {
     f.memory.insert(BASE + 0x10c, 0xdead_beef);
     assert_eq!(t.install(&mut f, BASE, &[]).state, State::Unsafe, "anything else over the entry is still a conflict");
 }
+
+#[test]
+fn each_frame_is_tinted_and_reported_once() {
+    let mut t = Tints::new();
+    assert!(matches!(t.note(0x1000), Tint::New));
+    assert!(matches!(t.note(0x1000), Tint::Known(0)));
+    assert!(matches!(t.note(0x2000), Tint::New));
+    assert!(t.report_change(1));
+    assert!(!t.report_change(1), "a change is logged once");
+    t.clear();
+    assert!(matches!(t.note(0x2000), Tint::New), "a new screen starts over");
+    assert!(t.report_change(0));
+    for n in 1..64 {
+        assert!(matches!(t.note(0x3000 + n), Tint::New));
+    }
+    assert!(matches!(t.note(0x9000), Tint::Full));
+    assert!(matches!(t.note(0x3001), Tint::Known(1)));
+}
