@@ -15,7 +15,7 @@
       "mods/please-do-better/EVIDENCE.json"
     ],
     "static_summary": "r27: pinned toolchain build; 27 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test, including fixtures that the probe tints a bound frame white once on all four corners, logs a replaced tint once and tints again on a new screen; verify: \"PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory\", plus the vertex-colour setter window against the pinned NSO.",
-    "manual_summary": "Gameplay NOT RUN. r26 is the gameplay-accepted build for luck highlights on Eden."
+    "manual_summary": "r27 ran on Ryubing 1.3.3: highlighted Base frames turned white and stayed white past the cursor and item pickup (screenshots and log, no \"tint replaced\" line). r26 is the gameplay-accepted build for luck highlights on Eden."
   },
   "limitations": [
     "r27 is a probe: it never restores a tinted frame while the reward screen stays open, and the overlay border still draws over the tinted frames",
@@ -101,7 +101,7 @@
       }
     ]
   },
-  "runtime_test": "Gameplay NOT RUN. r26 is the gameplay-accepted build for luck highlights on Eden.",
+  "runtime_test": "r27 ran on Ryubing 1.3.3: highlighted Base frames turned white and stayed white past the cursor and item pickup (screenshots and log, no \"tint replaced\" line). r26 is the gameplay-accepted build for luck highlights on Eden.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"

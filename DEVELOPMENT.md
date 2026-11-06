@@ -1,6 +1,6 @@
 # Please do Better: development and research
 
-**Current state.** r27 DEVELOPMENT candidate at `build/please-do-better/candidates/r27/`, a probe, gameplay NOT RUN. It is r26 plus one change: `bind_slots` sets each newly bound highlighted reward frame white through the vertex-colour setter `0xA4E0B8`, logs the frame's original corner colours, and logs once if the colour later stops being white. It decides whether a native frame tint can replace the ImGui overlay, whose `0xA4FE50` hook would leave the GUI texture draw interpreted on MHGURecomp. The overlay still draws. r26 is the gameplay-accepted build for luck highlights on Eden, its release preserved in `backups/accepted/please-do-better/r26-before-native-tint-probe/` and its ZIP in `build/please-do-better/candidates/r26/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r27 DEVELOPMENT candidate at `build/please-do-better/candidates/r27/`, a probe, gameplay NOT RUN. It is r26 plus one change: `bind_slots` sets each newly bound highlighted reward frame white through the vertex-colour setter `0xA4E0B8`, logs the frame's original corner colours, and logs once if the colour later stops being white. Ryubing 1.3.3 showed the highlighted Base frames white, and they stayed white past the cursor and item pickup (see `EVIDENCE.json`). It decides whether a native frame tint can replace the ImGui overlay, whose `0xA4FE50` hook would leave the GUI texture draw interpreted on MHGURecomp. The overlay still draws. r26 is the gameplay-accepted build for luck highlights on Eden, its release preserved in `backups/accepted/please-do-better/r26-before-native-tint-probe/` and its ZIP in `build/please-do-better/candidates/r26/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots with a pulsing gold border and sparkle. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
@@ -100,7 +100,9 @@ background root (`0x56E538` to `0x546C74` to root `0xA3896C`, which restarts onl
 Base rows red and Wound/Cap rows blue. The cursor's yellow cell comes from a path not yet read. List refresh
 `0x623C68` only assigns icons (`0x56E62C`) and visibility (`0x56E530`), so a frame keeps its `(group, index)` for
 the screen's life. Setter `0xA4E0B8(object, *colour, vertex)` stores `+0xA4 + 4 * vertex` and marks the quad dirty
-through vtable slot 0x50.
+through vtable slot 0x50. A Base frame's four corners hold `0xA02337DC` (bytes R 0xDC, G 0x37, B 0x23, alpha 0xA0)
+over a light texture, so a white vertex colour shows the texture itself. Neither the cursor's yellow nor taking the
+item rewrites that colour.
 
 State-1 `0x384AF0` can grow the main reward array to 16 or 48 entries before
 opening the grid. Copy loops `0x384BF0..0x384C24` and `0x384C7C..0x384CB0` preserve

@@ -3047,5 +3047,19 @@
       "romfs/nativeNX/plugins/please_do_better.nro": "bb57a10a1ac829d4626a465e70c3f717453d3beadabf2d70850340e11079c3ba"
     },
     "runtime_test": "NOT RUN"
+  },
+  "runtime_r27_2026_11_06": {
+    "version": "r27",
+    "emulator": "Ryubing 1.3.3 (Ryujinx_1.3.3+e2143d4_2026-11-06_16-45-31.log)",
+    "installed_nro_sha256": "bb57a10a1ac829d4626a465e70c3f717453d3beadabf2d70850340e11079c3ba",
+    "lines": [
+      "[ERROR] [please-do-better] probe: group 1 slot 5 frame colours a02337dc a02337dc a02337dc a02337dc; set white, reads ffffffff",
+      "[ERROR] [please-do-better] probe: group 1 slot 10 frame colours a02337dc a02337dc a02337dc a02337dc; set white, reads ffffffff",
+      "[ERROR] [please-do-better] probe: group 1 slot 15 frame colours a02337dc a02337dc a02337dc a02337dc; set white, reads ffffffff"
+    ],
+    "counts": "Two reward screens: slots 5..7 at 00:02:39, slots 10..15 at 00:10:38, every frame a02337dc on all four corners and reading ffffffff after the set; no 'tint replaced' line.",
+    "user_report": "\"im running on ryubing\", with four screenshots",
+    "screenshots": "The six highlighted Base slots in row two show white frames under the gold border while the other Base frames stay red. The cursor turns a highlighted slot yellow, and the slot it left is white again. A slot whose item was taken stays an empty white frame. The Felyne Palicoes page has no highlights.",
+    "reading": "The red is a vertex colour, bytes dc 37 23 a0 (R 220, G 55, B 35, alpha 160) over a light texture, so a white vertex colour shows the texture itself. Neither the cursor nor taking the item rewrote the tint."
   }
 }
