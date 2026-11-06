@@ -16,6 +16,7 @@ on all player reward pages. Palico rewards keep their normal quantities.
 3. Copy the whole `please-do-better` folder into your emulator's MHGU mod directory:
    - Eden: `~/.local/share/eden/load/0100770008DD8000/`
    - Ryujinx: `mods/contents/0100770008dd8000/` inside its data directory.
+   - MHGURecomp: `mods/` next to the game's executable.
 4. Enable `please-do-better` and launch MHGU.
 
 Keep only one enabled copy of `please_do_better.nro`.
@@ -74,4 +75,4 @@ A highlighted slot keeps its white frame after you take the item.
 
 It can load alongside plugins that hook some of the same game functions.
 
-This version hasn't been tested on MHGURecomp yet.
+It works on MHGURecomp too.

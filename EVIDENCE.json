@@ -3096,5 +3096,24 @@
       "romfs/nativeNX/plugins/please_do_better.nro": "3583061f373aea64e2340a226c0e57d268e00b9be3534fa318f208f22b139621"
     },
     "runtime_test": "NOT RUN"
+  },
+  "runtime_r29_2026_11_06": {
+    "version": "r29",
+    "user_report": "\"woo, its working for both\"",
+    "itemized": false,
+    "emulators": {
+      "Eden": {
+        "installed_nro_sha256": "3583061f373aea64e2340a226c0e57d268e00b9be3534fa318f208f22b139621",
+        "log": "eden_log.txt (2026-11-06 17:48) has no please-do-better lines, as expected at Forge's shipped error level."
+      },
+      "MHGURecomp 0.14.3": {
+        "installed_nro_sha256": "3583061f373aea64e2340a226c0e57d268e00b9be3534fa318f208f22b139621",
+        "lines": [
+          "[forge] [INFO] [please-do-better] r29 loaded; forcing and highlights ready"
+        ],
+        "log": "recomplog.txt (2026-11-06 17:54): no FATAL, unsupported-instruction or refused-hook line from this plugin; run.sh EXCLUDE no longer lists please-do-better."
+      }
+    },
+    "foreign": "The same Recomp log has KatSmithy's '[SmithyRise] ... smithy_win main+0x6f1ae8 GUARD MISMATCH: found E51FF004 03494FBC ... NOT hooked'; 0x03494FBC lies in Wishlist (loaded at 0x03490000), not this plugin."
   }
 }

@@ -15,10 +15,9 @@
       "mods/please-do-better/EVIDENCE.json"
     ],
     "static_summary": "r29: pinned toolchain build; 18 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test, with fixtures that emulate Forge 1.5.1's hook and patch calls: all 22 sites hook or none, a failed hook or flush rolls every site back, a conflict at any site refuses before hooking, a chaining entry stacks on a foreign hook, a foreign word survives rollback, and the observation suite runs the native count bodies through the trampolines and the main-count stub; verify: \"PASS: pinned inputs, 22 hook windows and the frame colour setter, NZCVQ/GE audit, exports and payload inventory\"; the binary's only SVCs are 0x6, 0x29 and 0x5F.",
-    "manual_summary": "Gameplay NOT RUN. r28 is the gameplay-accepted build on Eden (\"ok, working on eden\")."
+    "manual_summary": "User-reported working on Eden and MHGURecomp 0.14.3: \"woo, its working for both\", unitemized; installed NRO matches on both, and MHGURecomp logged \"r29 loaded; forcing and highlights ready\"."
   },
   "limitations": [
-    "r29 has no run on any emulator; MHGURecomp support rests on its Forge runtime source and the plugin's fixtures",
     "A highlighted frame stays white after its item is taken, by the user's choice",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
@@ -50,7 +49,7 @@
   "reason": "r29: installs all 22 hooks through Forge instead of a private CodeMemory arena, so the plugin can load on MHGURecomp.",
   "schema_version": 1,
   "status": "DEVELOPMENT",
-  "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx.",
+  "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx/MHGURecomp.",
   "version": "r29",
   "gamebanana": {
     "ai_code": {
@@ -101,7 +100,7 @@
       }
     ]
   },
-  "runtime_test": "Gameplay NOT RUN. r28 is the gameplay-accepted build on Eden (\"ok, working on eden\").",
+  "runtime_test": "User-reported working on Eden and MHGURecomp 0.14.3: \"woo, its working for both\", unitemized; installed NRO matches on both, and MHGURecomp logged \"r29 loaded; forcing and highlights ready\".",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
