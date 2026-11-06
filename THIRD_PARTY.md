@@ -49,4 +49,4 @@ Pinned game GUI/SPK data is private local research input and is not bundled.
 The Maxwell instruction encoding table in the pinned Eden reference is read as
 research data to verify shader position dataflow. No Eden runtime implementation
 or game shader bytes are compiled into the plugin or included in its ZIP.
-The renderer uses existing Forge/cimgui exports and procedural line geometry.
+Highlights use the game's own frame colour setter. The settings panel uses existing Forge/cimgui exports.

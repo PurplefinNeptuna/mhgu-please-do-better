@@ -101,11 +101,9 @@ pub extern "C" fn forge_onImGuiRender() {
     }
 }
 
-// Forge update and NVN presentation need not share a thread. Keep all preference access with the
-// ImGui callbacks; free-render runs with the settings panel closed too. Mode publication is the only
-// cross-thread edit.
+// Keep all preference access with the ImGui callbacks; free-render runs with the settings panel
+// closed too. Mode publication is the only cross-thread edit.
 #[unsafe(no_mangle)]
 pub extern "C" fn forge_onImGuiFreeRender() {
     settings::retry_load();
-    runtime::render();
 }

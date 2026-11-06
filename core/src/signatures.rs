@@ -31,12 +31,6 @@ pub const SITES: [Hook; 22] = [
     row(0x00388084, 0x00388084, [0xe5940064, 0xe1d510b0, 0xe1c012b0, 0xe5940064, 0xe1d510b2, 0xe1c012b2, 0xe5940064, 0xe1d510b4], false),
     row(0x003820b4, 0x003820a0, [0xe5900000, 0xeb01d8a6, 0xe2001001, 0xe0814005, 0xeb000081, 0xe1a05000, 0xe3540007, 0x8a000009], false),
 ];
-/// Texture-vertex constructor success join. Its gateway has no callable original.
-pub const HIGHLIGHT_BOUNDARY: Hook = row(0x00a4fe50, 0x00a4fe50, [0xe5960000, 0xe200000f, 0xe3500006, 0x8a000011, 0xe3a01001, 0xe3a02036, 0xe1120011, 0x0a000006], false);
-/// Tail of the game's NVN wrapper: `mov r0,r12; bx r3`. The gateway records the queue, window and
-/// index, then tail-calls the installed Forge interceptor with all native state intact.
-pub const PRESENTATION: Hook = row(0x0086a330, 0x0086a31c, [0xe3041740, 0xe0801001, 0xe59f000c, 0xe79f0000, 0xe5903000, 0xe1a0000c, 0xe12fff13, 0x00fd7000], false);
-
 /// `cGUIObjTexture` per-vertex colour setter `(object, *const u32 colour, vertex 0..3)`: stores
 /// +0xa4 + 4 * vertex when it differs, then marks the quad dirty through vtable slot 0x50.
 /// Called only, never hooked.

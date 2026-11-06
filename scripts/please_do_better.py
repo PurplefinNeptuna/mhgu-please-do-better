@@ -15,14 +15,14 @@ def write_json(path,record):
     path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(record,indent=2,sort_keys=True)+'\n')
 
 def recipes():
-    """(site, window, words, paired) from the Rust table: 22 sites plus the two rendering boundaries."""
+    """(site, window, words, paired) from the Rust table: the 22 hook sites."""
     source=(RECIPE/'core/src/signatures.rs').read_text()
     rows=re.findall(r'row\((0x[0-9a-f]+), (0x[0-9a-f]+), \[([^\]]+)\], (true|false)\)',source)
     return [(s,w,[int(x,16) for x in words.split(',')],paired=='true') for s,w,words,paired in rows]
 
 def validate_inputs():
     image,segments=binary.main_image(input_path('main').read_bytes())
-    rows=recipes();require(len(rows)==24,'Unexpected hook inventory')
+    rows=recipes();require(len(rows)==22,'Unexpected hook inventory')
     sites=[];evidence=json.loads((MOD/'research/patch-sites.json').read_text())
     for (site,window,words,_),old in zip(rows[:2],evidence['patch_sites']):
         start=int(window,16);raw=struct.pack('<8I',*words)
@@ -34,7 +34,6 @@ def validate_inputs():
         start=int(window,16)
         require(len(words)==8 and image[start:start+32]==struct.pack('<8I',*words),f'Original window differs: {window}')
         require(start<=int(site,16)<=start+24,'Displaced words escape signature window')
-    require([r[0] for r in rows[22:]]==['0x00a4fe50','0x0086a330'],'Unexpected rendering inventory')
     setter=re.search(r'VERTEX_COLOR: \(u32, \[u32; 8\]\) =\s*\((0x[0-9a-f]+), \[([^\]]+)\]\)',(RECIPE/'core/src/signatures.rs').read_text())
     require(setter is not None,'Missing vertex colour setter window')
     start=int(setter[1],16)
@@ -43,8 +42,8 @@ def validate_inputs():
     cheat=MOD/'vendor/wiki-cheats'/'Always Lucky/cheats/FB08F1D20FD1204F.txt'
     require(sha(cheat.read_bytes())=='378d0df1a25845bdf3d315dd38b6d6de1dedaf4c34d25475de4e8a6c2d9a4351','Two-site cheat input changed')
     report={'main':str(input_path('main')),'sha256':binary.MAIN_SHA,'build_id':binary.BUILD_ID[:32].upper(),'sites':sites,
-            'hooks':[{'site':s,'window':w,'paired':p,'original_words':[hex(x) for x in words]} for s,w,words,p in rows[:22]],
-            'highlight_boundaries':[{'site':s,'window':w,'original_words':words,'published':True} for s,w,words,_ in rows[22:]],
+            'hooks':[{'site':s,'window':w,'paired':p,'original_words':[hex(x) for x in words]} for s,w,words,p in rows],
+            'frame_colour_setter':{'address':hex(start),'checked':True},
             'text_bytes':len(segments[0][1]),'runtime_identity':'Title + exact signatures, not full build ID'}
     write_json(OUT/'input-validation.json',report)
     return report

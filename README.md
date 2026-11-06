@@ -1,6 +1,6 @@
 # Please do Better
 
-Marks extra reward slots granted by Luck with a pulsing gold border and sparkle.
+Marks extra reward slots granted by Luck by turning their frame white.
 You can also force Miraculous Luck and multiply item quantities from 1x to 5x
 on all player reward pages. Palico rewards keep their normal quantities.
 
@@ -12,7 +12,7 @@ on all player reward pages. Palico rewards keep their normal quantities.
 ## Installation
 
 1. Close the emulator.
-2. Extract `please-do-better-r27-candidate.zip`.
+2. Extract `please-do-better-r28-candidate.zip`.
 3. Copy the whole `please-do-better` folder into your emulator's MHGU mod directory:
    - Eden: `~/.local/share/eden/load/0100770008DD8000/`
    - Ryujinx: `mods/contents/0100770008dd8000/` inside its data directory.
@@ -70,8 +70,7 @@ The game's inventory and appraisal capacity limits still apply. Multiplying a
 charm quantity supplies additional charms for appraisal within those limits.
 Items already received during the quest into your pouch or box are unchanged.
 
-If reward borders look misplaced while Forge 1.5.1's overlay is open, close
-the overlay.
+A highlighted slot keeps its white frame after you take the item.
 
 It can load alongside plugins that hook some of the same game functions.
 

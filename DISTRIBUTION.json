@@ -1,5 +1,5 @@
 {
-  "archive": "please-do-better-r27-candidate.zip",
+  "archive": "please-do-better-r28-candidate.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -14,11 +14,11 @@
     "manual": [
       "mods/please-do-better/EVIDENCE.json"
     ],
-    "static_summary": "r27: pinned toolchain build; 27 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test, including fixtures that the probe tints a bound frame white once on all four corners, logs a replaced tint once and tints again on a new screen; verify: \"PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory\", plus the vertex-colour setter window against the pinned NSO.",
-    "manual_summary": "r27 ran on Ryubing 1.3.3: highlighted Base frames turned white and stayed white past the cursor and item pickup (screenshots and log, no \"tint replaced\" line). r26 is the gameplay-accepted build for luck highlights on Eden."
+    "static_summary": "r28: pinned toolchain build; 25 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test, including 331 compiled frame checks over 160 GUI layout cases (each highlighted slot tints exactly its original frame white; wrong ID, non-texture node, unknown layout and a changed setter are left alone); verify: \"PASS: pinned inputs, 22 hook windows and the frame colour setter, NZCVQ/GE audit, exports and payload inventory\".",
+    "manual_summary": "Gameplay NOT RUN. The r27 probe showed the white frames on Ryubing 1.3.3; r26 is the gameplay-accepted build for luck highlights on Eden."
   },
   "limitations": [
-    "r27 is a probe: it never restores a tinted frame while the reward screen stays open, and the overlay border still draws over the tinted frames",
+    "A highlighted frame stays white after its item is taken, by the user's choice",
     "does not run on MHGURecomp: the private CodeMemory arena calls svc 0x4B, which aborts the game at load",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
@@ -47,11 +47,11 @@
     "url": null
   },
   "readme": "mods/please-do-better/README.md",
-  "reason": "r27 probe: tints highlighted reward frames white through the native vertex-colour setter and logs their colours, to learn whether a native tint can replace the overlay.",
+  "reason": "r28: highlights extra-luck slots by turning their native frame white, replacing the ImGui gold border and its two render hooks.",
   "schema_version": 1,
   "status": "DEVELOPMENT",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx.",
-  "version": "r27",
+  "version": "r28",
   "gamebanana": {
     "ai_code": {
       "used": true,
@@ -101,17 +101,17 @@
       }
     ]
   },
-  "runtime_test": "r27 ran on Ryubing 1.3.3: highlighted Base frames turned white and stayed white past the cursor and item pickup (screenshots and log, no \"tint replaced\" line). r26 is the gameplay-accepted build for luck highlights on Eden.",
+  "runtime_test": "Gameplay NOT RUN. The r27 probe showed the white frames on Ryubing 1.3.3; r26 is the gameplay-accepted build for luck highlights on Eden.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
   },
   "payloads": {
     "romfs/nativeNX/plugins/please_do_better.nro": {
-      "source": "build/please-do-better/candidates/r27/package/romfs/nativeNX/plugins/please_do_better.nro",
-      "sha256": "bb57a10a1ac829d4626a465e70c3f717453d3beadabf2d70850340e11079c3ba"
+      "source": "build/please-do-better/candidates/r28/package/romfs/nativeNX/plugins/please_do_better.nro",
+      "sha256": "630f07f01df7ea415b090d288bb91f47ef125616de6111b1bc38df26f636636b"
     }
   },
-  "candidate": "build/please-do-better/candidates/r27/delivery",
+  "candidate": "build/please-do-better/candidates/r28/delivery",
   "candidate_builder": "scripts/build.py"
 }

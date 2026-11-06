@@ -1,29 +1,25 @@
-# Please do Better r27: testing
+# Please do Better r28: testing
 
-r27 is a probe on Eden. It tints each highlighted reward slot's frame white through the game's own
-colour setter, and logs what the frame looked like before. The gold border still draws as before.
-
-The questions it answers:
-
-1. Does a white tint show on the frame, or does the frame look unchanged?
-2. Does the tint stay, or does something (the cursor, the screen's own colours) put red or blue back?
+r28 highlights extra-luck reward slots by turning their frame white, in place of the gold border.
+Run it on Eden or Ryubing.
 
 ## Steps
 
-1. Run on Eden with r27 installed and Force Miraculous Luck on, so the reward screen has highlights.
-2. Finish a quest and open the Reward Box. Look at the slots with the gold border: is their frame
-   white or grey instead of red or blue?
-3. Move the cursor onto a highlighted slot, then away from it. Does the frame go back to white, or
-   turn red or blue?
-4. Take the item from a highlighted slot.
-5. Go on to the next reward page, if there is one, and leave the screen. Then send the Eden log.
+1. Install r28 and turn on Force Miraculous Luck, so the reward screen has highlights.
+2. Finish a quest and open the Reward Box. The extra-luck slots should have white frames and no
+   gold border; every other frame keeps its red or blue.
+3. Move the cursor onto a white slot and away again. It should turn yellow under the cursor and
+   white again after.
+4. Take the item from a white slot. Its empty frame stays white.
+5. Finish a second quest. Only that quest's extra-luck slots should be white.
+6. If you can, finish a quest with Force Miraculous Luck off and a Luck skill on, and check the same.
 
 ## Log lines
 
-All lines start with `[please-do-better]` and appear at Forge's shipped error level.
+At Forge's shipped `level = error` the plugin logs nothing in a normal run. At `level = warning`
+these can appear, each once:
 
 | Line | Meaning |
 | --- | --- |
-| `probe: group G slot I frame colours A B C D; set white, reads X` | First sight of that frame. A to D are its four corner colours before the tint; X should be `ffffffff`. |
-| `probe: group G slot I tint replaced by A B C D` | Something wrote the frame's colours after the tint. Logged once per frame per screen. Say what you did just before it, if you can tell. |
-| `probe: vertex colour setter differs; frames are not tinted` | The setter's bytes did not match at startup, so nothing is tinted. |
+| `[please-do-better] Highlights unavailable: the frame colour setter differs; verify game/Forge` | The game's colour setter did not match at startup, so no frame is tinted. Luck and the multiplier still work. |
+| `[please-do-better] Reward mapping incomplete; uncertain highlights skipped; restart if persistent` | A reward copy did not match what was generated, so those slots were not highlighted. |

@@ -4,7 +4,7 @@ import itertools
 import struct
 import unicorn
 from unicorn import arm_const as a
-from please_do_better_runtime_probe import Probe, MAIN, DATA, STACK, STOP, REGS, MASK
+from please_do_better_runtime_probe import Probe, MAIN, DATA, STACK, STOP, REGS
 import please_do_better as recipe
 
 
@@ -25,25 +25,6 @@ def main():
         try:u.emu_start(start,STOP,count=100000)
         finally:stop_at[0]=0
         check(u.reg_read(a.UC_ARM_REG_PC)==end,'Native fragment reaches exact fixture boundary')
-    check(p.read(MAIN+0xa4fe50)==0xe51ff004 and p.read(MAIN+0xa4fe54)==p.address('pdb_gateway_26'),
-          'Guarded geometry boundary publishes the fixed gateway')
-    preservation=0
-    for flags,ge,alignment,value in itertools.product(range(32),range(16),(0,4),(0,6,7,0xffffffff)):
-        values=[0x12300000+i for i in range(13)];values[6]=DATA+0x20000;p.write(values[6],value)
-        cpsr=0x10|(flags<<27)|(ge<<16);sp=STACK+0xff00-alignment;lr=STOP+64
-        vfp=[0x1234567800000000+i for i in range(32)]
-        for r,v in zip(REGS,values):u.reg_write(r,v)
-        for i,v in enumerate(vfp):u.reg_write(getattr(a,f'UC_ARM_REG_D{i}'),v)
-        u.reg_write(a.UC_ARM_REG_FPSCR,0x01000000);u.reg_write(a.UC_ARM_REG_CPSR,cpsr)
-        u.reg_write(a.UC_ARM_REG_SP,sp);u.reg_write(a.UC_ARM_REG_LR,lr)
-        run(p.address('pdb_gateway_26'),MAIN+0xa4fe58)
-        expected=values[:];expected[0]=value&15
-        check([u.reg_read(r) for r in REGS]==expected,'Boundary replays LDR/AND GPR outputs')
-        check(u.reg_read(a.UC_ARM_REG_CPSR)&MASK==cpsr&MASK and u.reg_read(a.UC_ARM_REG_SP)==sp and u.reg_read(a.UC_ARM_REG_LR)==lr,
-              'Boundary preserves NZCVQ/GE/SP/LR')
-        check([u.reg_read(getattr(a,f'UC_ARM_REG_D{i}')) for i in range(32)]==vfp and u.reg_read(a.UC_ARM_REG_FPSCR)==0x01000000,
-              'Boundary preserves all VFP/FPSCR state')
-        preservation+=1
     ui,source,target,new_array,list_obj,descriptor,flags_desc= [DATA+i for i in (0x10000,0x11000,0x12000,0x13000,0x14000,0x15000,0x16000)]
     entries=struct.pack('<16H',123,3,456,2,123,2,123,3,789,2,123,3,456,1,123,2)
     def batch(offset=0):
@@ -207,23 +188,6 @@ def main():
         check(selected[-1]==(DATA+0x25000+root*0x100+index*16,source),'Native holder resolves both root tables and exact node index')
     p.write(root_nodes+0xd8,0);p.call(MAIN+0x546f84,[holder,0,7,source])
     check(selected[-1]==(0,source),'Absent native node table is not mistaken for geometry')
-    # Full native scissor helper verifies CPU-side clipping only. It does not
-    # connect these bounds to the active shader, framebuffer or Forge texture.
-    draw_context,renderer,rectangle=DATA+0x26000,DATA+0x27000,DATA+0x29000
-    p.write(draw_context+4,renderer)
-    scissor_cases=0
-    for scale,offset,rect in itertools.product((.5,1,2),(-20,0,30),
-                                              ((0,0,32,24),(-500,-500,2000,2000),(2000,2000,2100,2100),(100,100,20,20))):
-        u.mem_write(renderer+0xc0,bytes(0x44));u.mem_write(renderer+0xc4,struct.pack('<4i',100,50,1280,720))
-        u.mem_write(draw_context+0xc0,struct.pack('<4f',offset,offset,scale,scale))
-        u.mem_write(rectangle,struct.pack('<4i',*rect));p.call(MAIN+0xa37c1c,[draw_context,rectangle])
-        l=max(100,100+int(offset+rect[0]*scale));t=max(50,50+int(offset+rect[1]*scale))
-        r=min(1280,100+int(offset+rect[2]*scale));b=min(720,50+int(offset+rect[3]*scale))
-        if r<l:l=r=0
-        if b<t:t=b=0
-        check(tuple(struct.unpack('<4i',u.mem_read(renderer+0xe4,16)))==(l,t,r,b),'Native scissor scales/offsets and intersects viewport, including empty axes')
-        check(bytes(u.mem_read(draw_context+0xd0,16))==struct.pack('<4i',*rect),'Native context retains original clip rectangle')
-        scissor_cases+=1
     for panel,diagnostics in itertools.product((False,True),repeat=2):
         p.tree={'Please do Better###pdb_panel':panel,'Diagnostics###pdb_diagnostics':diagnostics}
         p.messages.clear();p.text.clear();p.call('forge_onImGuiRender')
@@ -233,16 +197,15 @@ def main():
               'Compact panel excludes raw counters and ownership masks')
         check(not any(fmt.startswith('Currently highlighted slots:') for fmt in formats),
               'Settings panel has no reward summaries or diagnostic rows')
-    report={'checks':checks,'compiled_boundary_preservation_cases':preservation,'native_relocation_cases':relocation_cases,
-            'native_group_stride_cases':16,'native_holder_index_cases':33,'native_scissor_cases':scissor_cases,
+    report={'checks':checks,'native_relocation_cases':relocation_cases,
+            'native_group_stride_cases':16,'native_holder_index_cases':33,
             'main_sha256':recipe.binary.MAIN_SHA,'nro_sha256':recipe.sha(payload),
-            'rendering_gate':'Rendering enabled for verified paths; separate compiled highlight fixtures' ,
-            'geometry_capture_enabled':True,'gold_rendering_implemented':True,
+            'highlight':'Native frame tint; compiled frame mapping in highlight-tests.json',
             'limits':['Native copy/collection fragments execute; allocation, free and GUI refresh are fixtures',
                       'No GPU, emulator gameplay or natural-luck highlight test',
                       'Historical eight faults cannot be individually identified from screenshots']}
     recipe.write_json(recipe.OUT/'display-tests.json',report)
-    print(f'PASS: {checks} compiled boundary/display-copy/collection/panel checks; rendering gateway applied')
+    print(f'PASS: {checks} compiled display-copy/collection/panel checks')
 
 
 if __name__=='__main__':main()

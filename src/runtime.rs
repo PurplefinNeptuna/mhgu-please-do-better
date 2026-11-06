@@ -1,11 +1,10 @@
 //! Gateway logic. `pdb_gateway_dispatch` and `pdb_gateway_leave` run inside native routines on any
 //! game thread: no locks, no I/O, no logging. Only fixed atomics and immutable snapshots cross to
 //! Forge callbacks, which do the formatting.
-use crate::native::{NativePlatform, SvcKernel, byte, copy, copy_to, field, half, readable, word, writable};
+use crate::native::{NativePlatform, SvcKernel, copy, copy_to, field, half, readable, word, writable};
 use core::cell::UnsafeCell;
 use core::ffi::c_void;
-use core::sync::atomic::{AtomicBool, AtomicU32, Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst}};
-use forge::sys::imgui::*;
+use core::sync::atomic::{AtomicBool, AtomicU32, Ordering::{AcqRel, Acquire, Relaxed, Release}};
 use please_do_better_core::Once;
 use please_do_better_core::attribution::{Attribution, Provenance, Reward, compatible_refresh};
 use please_do_better_core::frame::RawFrame;
@@ -15,7 +14,7 @@ use please_do_better_core::mailbox::Mailbox;
 use please_do_better_core::mode::{Mode, Preferences};
 use please_do_better_core::platform::KernelPlatform;
 use please_do_better_core::quantity::*;
-use please_do_better_core::signatures::{HIGHLIGHT_BOUNDARY, PRESENTATION, SITES, VERTEX_COLOR, site_offset};
+use please_do_better_core::signatures::{SITES, VERTEX_COLOR, site_offset};
 
 unsafe extern "C" {
     fn pdb_gateway_0();
@@ -42,8 +41,6 @@ unsafe extern "C" {
     fn pdb_gateway_23();
     fn pdb_gateway_24();
     fn pdb_gateway_25();
-    fn pdb_gateway_26();
-    fn pdb_gateway_27();
     fn pdb_gateway_after();
     // Verified against the fingerprinted MHGU 1.4.0 SDK, not Forge's Result-return declaration for
     // SetTlsValue. The wrapper resolves to the void native setter at SDK + 0x9d80c.
@@ -178,13 +175,6 @@ pub struct CopyFault {
     actual: u32,
     route: u32,
 }
-#[repr(C)]
-#[derive(Clone, Copy, Default)]
-pub struct DrawRejection {
-    reason: u32,
-    fence: u32,
-    index: u32,
-}
 
 // Named so the ARM fixtures can read them; exports stay limited to Forge's callbacks.
 macro_rules! visible {
@@ -198,7 +188,6 @@ visible! {
     pdb_quantity_faults: AtomicU32 = counter();
     pdb_pair_ready: AtomicU32 = counter();
     pdb_capture_ready: AtomicU32 = counter();
-    pdb_highlight_ready: AtomicU32 = counter();
     pdb_drops: AtomicU32 = counter();
     pdb_expected_refreshes: AtomicU32 = counter();
     pdb_mapping_faults: AtomicU32 = counter();
@@ -213,14 +202,7 @@ visible! {
     pdb_cleared_rewards: AtomicU32 = counter();
     pdb_last_ui_state: AtomicU32 = counter();
     pdb_last_comparison_tier: AtomicU32 = counter();
-    pdb_bindings: [Snapshot<Binding, BINDING_WORDS>; 64] = [const { Snapshot::new() }; 64];
-    pdb_presentation: Snapshot<Presentation, PRESENTATION_WORDS> = Snapshot::new();
     pdb_binding_count: AtomicU32 = counter();
-    pdb_highlighted_count: AtomicU32 = counter();
-    pdb_render_faults: AtomicU32 = counter();
-    pdb_live_fence: AtomicU32 = AtomicU32::new(1);
-    pdb_draw_rejection: Snapshot<DrawRejection, 3> = Snapshot::new();
-    pdb_frame_overflow: [AtomicU32; 2] = [const { counter() }; 2];
     pdb_latest_tier: AtomicU32 = counter();
     pdb_bonus_count: AtomicU32 = counter();
     pdb_generated_count: AtomicU32 = counter();
@@ -232,13 +214,7 @@ pub struct Records(UnsafeCell<[[Record; 8]; 8]>);
 // SAFETY: the Forge update callback is the only reader and writer.
 unsafe impl Sync for Records {}
 
-static GEOMETRIES: [Snapshot<Geometry, GEOMETRY_WORDS>; 64] = [const { Snapshot::new() }; 64];
-static GEOMETRY_CLAIMS: [AtomicU32; 64] = [const { counter() }; 64];
 static BASE: AtomicU32 = counter();
-static NATIVE_RENDER: AtomicU32 = counter();
-static DRAW_CYCLE: AtomicU32 = AtomicU32::new(1);
-static PRESENT_PENDING: AtomicU32 = counter();
-static REJECTION_LOGGED: AtomicU32 = counter();
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
 static TINT_READY: AtomicBool = AtomicBool::new(false);
 static REPORTED: AtomicBool = AtomicBool::new(false);
@@ -248,9 +224,6 @@ fn base() -> u32 {
 }
 fn lost() {
     pdb_drops.fetch_add(1, Relaxed);
-}
-fn invalidate_highlights() {
-    pdb_live_fence.fetch_add(1, SeqCst);
 }
 fn quantity_fault(reason: QuantityFault) {
     if reason != QuantityFault::None {
@@ -358,60 +331,6 @@ fn multiply_player_pages(s: &mut Scope) {
     }
 }
 
-fn remember_rejection(reason: u32, index: u32) {
-    let fence = seen(&pdb_live_fence);
-    // Keep the first rejection for this screen readable while image identities alternate. A new
-    // screen fence permits a new coherent diagnostic.
-    if pdb_draw_rejection.read().is_none_or(|prior| prior.fence != fence) {
-        pdb_draw_rejection.publish(&DrawRejection { reason, fence, index });
-    }
-}
-fn report_draw_rejection() {
-    const REASONS: [&str; 8] = [
-        "unknown", "tiled or perspective geometry", "missing render target", "unsupported surface", "unsupported viewport", "unsupported shader", "unmapped texture", "unsupported clip",
-    ];
-    let Some(d) = pdb_draw_rejection.read() else {
-        return;
-    };
-    if d.reason == 0 || d.reason > 7 || d.fence != seen(&pdb_live_fence) {
-        return;
-    }
-    // One entry per class prevents floods; formatting stays outside the geometry gateway.
-    if REJECTION_LOGGED.fetch_or(1 << d.reason, Relaxed) & (1 << d.reason) == 0 {
-        log::warn!(
-            "[please-do-better] unsupported reward draw path ({}: {}); marker suppressed; restart if persistent",
-            d.reason, REASONS[d.reason as usize]
-        );
-    }
-}
-fn mark_overflow(frame: u32, serial: u32) {
-    let value = serial.wrapping_add(1);
-    let cell = &pdb_frame_overflow[frame as usize];
-    let mut prior = seen(cell);
-    // Out-of-order older producers cannot clear a newer frame's failure tag.
-    while prior == 0 || (value.wrapping_sub(prior) > 0 && value.wrapping_sub(prior) < 0x8000_0000) {
-        match cell.compare_exchange(prior, value, SeqCst, SeqCst) {
-            Ok(_) => break,
-            Err(current) => prior = current,
-        }
-    }
-}
-fn indirect(address: u32, offset: u32) -> u32 {
-    if !field(address, offset, 4) {
-        return 0;
-    }
-    let p = word(address + offset);
-    if readable(p, 4) { word(p) } else { 0 }
-}
-/// BC0E98 supplies surface+0x10 -> +0x3C to NVN SetRenderTargets and surface+0x14 as the texture
-/// view. Only the default view is supported.
-fn surface_texture(surface: u32) -> u32 {
-    if !field(surface, 0x10, 8) || word(surface + 0x14) != 0 {
-        return 0;
-    }
-    let gpu = word(surface + 0x10);
-    if field(gpu, 0x3c, 4) { word(gpu + 0x3c) } else { 0 }
-}
 fn gui_node(holder: u32, root_index: u32, node_index: u32) -> u32 {
     if root_index >= 128 || node_index >= 128 || !field(holder, 0x298, 4) {
         return 0;
@@ -447,259 +366,8 @@ fn texture_node(node: u32) -> bool {
     let vft = word(node);
     vft == base().wrapping_add(0x178fcc8) || vft == base().wrapping_add(0x176c7c4)
 }
-fn shader_2d(renderer: u32) -> bool {
-    if !field(renderer, 0x1d8, 4) || word(renderer + 0x1d8) != 0xd7376b18 || !field(renderer, 0x1a4, 4) {
-        return false;
-    }
-    let packet = word(renderer + 0x1a4);
-    if !field(packet, 8, 4) {
-        return false;
-    }
-    let program = word(packet + 8);
-    if !readable(program, 72) {
-        return false;
-    }
-    let uniforms = word(program + 0x40);
-    let n = word(program + 0x44);
-    if !(3..=9).contains(&n) || !readable(uniforms, n * 4) {
-        return false;
-    }
-    // Six exact uniform sequences cover the twelve verified 2D programs. The 3D blend variant shares
-    // the first three IDs, so prefix matching alone would adopt its perspective transform.
-    const PATTERNS: [&[u32]; 6] = [
-        &[0x2d7, 0x2d6, 0x16f, 0x2db, 0x2d9, 0x2de, 0x3ca],
-        &[0x2d7, 0x2d6, 0x16f, 0x2db, 0x2de, 0x3ca],
-        &[0x2d7, 0x2d6, 0x16f, 0x2db, 0x2d8, 0x2d9, 0x2de, 0x3ca],
-        &[0x2d7, 0x2d6, 0x16f],
-        &[0x2d7, 0x2d6, 0x16f, 0x2db, 0x2d8, 0x2de, 0x3ca],
-        &[0x2d7, 0x2d6, 0x16f, 0x2d9],
-    ];
-    PATTERNS.iter().any(|p| p.len() == n as usize && p.iter().enumerate().all(|(i, &v)| word(uniforms + i as u32 * 4) == v))
-}
-/// BC12D8..BC1364 intersects the selected scissor, normalizes inverted axes, then replaces an exact
-/// shared-sentinel match with the cached viewport. BC1314's PC-relative load resolves this relocated
-/// GOT entry. Never assume that the sentinel's current contents are zero.
-fn effective_clip(viewport: &[i32; 4], raw: &[i32; 4]) -> Option<[i32; 4]> {
-    if !field(base(), 0x183f2b0, 4) {
-        return None;
-    }
-    let mut sentinel = [0i32; 4];
-    if !copy_to(word(base() + 0x183f2b0), &mut sentinel) {
-        return None;
-    }
-    let mut out = [0; 4];
-    for i in 0..4 {
-        out[i] = if i < 2 { viewport[i].max(raw[i]) } else { viewport[i].min(raw[i]) };
-    }
-    if out[2] < out[0] {
-        out[0] = 0;
-        out[2] = 0;
-    }
-    if out[3] < out[1] {
-        out[1] = 0;
-        out[3] = 0;
-    }
-    Some(if out == sentinel { *viewport } else { out })
-}
 
-fn capture_geometry(f: &RawFrame) {
-    if seen(&pdb_highlight_ready) == 0 || seen(&pdb_binding_count) == 0 {
-        return;
-    }
-    let (node, ctx) = (f.r[5], f.r[4]);
-    if node as u64 + 0xcc > u32::MAX as u64 || f.r[6] != node + 0xcc {
-        return;
-    }
-    let fence = seen(&pdb_live_fence);
-    let cycle = seen(&DRAW_CYCLE);
-    let Some(b) = (0..seen(&pdb_binding_count).min(64) as usize)
-        .find_map(|i| pdb_bindings[i].read().filter(|b| b.node == node && b.fence == fence))
-    else {
-        return;
-    };
-    // Native draw proves the node is alive. Its exact list identity is retained until a UI exit or
-    // destructor invalidates the fence before native freeing.
-    if !field(b.list, 0x4c, 0x14) || word(b.list + 0x4c) != b.group || b.index >= word(b.list + 0x5c)
-        || !field(b.list, 0x60 + b.index * 4, 4)
-    {
-        return;
-    }
-    let mut current = Reward::default();
-    if !copy_to(b.list + 0x60 + b.index * 4, &mut current) || current.item == 0 || current.amount == 0
-        || !compatible_refresh(b.item, current)
-    {
-        return;
-    }
-    if !texture_node(node) || word(node + 0x50) != b.id || !field(ctx, 4, 4) {
-        return;
-    }
-    if word(node + 0xc0) & 0x80_0000 == 0 {
-        return;
-    }
-    if word(node + 0x108) & 0x30 != 0 {
-        return remember_rejection(1, 0);
-    }
-    let renderer = word(ctx + 4);
-    let sr = seen(&NATIVE_RENDER);
-    if !field(renderer, 0x18bc, 4) || !field(sr, 0x389cc, 4) {
-        return;
-    }
-    if !field(sr, 0x1f, 1) || !field(sr, 0x33f50, 4) || byte(sr + 0x1f) > 1 || word(sr + 0x33f4c) > 1 {
-        return;
-    }
-    if !field(renderer, 0x138, 4) || byte(renderer + 0x134) != 24 || word(renderer + 0x138) != word(node + 0xbc) {
-        return;
-    }
-    // The native draw-packet helper returns without enqueueing when these renderer flags suppress
-    // submission, even though vertex construction itself returns success. Such frames get no marker.
-    let draw_flags = word(renderer + 0x54);
-    if draw_flags & 0x100 == 0 && draw_flags & 0x50 != 0 {
-        return;
-    }
-    let target_packet = word(renderer + 0x1ac);
-    let sentinel = indirect(word(sr + 0x389c0), 0x204);
-    if !readable(target_packet, 0x5c) {
-        return remember_rejection(2, 0);
-    }
-    let surface = word(target_packet);
-    // Validate the captured native surface/view, retaining its image for logs. Overlay eligibility
-    // uses projected slot geometry, not texture equality.
-    let texture = if surface == sentinel { 0 } else { surface_texture(surface) };
-    if surface == 0 || (surface != sentinel && texture == 0) {
-        return remember_rejection(6, 0);
-    }
-    if !shader_2d(renderer) {
-        return remember_rejection(5, 0);
-    }
-    let mut viewport = [0i32; 4];
-    let mut clip = [0i32; 4];
-    let alternate = if word(target_packet + 0x14) & 0x200 != 0 { 0x10 } else { 0 };
-    if !copy_to(target_packet + 0x18 + alternate, &mut viewport) || !copy_to(target_packet + 0x38 + alternate, &mut clip) {
-        return;
-    }
-    // BC0E98 selects these exact two banks, clamps viewport to surface size, then intersects the
-    // scissor. Accept only its full, zero-origin result.
-    let extent = word(target_packet + 0x58);
-    let (width, height) = ((extent & 65535) as i32, (extent >> 16) as i32);
-    viewport[0] = viewport[0].max(0);
-    viewport[1] = viewport[1].max(0);
-    viewport[2] = viewport[2].min(width);
-    viewport[3] = viewport[3].min(height);
-    if viewport[0] != 0 || viewport[1] != 0 || viewport[2] != width || viewport[3] != height
-        || width <= 0 || height <= 0 || width > 16384 || height > 16384
-    {
-        return remember_rejection(4, 0);
-    }
-    let Some(resolved) = effective_clip(&viewport, &clip) else {
-        return;
-    };
-    // The verified GUI shader projects into this full framebuffer viewport. Offset and half-size
-    // targets are deliberately unsupported.
-    let gui = if field(base(), 0x212668c, 4) { word(base() + 0x212668c) } else { 0 };
-    if !field(gui, 0xb0, 4) {
-        return;
-    }
-    let start = word(gui + 0xb0);
-    let offset = word(node + 0xbc);
-    if start as u64 + offset as u64 + 96 > 0x1_0000_0000 {
-        return;
-    }
-    let mut vertices = [0f32; 24];
-    let mut model = [0f32; 16];
-    let mut global = [0f32; 4];
-    if !copy_to(start + offset, &mut vertices) || !copy_to(word(renderer + 0x18bc), &mut model)
-        || !field(renderer, 0x18b4, 4) || !copy_to(word(renderer + 0x18b4), &mut global)
-    {
-        return;
-    }
-    let Some(points) = screen_quad(&vertices, &model, &global, viewport[2] as f32, viewport[3] as f32) else {
-        return;
-    };
-    if resolved[2] <= resolved[0] || resolved[3] <= resolved[1] {
-        return;
-    }
-    if seen(&pdb_live_fence) != fence || seen(&DRAW_CYCLE) != cycle {
-        return;
-    }
-    let g = Geometry {
-        binding: b, cycle, frame: word(sr + 0x33f4c), owner: sr + 0x34100, serial: word(sr + 0x33f50),
-        width: viewport[2] as f32, height: viewport[3] as f32, points,
-        clip: resolved.map(|v| v as f32), surface, texture,
-    };
-    // Retain current and previous producer frames for the native ping-pong executor. Sixty-four
-    // samples total; competing producers never wait. Prefer updating the same node and frame, then
-    // reuse only older samples.
-    for pass in 0..2 {
-        for i in 0..64 {
-            if GEOMETRY_CLAIMS[i].compare_exchange(0, 1, Acquire, Relaxed).is_err() {
-                continue;
-            }
-            let old = GEOMETRIES[i].read();
-            let same = old.is_some_and(|o| o.serial == g.serial && o.owner == g.owner
-                && o.binding.node == g.binding.node && o.binding.fence == g.binding.fence);
-            let reusable = old.is_none_or(|o| o.binding.fence != fence || o.owner != g.owner
-                || (g.serial.wrapping_sub(o.serial) > 1 && g.serial.wrapping_sub(o.serial) < 0x8000_0000));
-            if (pass == 0 && same) || (pass == 1 && reusable) {
-                let published = GEOMETRIES[i].publish(&g);
-                GEOMETRY_CLAIMS[i].store(0, Release);
-                if !published {
-                    count(&pdb_render_faults);
-                    mark_overflow(g.frame, g.serial);
-                }
-                return;
-            }
-            GEOMETRY_CLAIMS[i].store(0, Release);
-        }
-    }
-    count(&pdb_render_faults);
-    mark_overflow(g.frame, g.serial);
-}
 
-fn capture_present(f: &RawFrame) {
-    if seen(&pdb_highlight_ready) == 0 {
-        return;
-    }
-    let sr = seen(&NATIVE_RENDER);
-    let owner = sr.wrapping_add(0x34100);
-    if sr == 0 || !field(owner, 0x46f8, 8) || !field(sr, 0x33f4c, 8) || !field(sr, 0x1f, 1)
-        || f.r[1] != owner + 0x4740 || f.r[12] != word(owner + 0x46f8) || f.r[2] != word(owner + 0x46fc)
-    {
-        return;
-    }
-    let parallel = byte(sr + 0x1f) as u32;
-    let frame = word(sr + 0x33f4c);
-    if parallel > 1 || frame > 1 {
-        return;
-    }
-    // 86A28C records the acquired resource and index. 869ECC builds the NVN window texture array
-    // from each resource+0x3C, not the resource itself.
-    let index = f.r[2];
-    if index >= 3 || !field(owner, 0x48d0, 4) || word(owner + 0x48d0) != index || !field(owner, 0x48c0 + index * 4, 4)
-        || word(owner + 0x48cc) == 0 || word(owner + 0x48cc) != word(owner + 0x48c0 + index * 4)
-    {
-        if seen(&pdb_binding_count) != 0 {
-            remember_rejection(7, index);
-        }
-        return;
-    }
-    // beginFrame latches parallel mode and increments the producer serial; executeFrame uses producer
-    // index XOR parallel, i.e. one frame behind.
-    let resource = word(owner + 0x48cc);
-    let image = if field(resource, 0x3c, 4) { word(resource + 0x3c) } else { 0 };
-    if image == 0 {
-        return remember_rejection(7, index);
-    }
-    let p = Presentation {
-        cycle: seen(&DRAW_CYCLE), frame: frame ^ parallel, owner, queue: f.r[12], window: f.r[1], index: f.r[2],
-        serial: word(sr + 0x33f50).wrapping_sub(parallel), texture: image, default_texture: surface_texture(indirect(resource, 0x204)),
-    };
-    if pdb_presentation.publish(&p) {
-        PRESENT_PENDING.store(1, Release);
-    } else {
-        count(&pdb_render_faults);
-        mark_overflow(p.frame, p.serial);
-    }
-}
 
 fn context() -> Option<&'static Context> {
     let tls = TLS.load(Relaxed);
@@ -800,16 +468,6 @@ pub extern "C" fn pdb_gateway_dispatch(kind: u32, f: *mut RawFrame) -> u32 {
     // SAFETY: gateway.S passes the frame it just pushed on this thread's stack.
     let f = unsafe { &mut *f };
     let base = base();
-    if kind == 26 {
-        capture_geometry(f);
-        f.r[0] = word(f.r[6]) & 15;
-        return base + 0xa4fe58;
-    }
-    if kind == 27 {
-        capture_present(f);
-        f.r[0] = f.r[12];
-        return f.r[3];
-    }
     if kind < 26 {
         count(&pdb_gateway_hits[kind as usize]);
     }
@@ -1010,7 +668,6 @@ fn enter_scope(kind: u32, f: &mut RawFrame) -> u32 {
             if c.quantity_ui == c.scopes[at].subject {
                 c.quantity_ui = 0;
             }
-            invalidate_highlights();
         }
         15 => enter_update(c, at),
         _ => {}
@@ -1045,7 +702,6 @@ fn enter_builder(context: &'static Context, at: usize) {
             s.player_blank = s.player_blank && before[..q.count as usize].iter().all(|r| r.item == 0 && r.amount == 0);
         }
     }
-    invalidate_highlights();
     s.epoch = serial;
     s.ui = subject;
     c.serial = serial;
@@ -1196,7 +852,7 @@ pub extern "C" fn pdb_gateway_leave(f: *mut RawFrame) -> u32 {
 
 /// Native 0x623c08 copies source[i] to list.buffer[i], up to capacity. The consumer follows that
 /// index mapping only after checking contents. Immutable eight-entry chunks fit the mailbox payload;
-/// capture now, before a later list refresh or a render-thread drain.
+/// capture now, before a later list refresh or the update callback reads them.
 fn leave_list_copy(context: &Context, s: &Scope, serial: u32) {
     let clear_copy = || {
         let mut r = Record { kind: 5, ui: s.ui, tier: s.subject, coverage: 1, ..EMPTY_RECORD };
@@ -1282,7 +938,6 @@ fn leave_update(context: &Context, s: &Scope) {
         pdb_last_ui_state.store(word(s.subject + 0x3c), Relaxed);
     }
     if !field(s.subject, 0x3c, 4) || word(s.subject + 0x3c) < 2 || word(s.subject + 0x3c) > 5 {
-        invalidate_highlights();
         count(&pdb_cleared_rewards);
         context.records.publish(&Record { kind: 4, ui: s.subject, ..EMPTY_RECORD });
     }
@@ -1303,42 +958,8 @@ unsafe impl<T> Sync for Global<T> {}
 static PLATFORM: Global<NativePlatform> = Global(UnsafeCell::new(KernelPlatform::new(SvcKernel)));
 static CONDITIONAL: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
 static VISUAL: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
-static HIGHLIGHT: Global<Hooks> = Global(UnsafeCell::new(Hooks::new()));
-// Read and written only by the Forge update callback (`bind_slots`, `update`).
-static TINTS: Global<Tints> = Global(UnsafeCell::new(Tints::new()));
 const WHITE: u32 = 0xffff_ffff;
 
-/// Probe: tint a highlighted reward frame white through the native setter once, logging the colours
-/// it had, and log once if anything later replaces the tint. `node` was validated as a live
-/// `cGUIObjTexture` (vtable, 0x130 readable bytes) in this same callback.
-fn tint(group: u32, index: u32, node: u32) {
-    if !TINT_READY.load(Relaxed) {
-        return;
-    }
-    // SAFETY: only the update callback reaches TINTS.
-    let tints = unsafe { &mut *TINTS.0.get() };
-    let colours = [word(node + 0xa4), word(node + 0xa8), word(node + 0xac), word(node + 0xb0)];
-    let [a, b, c, d] = colours;
-    match tints.note(node) {
-        Tint::New => {
-            // SAFETY: VERTEX_COLOR's bytes were checked at install; the setter takes the object, a
-            // pointer to one colour word and a vertex index, and returns nothing.
-            let set: unsafe extern "C" fn(u32, *const u32, u32) =
-                unsafe { core::mem::transmute((base() + VERTEX_COLOR.0) as usize) };
-            for vertex in 0..4 {
-                unsafe { set(node, &WHITE, vertex) };
-            }
-            let back = word(node + 0xa4);
-            log::error!(
-                "[please-do-better] probe: group {group} slot {index} frame colours {a:08x} {b:08x} {c:08x} {d:08x}; set white, reads {back:08x}"
-            );
-        }
-        Tint::Known(i) if colours != [WHITE; 4] && tints.report_change(i) => {
-            log::error!("[please-do-better] probe: group {group} slot {index} tint replaced by {a:08x} {b:08x} {c:08x} {d:08x}");
-        }
-        _ => {}
-    }
-}
 
 fn install_failure(feature: &str, r: HookReport) {
     const REASONS: [&str; 8] = [
@@ -1350,23 +971,16 @@ fn install_failure(feature: &str, r: HookReport) {
 }
 fn install() {
     // SAFETY: forge_onInit is the only writer, before any reader can observe capture_ready.
-    let (platform, conditional, visual, highlight) = unsafe {
-        (&mut *PLATFORM.0.get(), &mut *CONDITIONAL.0.get(), &mut *VISUAL.0.get(), &mut *HIGHLIGHT.0.get())
-    };
+    let (platform, conditional, visual) = unsafe { (&mut *PLATFORM.0.get(), &mut *CONDITIONAL.0.get(), &mut *VISUAL.0.get()) };
     if INITIALIZED.swap(true, Relaxed) {
         // Recheck owned signatures, without republishing or allocating. A conflict cancels effective
         // forcing and further attribution.
         let base = base();
         let r = conditional.install(platform, base, &[]);
-        if highlight.report().state == State::Applied && highlight.install(platform, base, &[]).state != State::Applied {
-            pdb_highlight_ready.store(0, Release);
-        }
         let v = if visual.report().state == State::Fresh { visual.report() } else { visual.install(platform, base, &[]) };
         if r.state != State::Applied || v.state != State::Applied {
             pdb_pair_ready.store(0, Release);
             pdb_capture_ready.store(0, Release);
-            pdb_highlight_ready.store(0, Release);
-            invalidate_highlights();
         }
         return;
     }
@@ -1391,22 +1005,12 @@ fn install() {
         return install_failure("Reward capture hooks", v);
     }
     pdb_capture_ready.store(1, Release);
-    let rendering = [
-        Hook { detour: pdb_gateway_26 as *const () as u32, ..HIGHLIGHT_BOUNDARY },
-        Hook { detour: pdb_gateway_27 as *const () as u32, ..PRESENTATION },
-    ];
     let (at, words) = VERTEX_COLOR;
     let setter = text + at;
     if readable(setter, 32) && (0..8).all(|i| word(setter + i * 4) == words[i as usize]) {
         TINT_READY.store(true, Relaxed);
     } else {
-        log::warn!("[please-do-better] probe: vertex colour setter differs; frames are not tinted");
-    }
-    let h = highlight.install(platform, text, &rendering);
-    if h.state == State::Applied {
-        pdb_highlight_ready.store(1, Release);
-    } else {
-        install_failure("Highlight hooks", h);
+        log::warn!("[please-do-better] Highlights unavailable: the frame colour setter differs; verify game/Forge");
     }
 }
 pub fn start() {
@@ -1417,7 +1021,7 @@ pub fn start() {
     if !REPORTED.swap(true, Relaxed) {
         let status = if !forcing_available() {
             "forcing unavailable"
-        } else if seen(&pdb_highlight_ready) != 0 {
+        } else if TINT_READY.load(Relaxed) {
             "forcing and highlights ready"
         } else {
             "forcing ready; highlights unavailable"
@@ -1444,12 +1048,8 @@ pub fn update() {
             log::warn!("[please-do-better] Multiplier skipped: {}; quantities retained. Restart if persistent.", FAULTS[reason as usize]);
         }
     }
-    if seen(&NATIVE_RENDER) == 0 {
-        // SAFETY: a NUL-terminated name; the result is checked before use.
-        let sr = unsafe { forge::sys::singleton::forge_singleton_getInstanceByName(c"sFestaRender".as_ptr().cast()) } as u32;
-        if field(sr, 0x389cc, 4) {
-            NATIVE_RENDER.store(sr, Release);
-        }
+    if seen(&pdb_mapping_faults) != 0 && FAILURES.claim(0) {
+        log::warn!("[please-do-better] Reward mapping incomplete; uncertain highlights skipped; restart if persistent");
     }
     // SAFETY: only this callback touches these consumer tables.
     let (observed, displayed, epochs, owners) = unsafe {
@@ -1473,12 +1073,8 @@ pub fn update() {
             pdb_summary_status.store(2, Release);
         }
     }
-    let bound = bind_slots(displayed);
-    pdb_binding_count.store(bound, Release);
-    if bound == 0 {
-        // SAFETY: only the update callback reaches TINTS.
-        unsafe { (*TINTS.0.get()).clear() };
-    }
+    let whitened = whiten_slots(displayed);
+    pdb_binding_count.store(whitened, Release);
 }
 
 fn consume(r: &Record, thread: usize, observed: &mut [[Record; 8]; 8], displayed: &mut [[Record; 8]; 8], epochs: &mut [u32; 8], owners: &mut [u32; 8]) {
@@ -1600,9 +1196,19 @@ fn consume(r: &Record, thread: usize, observed: &mut [[Record; 8]; 8], displayed
     }
 }
 
-fn bind_slots(displayed: &[[Record; 8]; 8]) -> u32 {
-    let mut bound = 0usize;
-    let fence = seen(&pdb_live_fence);
+/// Highlights each displayed extra-luck slot by setting its native background frame's four vertex
+/// colours to white, which shows the frame texture without its red or blue tint. The setter returns
+/// at once when a colour already matches, so calling it every update is cheap and restores the tint
+/// if anything rewrites it. Frames are never set back: a new reward screen builds its own colours.
+/// Each node is resolved and validated in this callback, from the live list, before the call.
+fn whiten_slots(displayed: &[[Record; 8]; 8]) -> u32 {
+    if !TINT_READY.load(Relaxed) {
+        return 0;
+    }
+    // SAFETY: VERTEX_COLOR's bytes were checked at install; the setter takes the object, a pointer
+    // to one colour word and a vertex index 0..3, and returns nothing.
+    let set: unsafe extern "C" fn(u32, *const u32, u32) = unsafe { core::mem::transmute((base() + VERTEX_COLOR.0) as usize) };
+    let mut whitened = 0;
     for record in displayed.iter().flatten().filter(|r| r.kind != 0 && r.generated != 0) {
         let list = record.generated;
         if record.rewards.array < list + 0x60 || !field(list, 0x4c, 4) || !field(list, 0x24, 4) {
@@ -1634,127 +1240,12 @@ fn bind_slots(displayed: &[[Record; 8]; 8]) -> u32 {
             if !texture_node(icon) || !texture_node(node) || word(node + 0x50) != id {
                 continue;
             }
-            if bound == 64 {
-                count(&pdb_render_faults);
-                let sr = seen(&NATIVE_RENDER);
-                if sr != 0 {
-                    for frame in 0..2 {
-                        let serial = word(sr + 0x33f50).wrapping_sub((word(sr + 0x33f4c) != frame) as u32);
-                        mark_overflow(frame, serial);
-                    }
-                }
-                return 0;
+            for vertex in 0..4 {
+                // SAFETY: `node` is a live cGUIObjTexture checked above in this callback.
+                unsafe { set(node, &WHITE, vertex) };
             }
-            let b = Binding {
-                fence, ui: record.ui, batch: record.epoch, list, group, index, node, icon, id,
-                item: record.rewards.items[j as usize],
-            };
-            if !pdb_bindings[bound].publish(&b) {
-                count(&pdb_render_faults);
-                return 0;
-            }
-            tint(group, index, node);
-            bound += 1;
+            whitened += 1;
         }
     }
-    bound as u32
-}
-
-const fn v(x: f32, y: f32) -> ImVec2_c {
-    ImVec2_c { x, y }
-}
-
-pub fn render() {
-    report_draw_rejection();
-    if seen(&pdb_mapping_faults) != 0 && FAILURES.claim(0) {
-        log::warn!("[please-do-better] Reward mapping incomplete; uncertain markers suppressed; restart if persistent");
-    }
-    if seen(&pdb_render_faults) != 0 && FAILURES.claim(1) {
-        log::warn!("[please-do-better] Highlight capture incomplete; uncertain markers suppressed; restart if persistent");
-    }
-    pdb_highlighted_count.store(0, Relaxed);
-    let cycle = DRAW_CYCLE.fetch_add(1, SeqCst);
-    if seen(&pdb_highlight_ready) == 0 || PRESENT_PENDING.swap(0, AcqRel) == 0 {
-        return;
-    }
-    let Some(p) = pdb_presentation.read() else {
-        return;
-    };
-    if p.cycle != cycle || seen(&pdb_frame_overflow[p.frame as usize]) == p.serial.wrapping_add(1) {
-        return;
-    }
-    // SAFETY: Forge calls this with the ImGui context set in forge_onImGuiInit; `io` is checked and
-    // the draw list is used only within this callback.
-    unsafe {
-        let io = igGetIO_Nil();
-        if io.is_null() || (*io).DisplaySize.x <= 0.0 || (*io).DisplaySize.y <= 0.0 {
-            return;
-        }
-        let draw = igGetBackgroundDrawList_Nil();
-        if draw.is_null() {
-            return;
-        }
-        // Triangle wave: two-second period, 0.45..0.75 alpha, no animation RNG.
-        let now = igGetTime() as f32;
-        if !now.is_finite() || now < 0.0 || now > 4294967296.0 {
-            return;
-        }
-        let phase = now * 0.5 - (now * 0.5) as u32 as f32;
-        let alpha = 0.45 + 0.30 * (1.0 - (phase * 2.0 - 1.0).abs());
-        let gold = ((alpha * 255.0) as u32) << 24 | 0x0054_c5f2;
-        let display = (*io).DisplaySize;
-        let scale = display.y / 720.0;
-        let thickness = 1.5 * scale;
-        let fence = seen(&pdb_live_fence);
-        let mut rendered = 0;
-        // Read each atomic snapshot once. A fixed stack copy avoids repeatedly loading 64 geometry
-        // payloads for every slot at the presentation boundary.
-        let bound = seen(&pdb_binding_count).min(64) as usize;
-        let current: [Option<Binding>; 64] = core::array::from_fn(|i| {
-            if i < bound { pdb_bindings[i].read().filter(|b| b.fence == fence) } else { None }
-        });
-        let mut drawn = [false; 64];
-        for sample in &GEOMETRIES {
-            let Some(g) = sample.read() else { continue };
-            if g.frame != p.frame || g.owner != p.owner || g.serial != p.serial {
-                continue;
-            }
-            if (g.width - display.x).abs() > 0.5 || (g.height - display.y).abs() > 0.5 {
-                continue;
-            }
-            let Some(matched) = (0..bound).find(|&i| !drawn[i] && current[i] == Some(g.binding)) else {
-                continue;
-            };
-            if seen(&pdb_live_fence) != fence {
-                return;
-            }
-            // This is our own Forge overlay. The original full-viewport GUI shader has already
-            // projected this exact live slot into framebuffer pixels. Forge submits our primitive
-            // to the selected acquired image; its identity need not equal the game's UI texture.
-            drawn[matched] = true;
-            let corners: [ImVec2_c; 4] = core::array::from_fn(|k| v(g.points[k * 2], g.points[k * 2 + 1]));
-            ImDrawList_PushClipRect(draw, v(g.clip[0], g.clip[1]), v(g.clip[2], g.clip[3]), true);
-            // Native texture strip order is TL,TR,BL,BR. Walk the perimeter rather than crossing its
-            // diagonals; mirrored or rotated frames keep that order.
-            const ORDER: [usize; 4] = [0, 1, 3, 2];
-            for k in 0..4 {
-                ImDrawList_AddLine(draw, corners[ORDER[k]], corners[ORDER[(k + 1) % 4]], gold, thickness);
-            }
-            let anchor = corners[0];
-            let radius = 3.0 * scale;
-            let near = 0.7 * scale;
-            let spark = [
-                v(anchor.x, anchor.y - radius), v(anchor.x + near, anchor.y - near),
-                v(anchor.x + radius, anchor.y), v(anchor.x + near, anchor.y + near),
-                v(anchor.x, anchor.y + radius), v(anchor.x - near, anchor.y + near),
-                v(anchor.x - radius, anchor.y), v(anchor.x - near, anchor.y - near),
-            ];
-            for k in 0..8 {
-                ImDrawList_AddLine(draw, spark[k], spark[(k + 1) % 8], gold, scale);
-            }
-            ImDrawList_PopClipRect(draw);
-            rendered += 1;
-        }
-        pdb_highlighted_count.store(rendered, Relaxed);
-    }
+    whitened
 }

@@ -140,52 +140,22 @@ fn layout_table() {
 }
 
 #[test]
-fn screen_transform() {
-    let mut v = [0.0f32; 24];
-    let mut m = [0.0f32; 16];
-    let g = [2.0 / 1280.0, 2.0 / 720.0, -1.0, 1.0];
-    m[0] = 1.0;
-    m[5] = 1.0;
-    m[10] = 1.0;
-    m[15] = 1.0;
-    m[12] = 100.0;
-    m[13] = -50.0;
-    for k in 0..4 {
-        v[k * 6] = if k & 1 != 0 { 36.0 } else { 0.0 };
-        v[k * 6 + 1] = if k & 2 != 0 { -36.0 } else { 0.0 };
-    }
-    for scale in [0.5f32, 1.0, 2.0] {
-        let out = screen_quad(&v, &m, &g, 1280.0 * scale, 720.0 * scale).unwrap();
-        for k in 0..4 {
-            assert!((out[k * 2] - (100.0 + if k & 1 != 0 { 36.0 } else { 0.0 }) * scale).abs() < 0.001);
-            assert!((out[k * 2 + 1] - (50.0 + if k & 2 != 0 { 36.0 } else { 0.0 }) * scale).abs() < 0.001);
-        }
-    }
-    v[0] = f32::NAN;
-    assert!(screen_quad(&v, &m, &g, 1280.0, 720.0).is_none());
-    v[0] = 0.0;
-    assert!(screen_quad(&v, &m, &g, 0.0, 720.0).is_none());
-    m[5] = 0.0;
-    assert!(screen_quad(&v, &m, &g, 1280.0, 720.0).is_none());
-}
-
-#[test]
 fn snapshots_never_expose_a_torn_pair() {
-    let s: Snapshot<Binding, BINDING_WORDS> = Snapshot::new();
+    let s: Snapshot<[u32; 2], 2> = Snapshot::new();
     assert!(s.read().is_none());
     std::thread::scope(|scope| {
         scope.spawn(|| {
             for i in 1..100_000u32 {
-                assert!(s.publish(&Binding { batch: i, index: !i, ..Default::default() }));
+                assert!(s.publish(&[i, !i]));
             }
         });
         for _ in 0..100_000 {
-            if let Some(b) = s.read() {
-                assert_eq!(b.index, !b.batch);
+            if let Some([a, b]) = s.read() {
+                assert_eq!(b, !a);
             }
         }
     });
-    assert_eq!(s.read().unwrap().batch, 99_999);
+    assert_eq!(s.read().unwrap()[0], 99_999);
 }
 
 #[test]
@@ -678,12 +648,12 @@ fn a_later_conflict_is_reported_without_a_write() {
 }
 
 #[test]
-fn an_optional_boundary_group_cannot_roll_back_a_working_group() {
+fn a_failing_later_group_cannot_roll_back_a_working_group() {
     for failure in 0..=6 {
         let mut f = fresh();
         let mut core = Hooks::new();
         assert_eq!(core.install(&mut f, BASE, &HS).state, State::Applied);
-        let mut boundary = HIGHLIGHT_BOUNDARY;
+        let mut boundary = SITES[17];
         boundary.detour = 0x800200;
         for j in 0..8 {
             f.memory.insert(BASE + boundary.window + j * 4, boundary.words[j as usize]);
@@ -729,7 +699,7 @@ fn an_optional_boundary_group_cannot_roll_back_a_working_group() {
 
 #[test]
 fn every_recipe_keeps_its_two_displaced_words_inside_its_window() {
-    for h in SITES.iter().chain([&HIGHLIGHT_BOUNDARY, &PRESENTATION]) {
+    for h in SITES.iter() {
         assert!(h.site >= h.window && h.site + 8 <= h.window + 32);
     }
     assert_eq!(site_offset(0), 0x3822dc);
@@ -899,7 +869,6 @@ fn only_paired_entries_chain_and_the_pc_relative_entry_does_not() {
     let chained: Vec<u32> = SITES.iter().filter(|h| h.chains).map(|h| h.site).collect();
     assert_eq!(chained, [0x382e1c, 0x38211c, 0x3874e0, 0x381d30, 0x623c08, 0x384848, 0x384408]);
     assert!(SITES.iter().filter(|h| h.chains).all(|h| h.site == h.window));
-    assert!(!HIGHLIGHT_BOUNDARY.chains && !PRESENTATION.chains);
 }
 
 #[test]
@@ -923,22 +892,4 @@ fn a_later_forge_hook_over_a_chaining_entry_is_not_a_conflict() {
     assert_eq!(t.install(&mut f, BASE, &[]).state, State::Applied);
     f.memory.insert(BASE + 0x10c, 0xdead_beef);
     assert_eq!(t.install(&mut f, BASE, &[]).state, State::Unsafe, "anything else over the entry is still a conflict");
-}
-
-#[test]
-fn each_frame_is_tinted_and_reported_once() {
-    let mut t = Tints::new();
-    assert!(matches!(t.note(0x1000), Tint::New));
-    assert!(matches!(t.note(0x1000), Tint::Known(0)));
-    assert!(matches!(t.note(0x2000), Tint::New));
-    assert!(t.report_change(1));
-    assert!(!t.report_change(1), "a change is logged once");
-    t.clear();
-    assert!(matches!(t.note(0x2000), Tint::New), "a new screen starts over");
-    assert!(t.report_change(0));
-    for n in 1..64 {
-        assert!(matches!(t.note(0x3000 + n), Tint::New));
-    }
-    assert!(matches!(t.note(0x9000), Tint::Full));
-    assert!(matches!(t.note(0x3001), Tint::Known(1)));
 }

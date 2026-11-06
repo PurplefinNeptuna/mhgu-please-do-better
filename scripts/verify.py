@@ -16,7 +16,7 @@ def verify():
     package=BUILD_ROOT/'package';actual={str(p.relative_to(package)) for p in package.rglob('*') if p.is_file()}
     if actual!={'romfs/nativeNX/plugins/please_do_better.nro'}: raise ValueError('Unexpected runtime payload files: '+str(actual))
     record('verify.json',{'status':'PASSED','nro_sha256':digest(PACKAGED_NRO),'elf_sha256':digest(ELF),'exports':audit['exports'],
-        'strong_imports':audit['imports'],'signature_windows':len(inputs['hooks'])+len(inputs['highlight_boundaries']),
+        'strong_imports':audit['imports'],'signature_windows':len(inputs['hooks'])+1,
         'gateway_sha256':digest(recipe.RECIPE/'src/gateway.S'),'text_relocations':False,'runtime_test':'NOT RUN'})
-    print('PASS: pinned inputs, 24 hook windows, NZCVQ/GE audit, exports and payload inventory')
+    print('PASS: pinned inputs, 22 hook windows and the frame colour setter, NZCVQ/GE audit, exports and payload inventory')
 if __name__=='__main__': verify()

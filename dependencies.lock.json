@@ -2089,7 +2089,7 @@
     "link/switch32.ld": "dfa3102bf0a910ad89aaa60e286153a087f44d74cb19c5f694a9542866540aa5",
     "link/exported.txt": "7a6889f571d2eec21193f601f6c1449d0ad38de0180db94beaa96c2ecaf17c68",
     "src/svc.S": "2b4522e08d143a990a18c8a8508588de5e8d1173f5bb61c865bbdbcc5c7e60c7",
-    "src/gateway.S": "07992f17edc7c7bbf2fa1a6154c120bb91da2df164acea52ff186aed0135585f",
+    "src/gateway.S": "469de76d31e6a29d5e51387834f681d3275779b5cffec987e26f8416b2c3433c",
     "vendor/wiki-cheats/NOTICE.md": "3a311d9ae0d60f894b8640b4e926c38e42049307bfa49ec45eac5cfd6fe87bca"
   },
   "inputs": {

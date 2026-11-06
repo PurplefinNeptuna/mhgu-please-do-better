@@ -3061,5 +3061,18 @@
     "user_report": "\"im running on ryubing\", with four screenshots",
     "screenshots": "The six highlighted Base slots in row two show white frames under the gold border while the other Base frames stay red. The cursor turns a highlighted slot yellow, and the slot it left is white again. A slot whose item was taken stays an empty white frame. The Felyne Palicoes page has no highlights.",
     "reading": "The red is a vertex colour, bytes dc 37 23 a0 (R 220, G 55, B 35, alpha 160) over a light texture, so a white vertex colour shows the texture itself. Neither the cursor nor taking the item rewrote the tint."
+  },
+  "static_r28": {
+    "version": "r28",
+    "user_request": "\"stay white is okay\", answering whether a taken item's frame should go back to red or stay white, for the r28 plan to replace the overlay with the white frame tint",
+    "change": "Removes the ImGui gold border, its render hooks 0xA4FE50 and 0x86A330 and their geometry/presentation capture; the update callback sets every displayed highlighted frame's four vertex colours white through 0xA4E0B8 and never sets them back",
+    "tests": "25 Rust host tests; ARM32, runtime/gateway, native copy, observation, display, frame-tint (331 checks, 160 GUI layout cases) and quantity suites passed",
+    "verify": "PASS: pinned inputs, 22 hook windows and the frame colour setter, NZCVQ/GE audit, exports and payload inventory",
+    "instruction_scan": "No QADD/QSUB/QDADD/QDSUB/QASX/QSAX and no VADDW/VSUBW/VADDL/VSUBL/VMLAL/VMULL in the r28 disassembly",
+    "nro_sha256": {
+      "romfs/nativeNX/plugins/please_do_better.nro": "630f07f01df7ea415b090d288bb91f47ef125616de6111b1bc38df26f636636b"
+    },
+    "nro_bytes": 73728,
+    "runtime_test": "NOT RUN"
   }
 }
