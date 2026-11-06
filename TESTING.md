@@ -15,9 +15,8 @@ The questions it answers:
    white or grey instead of red or blue?
 3. Move the cursor onto a highlighted slot, then away from it. Does the frame go back to white, or
    turn red or blue?
-4. Switch to any other reward page the screen offers (for example the Palico page), then back.
-5. Take the item from a highlighted slot.
-6. Leave the screen, then send the Eden log.
+4. Take the item from a highlighted slot.
+5. Go on to the next reward page, if there is one, and leave the screen. Then send the Eden log.
 
 ## Log lines
 
