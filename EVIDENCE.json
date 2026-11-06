@@ -3074,5 +3074,13 @@
     },
     "nro_bytes": 73728,
     "runtime_test": "NOT RUN"
+  },
+  "runtime_r28_2026_11_06": {
+    "version": "r28",
+    "emulator": "Eden",
+    "user_report": "\"ok, working on eden\"",
+    "itemized": false,
+    "installed_nro_sha256": "630f07f01df7ea415b090d288bb91f47ef125616de6111b1bc38df26f636636b",
+    "log": "eden_log.txt (2026-11-06 17:25) has no please-do-better lines, as expected at Forge's shipped error level."
   }
 }

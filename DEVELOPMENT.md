@@ -1,12 +1,12 @@
 # Please do Better: development and research
 
-**Current state.** r28 DEVELOPMENT candidate at `build/please-do-better/candidates/r28/`, gameplay NOT RUN. It highlights each extra-luck slot by setting its native background frame's four vertex colours to white through `0xA4E0B8`, called from the Forge update for every displayed highlighted slot. The ImGui gold border, its two render hooks (`0xA4FE50`, `0x86A330`) and their geometry and presentation capture are removed. A frame is never set back, so a taken item's slot stays white, by the user's choice. The r27 probe showed the white frames on Ryubing 1.3.3, unchanged by the cursor and item pickup. r26 is the gameplay-accepted build for luck highlights on Eden, its release preserved in `backups/accepted/please-do-better/r26-before-native-tint-probe/` and its ZIP in `build/please-do-better/candidates/r26/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r28 DEVELOPMENT candidate at `build/please-do-better/candidates/r28/`, user-reported working on Eden ("ok, working on eden", unitemized; installed NRO matches). It highlights each extra-luck slot by setting its native background frame's four vertex colours to white through `0xA4E0B8`, called from the Forge update for every displayed highlighted slot. The ImGui gold border, its two render hooks (`0xA4FE50`, `0x86A330`) and their geometry and presentation capture are removed. A frame is never set back, so a taken item's slot stays white, by the user's choice. The r27 probe showed the white frames on Ryubing 1.3.3, unchanged by the cursor and item pickup. r26 is the gameplay-accepted build for luck highlights on Eden, its release preserved in `backups/accepted/please-do-better/r26-before-native-tint-probe/` and its ZIP in `build/please-do-better/candidates/r26/`. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots by turning their native frame white. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
-Runtime evidence, scoped to Eden: visible gold highlights on an accepted earlier build (user, 2026-10-07: "finally it works"), the tested setup with the Forge menu (2026-10-08: "all works well"), and r23 loading with forcing and highlights ready (log and installed hash, approved 2026-10-13: "good job, mark it ready to distribute").
+Runtime evidence: r28 on Eden as above, and the r27 frame-tint probe on Ryubing 1.3.3, where white frames held through the cursor and item pickup. Exact records are in `EVIDENCE.json`.
 
-Still unconfirmed: natural positive luck, no luck, forced and live toggles across repeated batches, save and restart persistence, collection and quantity decreases, repeated grids and transitions, player-page multiplier, Palico exclusion, appraisal and collection, consecutive quests, Ryujinx and physical Switch. No clean-shutdown claim is made; Maxwell, HLE and unmapped-memory messages in the logs are not attributed to this plugin. The second check's broader role is incompletely traced. Disable the legacy Great Luck cheat for an authorized test, because startup rejects prepatched or conflicting code.
+Still unconfirmed: natural positive luck, no luck, forced and live toggles across repeated batches, save and restart persistence, collection and quantity decreases, repeated grids and transitions, player-page multiplier, Palico exclusion, appraisal and collection, consecutive quests, Ryujinx beyond the r27 probe, and physical Switch. No clean-shutdown claim is made; Maxwell, HLE and unmapped-memory messages in the logs are not attributed to this plugin. The second check's broader role is incompletely traced. Disable the legacy Great Luck cheat for an authorized test, because startup rejects prepatched or conflicting code.
 
 ## Developing please-do-better
 
@@ -21,14 +21,9 @@ Use settings-only panels. Format logs in Forge callbacks, outside native hooks. 
 Export only `EXPORT.json` entries. `source-export.json` records the parent commit and source/export hashes. Exports omit game assets, outputs, caches, backups, private configurations, historical asset editions and Git metadata. Initialize remotes and publish separately.
 
 
-### Forge rendering
-
-Keep plugin rendering active with its settings panel closed. Stock Forge 1.5.1's NVN backend accumulates list offsets (`source/forge/graphics/imgui_impl_nvn.cpp`), so older loaders' multi-list geometry defect does not apply to the baseline.
-
-
 ## Please do Better native research
 
-The overlay and state rules are under "Implementation and state audit".
+The highlight and state rules are under "Implementation and state audit".
 
 ### Decisions and accepted copies
 
@@ -73,27 +68,13 @@ reward states 2..5 at +0x3C; leaving them or destruction invalidates provenance.
 This establishes only the listed routes, not every category/display mapping.
 
 
-### Native geometry bindings
+### Native slot and frame bindings
 
 List refresh uses group records of stride `0x28`, root ID at
 `list+group*0x28+0x160` and node-ID arrays at `+0x16C`. Holder lookup `0x546F84`
 selects holder+0x298's table, resolves the root and accesses root+0xD8 node pointers.
 Item assignment `0x56E62C` and visibility `0x56E530` trace item-icon nodes; nearby
 IDs alone do not identify frame perimeters.
-
-World-quad helper `0xA4B390` uses anchors +0xA0, size +0xB4, matrix +0x10,
-direction bit 0x40 at +0x56 and hard-VFP scale s0. Its 216 original-execution
-cases covered nine anchors, two directions, three centre scales, translation,
-rotation and shear. World quads alone do not establish framebuffer coordinates.
-
-Texture draw `0xA4FC9C` joins `0xA4FE50` after successful vertex construction.
-The displaced LDR r0,[r6] / AND r0,r0,#15 pair writes no flags. GUI publishers
-`0xA4EB9C` and `0xA3E3B0` provide model matrices; `0xA397D4` provides globals.
-CBGUIMatrix 0x2D7 and CBGUIGlobal 0x2D6 bind at renderer+0x18BC/+0x18B4.
-Scissor `0xA37C1C` applies draw-context offsets/scales and viewport intersections.
-The plugin also reproduces the native sentinel rectangle fallback at `0xBC12D8..0xBC1364`.
-Current shader/full-viewport, clip and exact frame/slot identity guards are
-documented with the rendering hooks in the implementation audit.
 
 Frame colours are sequence data. Layout setup `0x623A6C` starts sequence `0xF4242` plus a variant on the group's
 background root (`0x56E538` to `0x546C74` to root `0xA3896C`, which restarts only on a different ID), which colours
@@ -151,7 +132,7 @@ For any authorized follow-up, keep the exact payload hashes, launch set and late
 - [ ] Cover duplicate items, quest guarantees, main A/B, secondary rewards and all four verified copy routes.
 - [ ] Cover capacity-16/48 reallocation, repeated grids, row/category changes and screen destruction.
 - [ ] Check collection/quantity decreases: stale/empty slots hide and ordinary refreshes produce no false faults.
-- [ ] Check gold border/sparkle alignment, animation, clipping and cursor/icon visibility with the panel open/closed.
+- [ ] Check the white frames on every reward page layout and with the cursor on and off a highlighted slot.
 - [ ] Confirm village return clears live highlights while retaining completed scalar totals.
 - [ ] Check Forge combos, navigation and overlays on the exact loader version.
 - [ ] Document Eden multicore/translation freshness separately from guest flush/readback.
@@ -289,8 +270,7 @@ query SVC and fingerprinted SDK TLS/thread bodies. GetCurrentThread at SDK
 use MRC/LDR/ADD/STR/BX without GE writes. C entries tail-call through SDK PLT;
 fixtures execute native bodies with synthetic thread storage, not SDK startup.
 Filesystem/logging/ImGui and singleton lookup calls remain outside gameplay
-gateways. Rendering gateways call only bounded private helpers and the audited
-query SVC.
+gateways.
 
 Fixtures compare natural hasSkill bodies and forced behavior against original
 instructions across all GPR/flags/VFP state, both stack alignments and GE patterns.
@@ -333,7 +313,7 @@ It snapshots list-copy contents at native return in at most six eight-entry
 mailbox records, tagged with the current batch serial. The first chunk clears
 only that exact list; capture failure publishes a clearing record. Delayed reads
 never compare earlier copy mappings with later native destination bytes. The
-renderer accepts the two verified base/Festa texture vtables with inherited
+frame tint accepts only the two verified base/Festa texture vtables with inherited
 layout and draw methods; other classes stay rejected.
 
 State 1's `0x384AF0` resizes before its original `0x384FC0` call to builder
@@ -352,51 +332,17 @@ counter tracks collected items; neither edits inventory. Screen close/destructio
 clears live provenance without erasing completed totals. A relocation failure
 invalidates live provenance without retroactively invalidating valid generation.
 
-The fixed `0xA4FE50` gateway captures only verified reward frame nodes after
-successful normal vertex construction and replays LDR/AND. The `0x86A330`
-gateway records the exact native present queue/window/index, replays MOV r0,r12,
-and tail-calls r3 with native LR intact. Both use the existing full-state gateway
-frame; neither needs a callable original or another arena/TLS slot.
-
-64 immutable binding snapshots and 64 immutable geometry snapshots use atomic
-payload words and nonblocking sequence tickets. A mismatched/torn snapshot or
-stale fence/frame suppresses rendering. Overflow suppresses its whole frame.
-The geometry pool retains current and previous producer serials for native
-parallel execution; monotonic per-buffer overflow tags cannot be overwritten
-by an older publication. Bindings contain exact UI/batch/list/group/index/frame-node/icon-node identity;
-item IDs alone never select slots. Native screen exit/destruction invalidates
-the fence before freeing UI state. Live item/quantity checks suppress empty or
-incompatible slots; completed scalar totals remain retained.
-
-Forge free-render uses its background draw list. The native shader/model/global
-bindings and full viewport determine the perimeter. It pushes native clipping,
-draws four gold lines at 1.5px scaled from 720p plus eight lines for a four-point
-sparkle, then pops clipping. Alpha follows a deterministic two-second pulse.
-No fill covers icons or quantities. Unsupported geometry produces no draw.
-
-
 Repeat initialization checks every installed transaction without republishing.
-A lost conditional/observation owner disables forcing, capture and highlighting
-and invalidates the live binding fence. External bytes stay untouched; unsafe
+A lost conditional/observation owner disables forcing, capture and highlighting. External bytes stay untouched; unsafe
 transaction status remains explicit. There is no live unpatching or enforcement.
 
-### Target, viewport and scissor
+### Logging
 
-The native target resolver accepts the default sentinel and the resolved presentation surface. The native viewport flag selects one of two rectangle banks; accept either only when clamping gives the full surface, and capture the matching clip from the immutable packet. Reflected shader-list checks and bounded rejection diagnostics keep the native guards.
-
-Original BC12D8..BC1364 normalizes the selected viewport and scissor intersection, compares its signed rectangle with a shared sentinel, then substitutes the cached viewport on equality. The runtime pointer comes from relocated GOT entry main+0x183F2B0 (BC1314 PC-relative indirection); the offline pointer is main+0x191EAA0. All reads are guarded. Nonmatching empty rectangles and failed sentinel reads stay suppressed.
-
-### Independent overlay
-
-The rendering uses Forge's free-render callback and background draw list to submit its own gold border and procedural sparkle to Forge's acquired image. The guarded rendering transaction has two fixed hooks: geometry and native presentation. Native full-viewport shader math, exact slot, batch, array and node binding, owner, executed serial and index, per-boundary authorization, clip, screen fence, bounded snapshots and overflow guards remain. A nondefault view, reduced viewport, unknown shader or missing, changed or empty item stays unsupported. An intermediate offscreen UI image does not suppress the primitive when its projected geometry is valid for the presented frame. Local draw-call fixtures do not prove GPU success.
-
-Logging: three startup safety records and one concise suppression-code record per class per reward screen. No normal capture, present or render frame logs, and no gateway logs or formats text. Fixtures verify log-free rendering over 240 boundaries. The config codec writes no version marker and reads existing `version=2` files without changing preferences.
+Startup safety records and one record per failure class only. No capture or per-frame logs; gateways format no text. The config codec writes no version marker and reads existing `version=2` files without changing preferences.
 
 ### Do not
 
-- **Identify the presented image by comparing surface descriptors or transient global state.** Descriptors differ and the sampled surface alternates. Native draw image is `surface+0x10 -> wrapper+0x3C`; acquired resource is `owner+0x48CC`, its NVN texture at resource+0x3C. That route is unused now, and nondefault views stay unsupported.
-- **Route the overlay through downsample hooks.** Gateways at main+0xBBFB08 and main+0xBBFB44 (GOT main+0x18418F8, `nvnCommandBufferDownsample`) saw zero hits on valid reward geometry and were removed.
-- **Treat the default empty rectangle as a zero-area draw.** Reproduce the native sentinel tail instead.
+- **Draw the highlight as an ImGui overlay.** Its capture hook inside the GUI texture draw `0xA4FC9C` leaves that per-draw function interpreted on MHGURecomp; the native frame tint needs no render hook. The overlay's native addresses are in the mhgu-understanding native GUI reference.
 - **Compare a nested builder's new generation records with the outer empty array.** A same-object new batch supersedes the outer preimage.
 - **Read the secondary routine's return register as a count.** It returns void; derive the count from comparisons.
 - **Read the old allocation after native return, or compare earlier copy mappings with later destination bytes.**

@@ -15,7 +15,7 @@
       "mods/please-do-better/EVIDENCE.json"
     ],
     "static_summary": "r28: pinned toolchain build; 25 Rust host tests passed plus the mod's ARM and native suites in ./build.sh test, including 331 compiled frame checks over 160 GUI layout cases (each highlighted slot tints exactly its original frame white; wrong ID, non-texture node, unknown layout and a changed setter are left alone); verify: \"PASS: pinned inputs, 22 hook windows and the frame colour setter, NZCVQ/GE audit, exports and payload inventory\".",
-    "manual_summary": "Gameplay NOT RUN. The r27 probe showed the white frames on Ryubing 1.3.3; r26 is the gameplay-accepted build for luck highlights on Eden."
+    "manual_summary": "User-reported on Eden: \"ok, working on eden\", unitemized; installed NRO matches. The r27 probe showed the white frames on Ryubing 1.3.3."
   },
   "limitations": [
     "A highlighted frame stays white after its item is taken, by the user's choice",
@@ -101,7 +101,7 @@
       }
     ]
   },
-  "runtime_test": "Gameplay NOT RUN. The r27 probe showed the white frames on Ryubing 1.3.3; r26 is the gameplay-accepted build for luck highlights on Eden.",
+  "runtime_test": "User-reported on Eden: \"ok, working on eden\", unitemized; installed NRO matches. The r27 probe showed the white frames on Ryubing 1.3.3.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json"
