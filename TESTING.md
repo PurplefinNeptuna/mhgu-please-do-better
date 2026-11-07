@@ -8,8 +8,8 @@ Highlights and settings are r28's.
 1. On Eden, install r29 and turn on Force Miraculous Luck. Finish a quest and open the Reward Box:
    the extra-luck slots should have white frames, as with r28. Try a reward multiplier above 1x
    and check the player pages' quantities.
-2. On MHGURecomp, enable the mod. `run.sh` skips it while `please-do-better` is in its `EXCLUDE`
-   list, so take it out of that list first. Then repeat step 1 there.
+2. On MHGURecomp, start the game with its `run.sh`, which copies the mod from Eden while it is
+   enabled there. Then repeat step 1.
 3. Send both logs: Eden's `eden_log.txt` and MHGURecomp's `recomplog.txt`.
 
 ## Log lines
