@@ -10,7 +10,7 @@ Still unconfirmed: natural positive luck, no luck, forced and live toggles acros
 
 ## Developing please-do-better
 
-Run `./build.sh COMMAND` from any directory: `doctor`, `prepare`, `build`, `test --host`, `test`, `verify`, `package` and `export --output DEST`. Builds are offline with the pinned Rust nightly, vendored forge-rs 1.5.0 and the separately pinned cargo-forge 1.4.1 converter.
+Run `./build.sh COMMAND` from any directory: `fetch` (once, downloads `vendor/`), `doctor`, `prepare`, `build`, `test --host`, `test`, `verify`, `package` and `export --output DEST`. Builds are offline with the pinned Rust nightly, vendored forge-rs 1.5.0 and the separately pinned cargo-forge 1.4.1 converter.
 
 Copy `build.local.example.json` to ignored `build.local.json`, then set the tools and copied main/SDK/Forge inputs. Their supported SHA-256 values are in `dependencies.lock.json`; the main build ID and hook signatures are checked too. Changing dependencies or hook sites requires a reviewed lock update, import checks, focused fixtures and GE liveness revalidation. `core/` holds the portable logic and `core/tests/` its host tests. `src/` holds the gateways, reward capture, overlay and settings. The ARM probes in `scripts/` execute the compiled plugin and read its private state through hidden `pdb_*` symbols, which never reach the NRO's exports.
 

@@ -31,10 +31,10 @@
   "notices": [
     "mods/please-do-better/DISTRIBUTION_NOTICES.md",
     "mods/please-do-better/LICENSE",
-    "mods/please-do-better/vendor/forge-rs/LICENSE",
+    "mods/please-do-better/licenses/FORGE-RS-MIT.txt",
     "mods/please-do-better/vendor/libnx/LICENSE-MIT",
     "mods/please-do-better/licenses/FORGE-MIT.txt",
-    "mods/please-do-better/vendor/crates/log-0.4.34/LICENSE-MIT",
+    "mods/please-do-better/licenses/LOG-MIT.txt",
     "mods/please-do-better/licenses/RUST-MIT.txt",
     "mods/please-do-better/licenses/UNICODE-3.0.txt",
     "mods/please-do-better/licenses/COMPILER_BUILTINS.txt"
