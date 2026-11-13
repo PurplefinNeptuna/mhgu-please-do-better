@@ -1,3 +1,3 @@
 mod_name="Please do Better"
-version="r35"
+version="r36"
 author(s)="PurplefinNeptuna"

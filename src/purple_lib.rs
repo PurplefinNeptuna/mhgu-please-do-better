@@ -1,4 +1,4 @@
-//! Optional: Please do Better's settings in Purple-lib's Mod Options and a help topic on that
+//! Optional: Please do Better's settings in Purple-lib's Mod Options and a help topic per setting on that
 //! page's own help. Purple-lib is found by its exported symbols at start-up (Forge has no plugin
 //! symbol lookup and `nn::ro::LookupSymbol` sees only the game's modules); without it this module
 //! does nothing and the Plugin UI panel stays the only way to change the settings.
@@ -64,14 +64,15 @@ extern "C" fn closed(_: *mut c_void) {
     SAVE.store(true, Ordering::Release);
 }
 
-extern "C" fn help_title(_: *mut c_void, _: u32) -> *const c_char {
-    api::TITLE.as_ptr()
+// A topic's context is its row index.
+extern "C" fn help_title(context: *mut c_void, language: u32) -> *const c_char {
+    api::ROW_TEXT[context as usize].name[api::language_index(language)].as_ptr()
 }
-extern "C" fn help_page(_: *mut c_void, language: u32, index: u32) -> *const c_char {
-    api::HELP_TEXT[api::language_index(language)].get(index as usize).map_or(core::ptr::null(), |p| p.as_ptr())
+extern "C" fn help_page(context: *mut c_void, language: u32, index: u32) -> *const c_char {
+    api::HELP_TEXT[context as usize][api::language_index(language)].get(index as usize).map_or(core::ptr::null(), |p| p.as_ptr())
 }
 
-/// Read-only records of static data; the null context is never dereferenced.
+/// Read-only records of static data; no context is ever dereferenced.
 struct Shared<T>(T);
 // SAFETY: see above.
 unsafe impl<T> Sync for Shared<T> {}
@@ -87,15 +88,18 @@ static OPTIONS: Shared<Options> = Shared(Options {
     value_text: None,
     action: None,
 });
-static HELP: Shared<Help> = Shared(Help {
-    size: core::mem::size_of::<Help>() as u32,
-    context: core::ptr::null_mut(),
-    category: api::HELP_CATEGORY,
-    page_count: api::HELP_PAGES as u32,
-    title: Some(help_title),
-    page: Some(help_page),
-    open: None,
-});
+const fn topic(row: u32) -> Help {
+    Help {
+        size: core::mem::size_of::<Help>() as u32,
+        context: row as usize as *mut c_void,
+        category: api::HELP_CATEGORY,
+        page_count: api::HELP_PAGES as u32,
+        title: Some(help_title),
+        page: Some(help_page),
+        open: None,
+    }
+}
+static HELP: Shared<[Help; api::ROWS as usize]> = Shared([topic(api::ROW_FORCE), topic(api::ROW_MULTIPLIER)]);
 
 /// This process's memory, read only after the whole range is found in readable mappings.
 struct Process;
@@ -165,8 +169,8 @@ pub fn register() -> Registered {
     let add_options = unsafe { core::mem::transmute::<usize, extern "C" fn(*const Options) -> bool>(add_options as usize) };
     let add_set_help =
         unsafe { core::mem::transmute::<usize, extern "C" fn(*const Options, *const Help) -> bool>(add_set_help as usize) };
-    // The page's help names the page, so it goes in after the page.
+    // The page's help names the page, so it goes in after the page; topics show in this order.
     let options = add_options(&OPTIONS.0);
-    let help = options && add_set_help(&OPTIONS.0, &HELP.0);
+    let help = options && HELP.0.iter().all(|topic| add_set_help(&OPTIONS.0, topic));
     if options && help { Registered::Done } else { Registered::Refused { options, help } }
 }

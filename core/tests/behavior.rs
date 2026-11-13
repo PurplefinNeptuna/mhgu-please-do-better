@@ -619,7 +619,7 @@ fn purple_lib_text_fits_in_every_language() {
     assert_eq!(purple::HELP_CATEGORY, 0, "the page's own help");
     let fits = |text: &str, lines: usize| text.split("\r\n").count() <= lines && text.split("\r\n").all(|l| purple::columns(l) <= 40);
     for language in 0..purple::LANGUAGES {
-        for page in purple::HELP_TEXT[language] {
+        for page in purple::HELP_TEXT.iter().flat_map(|topic| topic[language]) {
             assert!(fits(page.to_str().unwrap(), 5), "{page:?}");
         }
         for row in &purple::ROW_TEXT {

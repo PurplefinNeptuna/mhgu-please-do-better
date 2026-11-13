@@ -1,7 +1,7 @@
-# Please do Better r35: testing
+# Please do Better r36: testing
 
-Its settings are on a Mod Options page, with its help on that page's own help screen. r35 also
-registers with a Purple-lib whose API version is later than 2. Install Purple-lib r15 or later
+Its settings are on a Mod Options page, with a help topic for each setting on that page's own
+help screen. Install Purple-lib r15 or later
 beside it; with an older Purple-lib the page and its help do not appear.
 
 ## Steps
@@ -9,8 +9,8 @@ beside it; with an older Purple-lib the page and its help do not appear.
 1. In English, open **Options > Mod Options**: both rows change, and closing after a change logs
    the `Saved:` line.
 2. On the "Please do Better" page, the button guide shows (−) "Mod Help" (or (+) if you swapped
-   them). Press it: a help titled "Please do Better" opens with one topic, "Please do Better",
-   whose three pages fit. Close it with B: you are back on the page, cursor where it was.
+   them). Press it: a help titled "Please do Better" opens with two topics, "Force Miraculous
+   Luck" and "Reward multiplier", each with two pages that fit. Close it with B: you are back on the page, cursor where it was.
 3. Open the Village/Hub help: it no longer has a "Please do Better" topic.
 4. With the game in French, German, Spanish, Italian or Chinese, repeat steps 1 and 2: the rows,
    labels, help-bar lines and help pages are in that language, for example "Forcer Grande
@@ -23,9 +23,9 @@ beside it; with an older Purple-lib the page and its help do not appear.
 
 | Line | Meaning |
 | --- | --- |
-| `[please-do-better] r35 loaded; forcing and highlights ready` | Started |
+| `[please-do-better] r36 loaded; forcing and highlights ready` | Started |
 | `[please-do-better] settings and help added to Purple-lib` | Registered with Purple-lib |
-| `[purple-lib] Mod Options: N sets, M topics in their own help` | Purple-lib accepted the page; M counts Please do Better's topic |
+| `[purple-lib] Mod Options: N sets, M topics in their own help` | Purple-lib accepted the page; M counts Please do Better's two topics |
 | `[please-do-better] Saved: luck on, quantities 3x` | Mod Options closed after a change and the INI was written |
 | `Purple-lib API version N is older than the supported 2` | An older Purple-lib: install r15 |
 | `Purple-lib refused the registration` | Send the log |

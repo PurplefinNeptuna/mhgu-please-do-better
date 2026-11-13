@@ -151,46 +151,72 @@ pub fn with_value(mut p: Preferences, row: u32, value: u32) -> Option<Preference
     Some(p)
 }
 
-/// The topic of the page's own help, which the help button opens on the Mod Options page
-/// (`purplelib_add_set_help`, category 0): five lines at most, about 40 columns a line (a CJK
-/// character takes two).
+/// The page's own help, which the help button opens on the Mod Options page
+/// (`purplelib_add_set_help`, category 0): one topic per row, titled with the row's name, in row
+/// order. A page has five lines at most, about 40 columns a line (a CJK character takes two).
 pub const HELP_CATEGORY: u32 = 0;
-pub const HELP_PAGES: usize = 3;
-pub static HELP_TEXT: [[&CStr; HELP_PAGES]; LANGUAGES] = [
+pub const HELP_PAGES: usize = 2;
+/// `HELP_TEXT[row][language][page]`: what the option does, then why it is there.
+pub static HELP_TEXT: [[[&CStr; HELP_PAGES]; LANGUAGES]; ROWS as usize] = [
     [
-        c"Please do Better marks the extra reward\r\nslots that Luck skills give with a\r\nwhite frame on the reward screen.",
-        c"Force Miraculous Luck gives Miraculous\r\nLuck the next time rewards are\r\ngenerated, without changing skills.",
-        c"Reward multiplier multiplies every\r\noccupied slot on the player reward\r\npages; the Palico page is unchanged.",
+        [
+            c"Gives you Miraculous Luck the next time\r\nrewards are generated, without changing\r\nyour skills. Slots added by any Luck\r\nskill get a white frame on the reward\r\nscreen.",
+            c"Miraculous Luck gives the most reward\r\nslots, but your gear needs a Luck skill\r\nfor it. This option gets you those slots\r\nwhile you keep the skills you want.",
+        ],
+        [
+            c"Donne Grande fortune à la prochaine\r\ngénération des récompenses, sans changer\r\nde talents. Les emplacements en plus dus\r\nà la chance ont un cadre blanc.",
+            c"Grande fortune donne le plus\r\nd'emplacements, mais demande un talent\r\nde chance sur l'équipement. Cette option\r\nles donne en gardant vos talents.",
+        ],
+        [
+            c"Aplica Suerte +2 la próxima vez que se\r\ngeneren las recompensas, sin cambiar\r\nhabilidades. Los espacios extra de las\r\nhabilidades de suerte tienen un marco\r\nblanco.",
+            c"Suerte +2 da el máximo de espacios,\r\npero requiere una habilidad de suerte\r\nen el equipo. Esta opción los da sin\r\nque cambies de habilidades.",
+        ],
+        [
+            c"Nutzt Glücksverstärker bei der nächsten\r\nBelohnung, ohne Fertigkeiten zu ändern.\r\nZusätzliche Plätze durch Glück erhalten\r\neinen weißen Rahmen.",
+            c"Glücksverstärker gibt die meisten\r\nBelohnungsplätze, braucht aber eine\r\nGlücksfertigkeit auf der Ausrüstung.\r\nSo behältst du deine Fertigkeiten.",
+        ],
+        [
+            c"Applica Gran fortuna alla prossima\r\ngenerazione dei premi, senza cambiare\r\nabilità. Gli spazi extra dati dalla\r\nfortuna hanno una cornice bianca.",
+            c"Gran fortuna dà il massimo degli spazi,\r\nma richiede un'abilità della fortuna\r\nsull'equipaggiamento. Questa opzione li\r\ndà senza cambiare le tue abilità.",
+        ],
+        [
+            c"下次產生報酬時套用激運，\r\n不需變更技能。\r\n幸運類技能額外增加的報酬欄位\r\n會以白框標示。",
+            c"激運能得到最多的報酬欄位，\r\n但需要裝備提供幸運類技能。\r\n此選項讓你保留想要的技能，\r\n同時得到這些欄位。",
+        ],
+        [
+            c"下次生成报酬时套用激运，\r\n不需更改技能。\r\n幸运类技能额外增加的报酬栏位\r\n会以白框标示。",
+            c"激运能得到最多的报酬栏位，\r\n但需要装备提供幸运类技能。\r\n此选项让你保留想要的技能，\r\n同时得到这些栏位。",
+        ],
     ],
     [
-        c"Please do Better encadre en blanc les\r\nemplacements de récompense en plus que\r\ndonnent les talents de chance.",
-        c"Forcer Grande fortune applique Grande\r\nfortune à la prochaine génération des\r\nrécompenses, sans changer de talents.",
-        c"Le multiplicateur multiplie chaque\r\nemplacement occupé des pages de\r\nrécompenses du joueur, pas celles des\r\nPalicos.",
-    ],
-    [
-        c"Please do Better marca con un marco\r\nblanco los espacios extra de\r\nrecompensa que dan las habilidades\r\nde suerte.",
-        c"Forzar Suerte +2 aplica Suerte +2 la\r\npróxima vez que se generen las\r\nrecompensas, sin cambiar habilidades.",
-        c"El multiplicador multiplica cada\r\nespacio ocupado de las páginas de\r\nrecompensas del jugador, no las de\r\nlos Camaradas.",
-    ],
-    [
-        c"Please do Better markiert die durch\r\nGlück zusätzlichen Belohnungsplätze\r\nmit einem weißen Rahmen.",
-        c"Glücksverstärker erzwingen nutzt\r\nGlücksverstärker bei der nächsten\r\nBelohnung, ohne Fertigkeiten zu ändern.",
-        c"Der Multiplikator vervielfacht jeden\r\nbelegten Platz der Belohnungsseiten\r\ndes Jägers, nicht die der Kameraden.",
-    ],
-    [
-        c"Please do Better evidenzia in bianco\r\ngli spazi premio extra dati dalle\r\nabilità della fortuna.",
-        c"Forza Gran fortuna applica Gran\r\nfortuna alla prossima generazione\r\ndei premi, senza cambiare abilità.",
-        c"Il moltiplicatore moltiplica ogni\r\ncasella occupata nelle pagine dei\r\npremi del giocatore, non quelle dei\r\nCompagni.",
-    ],
-    [
-        c"Please do Better會以白框標示\r\n幸運類技能額外增加的報酬欄位。",
-        c"「強制激運」會在下次產生報酬時\r\n套用激運，不需變更技能。",
-        c"「報酬倍率」會將玩家報酬頁面中\r\n每個有道具的欄位乘以倍率，\r\n隨從的報酬不變。",
-    ],
-    [
-        c"Please do Better会以白框标示\r\n幸运类技能额外增加的报酬栏位。",
-        c"「强制激运」会在下次生成报酬时\r\n套用激运，不需更改技能。",
-        c"「报酬倍率」会将玩家报酬页面中\r\n每个有道具的栏位乘以倍率，\r\n随从的报酬不变。",
+        [
+            c"Multiplies the quantity in every\r\noccupied slot on the player reward\r\npages, from 1x to 5x. The items and the\r\nnumber of slots stay the same. Palico\r\nrewards are not multiplied.",
+            c"Use it when you need many of one\r\nmaterial and don't want to repeat the\r\nsame hunt over and over. 1x leaves\r\nrewards as the game gives them.",
+        ],
+        [
+            c"Multiplie de 1x à 5x chaque emplacement\r\noccupé des pages de récompenses du\r\njoueur. Les objets et le nombre\r\nd'emplacements ne changent pas. Les\r\nPalicos ne sont pas concernés.",
+            c"Utile pour obtenir beaucoup d'un même\r\nmatériau sans refaire la même chasse.\r\nÀ 1x, les récompenses sont celles du\r\njeu.",
+        ],
+        [
+            c"Multiplica de 1x a 5x cada espacio\r\nocupado de las páginas de recompensas\r\ndel jugador. Los objetos y el número de\r\nespacios no cambian. Las recompensas\r\nde los Camaradas no se multiplican.",
+            c"Útil cuando necesitas mucho de un\r\nmaterial y no quieres repetir la misma\r\ncacería. Con 1x las recompensas no\r\ncambian.",
+        ],
+        [
+            c"Vervielfacht jeden belegten Platz der\r\nBelohnungsseiten des Jägers um 1x bis\r\n5x. Gegenstände und Anzahl der Plätze\r\nbleiben gleich. Belohnungen der\r\nKameraden bleiben unverändert.",
+            c"Nützlich, wenn du viel von einem\r\nMaterial brauchst und dieselbe Jagd\r\nnicht wiederholen willst. Bei 1x\r\nbleiben die Belohnungen gleich.",
+        ],
+        [
+            c"Moltiplica da 1x a 5x ogni casella\r\noccupata nelle pagine dei premi del\r\ngiocatore. Oggetti e numero di caselle\r\nnon cambiano. I premi dei Compagni non\r\nvengono moltiplicati.",
+            c"Utile quando serve molto di un\r\nmateriale e non vuoi ripetere la\r\nstessa caccia. A 1x i premi restano\r\nquelli del gioco.",
+        ],
+        [
+            c"將玩家報酬頁面中每個有道具的\r\n欄位乘以1至5倍。\r\n道具與欄位數量不變，\r\n隨從的報酬也不變。",
+            c"需要大量同一種素材時，\r\n不必一再重複同一場狩獵。\r\n設為1x時報酬維持原樣。",
+        ],
+        [
+            c"将玩家报酬页面中每个有道具的\r\n栏位乘以1至5倍。\r\n道具与栏位数量不变，\r\n随从的报酬也不变。",
+            c"需要大量同一种素材时，\r\n不必一再重复同一场狩猎。\r\n设为1x时报酬维持原样。",
+        ],
     ],
 ];
 

@@ -1,9 +1,9 @@
 # Please do Better: development and research
 
-**Current state.** r35 DEVELOPMENT candidate at `build/please-do-better/candidates/r35/`, works
-on MHGURecomp: it registers with Purple-lib API version 2 or later, with its help topic on its Mod Options
-page's own help; needs Purple-lib r15 or later. r31 is the last accepted build (Eden with Purple-lib r6, English and Chinese; r30 on Ryubing and MHGURecomp
-too); its ZIP is in `build/please-do-better/candidates/r31/`. Every hook is installed through Forge's hook API; highlights are white
+**Current state.** r36 DEVELOPMENT candidate at `build/please-do-better/candidates/r36/`, not run:
+its Mod Options page's own help has one topic per setting; it registers with Purple-lib API version
+2 or later and needs Purple-lib r15 or later. r35 works on MHGURecomp. r31 is the last accepted build; its ZIP is in
+`build/please-do-better/candidates/r31/` ([where it ran](EVIDENCE.json)). Every hook is installed through Forge's hook API; highlights are white
 native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact
 results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release
 credits](DISTRIBUTION_NOTICES.md).
@@ -33,8 +33,9 @@ Optional, Purple-lib API version 2 (its `API.md`; Purple-lib r15 and later). `sr
 `forge_onInit` after the hooks: it walks the mappings with `svcQueryMemory` for a readable and
 executable one that starts with an NRO header and defines `purplelib_api_version`
 (`core/src/purple_lib.rs::nro_symbol`, the WishFinder bridge's reader), checks the version is 2 or later, and
-passes one Mod Options record (2 labels rows, no `value_text`), then one help record (category 0,
-3 pages) to `purplelib_add_set_help` for the page's own help. Without Purple-lib it returns quietly.
+passes one Mod Options record (2 labels rows, no `value_text`), then two help records (category 0,
+2 pages each: what the setting does, then why) to `purplelib_add_set_help` for the page's own help,
+one per row in row order, titled with the row's name; a topic's `context` is its row index. Without Purple-lib it returns quietly.
 
 Purple-lib calls `get` and `set` inside the game's update, so they use only the lock-free mode
 request (`runtime::requested_preferences` / `request_preferences`). `set` raises `EDITED` and
