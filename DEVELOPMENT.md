@@ -1,7 +1,7 @@
 # Please do Better: development and research
 
-**Current state.** r35 DEVELOPMENT candidate at `build/please-do-better/candidates/r35/`, not
-run: it registers with Purple-lib API version 2 or later, with its help topic on its Mod Options
+**Current state.** r35 DEVELOPMENT candidate at `build/please-do-better/candidates/r35/`, works
+on MHGURecomp: it registers with Purple-lib API version 2 or later, with its help topic on its Mod Options
 page's own help; needs Purple-lib r15 or later. r31 is the last accepted build (Eden with Purple-lib r6, English and Chinese; r30 on Ryubing and MHGURecomp
 too); its ZIP is in `build/please-do-better/candidates/r31/`. Every hook is installed through Forge's hook API; highlights are white
 native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact

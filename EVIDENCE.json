@@ -3186,5 +3186,11 @@
     "host_tests": 23,
     "change": "Registers with Purple-lib API version 2 or later (was exactly 2); the version comparison itself has no host test.",
     "runtime_test": "NOT RUN"
+  },
+  "runtime_r35_2026_11_14": {
+    "emulator": "MHGURecomp 0.16.1 (recomplog.txt 2026-11-14 06:45; the newest Eden log, 06:03, is the earlier r15/r33 run)",
+    "user": "newer purple-lib, the tester, and please do better works wonderfully, please save the log",
+    "installed": "purple_lib.nro 48ad904a5a3f456d (Purple-lib r16), please_do_better.nro 2f1664d17c1bc402 (Please do Better r35), purple_lib_tester.nro 43036a1a754daffd (Tester r9); each matches its candidate",
+    "log": "\"[please-do-better] r35 loaded; forcing and highlights ready\", \"settings and help added to Purple-lib\"; Purple-lib counts 5 page help topics (the tester's 4 and this one). No Saved: line in this log."
   }
 }
