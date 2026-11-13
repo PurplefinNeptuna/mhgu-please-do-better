@@ -103,9 +103,7 @@ external emulator snapshots are not committed or bundled.
 | root.arc | `63d861e9beb9464ca8308760479ed2514d87e9975568889b9599e7a22d91615c` |
 | sc/NX/root.spkg | `7dea1d84f3e64d1a79df8f7a4d7bdf063643e996de6cfab95e7c5d782f8b795e` |
 
-Root ARC holds one shader resource. Its large size requires the 30-bit field;
-independent bounded zlib extraction produced 58,841,740 bytes without altering
-the shared 24-bit helper. Native loader `0xCE1FBC` verifies SPK magic, version
+Root ARC holds one shader resource of 58,841,740 bytes unpacked, larger than 24 bits can count; ARC sizes are the low 29 bits of the entry's flags (`SIZE_MASK` in `scripts/mhgu_assets.py`). Native loader `0xCE1FBC` verifies SPK magic, version
 0x26 and shader version 0xB2D34C60. Metadata/variant tables were inspected, but the
 exact GUI vertex program and constant-buffer bindings remain unresolved. No GPU
 equation is accepted from a guessed table entry or unrelated shader variant.

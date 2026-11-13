@@ -27,6 +27,11 @@ Keep only one enabled copy of `please_do_better.nro`.
 
 Open **Plugin UI > Please do Better** in Forge's overlay.
 
+Forge opens its overlay with the Insert key on a keyboard; `[menu] key` in Forge's
+`config.ini` changes the key. On Ryujinx, turn on Direct Keyboard Access in the input
+settings first. On MHGU Recomp, press Insert or choose **Open the Forge menu** on the
+Mods tab of its settings menu (F1, or Plus and Minus on a controller).
+
 | Setting | Default | Effect |
 | --- | --- | --- |
 | Force Miraculous Luck | Off | Uses Miraculous Luck the next time rewards are generated. |
