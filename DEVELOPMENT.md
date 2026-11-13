@@ -1,9 +1,9 @@
 # Please do Better: development and research
 
-**Current state.** r31 DEVELOPMENT candidate at `build/please-do-better/candidates/r31/`, not run;
-r30 is the last accepted build (Eden, Ryubing and MHGURecomp, with and without Purple-lib). r31
-translates its Purple-lib page and help topic into the game's seven languages; the reward code and
-the registration are r30's. Every hook is installed through Forge's hook API; highlights are white
+**Current state.** r31 is READY_TO_DISTRIBUTE, released at `build/please-do-better/releases/r31/`
+and accepted on Eden with Purple-lib r6, in English and Chinese; r30, the same reward code and
+registration without the translations, is accepted on Ryubing and MHGURecomp too. Its Purple-lib
+page and help topic are in the game's seven languages. Every hook is installed through Forge's hook API; highlights are white
 native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact
 results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release
 credits](DISTRIBUTION_NOTICES.md).

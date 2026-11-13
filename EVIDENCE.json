@@ -558,7 +558,7 @@
           },
           {
             "name": "Great Luck patch",
-            "author": "\u82b1\u82b1\u82b1\u82b1\u82b1\u6930\u83dc",
+            "author": "花花花花花椰菜",
             "url": "https://github.com/RTHKKona/MHGU-Modding/wiki/Cheat-Codes",
             "scope": "Original Great Luck patch."
           }
@@ -3151,5 +3151,12 @@
     "core_host_tests": 23,
     "arm_and_native_suites": "passed",
     "runtime_test": "NOT RUN"
+  },
+  "runtime_r31_2026_11_13": {
+    "emulator": "Eden",
+    "nro_sha256": "bb7eaeb79da077b1b4b2f264c3d7c9f7ff012da782f8857fb1416c4bc90dbae7",
+    "with": "Purple-lib r6",
+    "user": "promote them, they work perfectly, tested twice in eden, i tested chinese too, so it works",
+    "log": "[please-do-better] r31 loaded; forcing and highlights ready; [please-do-better] settings and help added to Purple-lib. No Saved: line in either remaining Eden log."
   }
 }

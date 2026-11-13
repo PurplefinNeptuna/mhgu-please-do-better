@@ -1,5 +1,5 @@
 {
-  "archive": "please-do-better-r31-candidate.zip",
+  "archive": "please-do-better-r31.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -15,10 +15,10 @@
       "mods/please-do-better/EVIDENCE.json"
     ],
     "static_summary": "r31: pinned toolchain build; 23 Rust host tests (the Purple-lib text in all seven languages, the symbol reader on this build's own NRO against nm) plus the mod's ARM and native suites; verify: 22 hook windows, frame colour setter, NZCVQ/GE audit, exports, payload inventory.",
-    "manual_summary": "r31 not run; r30 accepted on Eden, Ryubing and MHGURecomp with and without Purple-lib."
+    "manual_summary": "r31 accepted on Eden with Purple-lib r6 (English and Chinese); r30 accepted on Eden, Ryubing and MHGURecomp with and without Purple-lib."
   },
   "limitations": [
-    "r31's translations have not been seen in game",
+    "r31 ran on Eden only; Ryubing 1.3.3 and MHGURecomp ran r30",
     "A highlighted frame stays white after its item is taken, by the user's choice",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
@@ -49,7 +49,7 @@
   "readme": "mods/please-do-better/README.md",
   "reason": "r31: r30 (reward code from r29 plus the optional Purple-lib page and help topic) with that page and topic translated into the game's seven languages, using the game's own words where it has them.",
   "schema_version": 1,
-  "status": "DEVELOPMENT",
+  "status": "READY_TO_DISTRIBUTE",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx/MHGURecomp.",
   "version": "r31",
   "gamebanana": {
@@ -95,13 +95,13 @@
       },
       {
         "name": "Great Luck patch",
-        "author": "\u82b1\u82b1\u82b1\u82b1\u82b1\u6930\u83dc",
+        "author": "花花花花花椰菜",
         "url": "https://github.com/RTHKKona/MHGU-Modding/wiki/Cheat-Codes",
         "scope": "Original Great Luck patch."
       }
     ]
   },
-  "runtime_test": "r31 NOT RUN. r30 accepted on Eden, Ryubing 1.3.3 and MHGURecomp with and without Purple-lib; see EVIDENCE.json.",
+  "runtime_test": "r31 accepted on Eden with Purple-lib r6, including Chinese: \"they work perfectly, tested twice in eden, i tested chinese too\". The Eden log shows \"[please-do-better] r31 loaded; forcing and highlights ready\" and \"settings and help added to Purple-lib\"; installed NRO matches. r30 accepted on Ryubing 1.3.3 and MHGURecomp with and without Purple-lib.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json",
@@ -117,6 +117,8 @@
       "sha256": "e0eb69334a458d60ea7a46d259e44b8933df7d0f0d65468370a6b5e70489a15f"
     }
   },
-  "candidate": "build/please-do-better/candidates/r31/delivery",
-  "candidate_builder": "scripts/build.py"
+  "approval": {
+    "date": "2026-11-13",
+    "basis": "The user approved Please do Better r31 and Purple-lib r6 on 2026-11-13: \"promote them, they work perfectly, tested twice in eden, i tested chinese too, so it works\". The promoted bytes are the r31 candidate the user ran on Eden (please_do_better.nro bb7eaeb79da077b1b4b2f264c3d7c9f7ff012da782f8857fb1416c4bc90dbae7, installed hash matches). Not shown by that run: Ryubing and MHGURecomp (r30 accepted there) and a save from Mod Options (no Saved: line in the remaining Eden logs)."
+  }
 }
