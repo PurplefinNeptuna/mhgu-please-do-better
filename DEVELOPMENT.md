@@ -1,6 +1,12 @@
 # Please do Better: development and research
 
-**Current state.** r29 READY_TO_DISTRIBUTE, unpublished, release at `build/please-do-better/releases/r29/`; the user reported it working on Eden and MHGURecomp 0.14.3 ("woo, its working for both", unitemized; installed NRO matches on both). Every hook is installed through Forge's hook API, with no private CodeMemory arena and no svc 0x4B. The seven chaining entries continue through Forge's trampolines, the interior sites take Forge hooks with no original, and `0x381FEC` resumes through a fixed stub (see *Identity and hook inventory*). Highlights are white native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r30 DEVELOPMENT candidate at `build/please-do-better/candidates/r30/`, not run;
+r29 is the last accepted build (Eden and MHGURecomp 0.14.3, "woo, its working for both"). r30
+keeps r29's reward code and adds an optional registration with Purple-lib: its two settings as a
+Mod Options page and a help topic in Village/Hub (*Purple-lib* below). Every hook is installed
+through Forge's hook API; highlights are white native frames. [Install and settings](README.md);
+[status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md);
+[provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots by turning their native frame white. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
@@ -20,6 +26,23 @@ Use settings-only panels. Format logs in Forge callbacks, outside native hooks. 
 
 Export only `EXPORT.json` entries. `source-export.json` records the parent commit and source/export hashes. Exports omit game assets, outputs, caches, backups, private configurations, historical asset editions and Git metadata. Initialize remotes and publish separately.
 
+
+## Purple-lib
+
+Optional, Purple-lib API version 1 (its `API.md`). `src/purple_lib.rs::register` runs in
+`forge_onInit` after the hooks: it walks the mappings with `svcQueryMemory` for a readable and
+executable one that starts with an NRO header and defines `purplelib_api_version`
+(`core/src/purple_lib.rs::nro_symbol`, the WishFinder bridge's reader), checks the version, and
+passes one Mod Options record (2 rows) and one help record (category 18, 3 pages). Without
+Purple-lib it returns quietly.
+
+Purple-lib calls `get` and `set` inside the game's update, so they use only the lock-free mode
+request (`runtime::requested_preferences` / `request_preferences`). `set` raises `EDITED` and
+`closed` raises `SAVE`; `forge_onImGuiFreeRender` turns them into `settings::changed()` (drop a
+pending load) and `settings::save(...)`, keeping preference state and the INI on the ImGui
+callbacks. Row values: Force 0/1, multiplier label index = multiplier - 1. All strings are static,
+because Purple-lib keeps the pointers. The host test `the_symbol_lookup_finds_exports_in_a_real_nro`
+runs the reader on this build's own NRO against its nm listing.
 
 ## Please do Better native research
 

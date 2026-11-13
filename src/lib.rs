@@ -4,6 +4,7 @@
 //! gameplay. Forge's `forge_log` filters below its configured level.
 #![no_std]
 mod native;
+mod purple_lib;
 mod runtime;
 mod settings;
 
@@ -44,6 +45,16 @@ pub unsafe extern "C" fn forge_onLoad(params: *mut forge::PluginInitParams) {
 #[unsafe(no_mangle)]
 pub extern "C" fn forge_onInit() {
     runtime::start();
+    match purple_lib::register() {
+        purple_lib::Registered::Done => log::info!("[please-do-better] settings and help added to Purple-lib"),
+        purple_lib::Registered::Missing => {}
+        purple_lib::Registered::OtherVersion(v) => {
+            log::warn!("[please-do-better] Purple-lib API version {v} is not the supported 1; Mod Options not added")
+        }
+        purple_lib::Registered::Refused { options, help } => {
+            log::warn!("[please-do-better] Purple-lib refused the registration (settings {options}, help {help})")
+        }
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -105,5 +116,12 @@ pub extern "C" fn forge_onImGuiRender() {
 // closed too. Mode publication is the only cross-thread edit.
 #[unsafe(no_mangle)]
 pub extern "C" fn forge_onImGuiFreeRender() {
+    // Changes made in Purple-lib's Mod Options: drop a pending load, then save once it closed.
+    if purple_lib::EDITED.swap(false, core::sync::atomic::Ordering::AcqRel) {
+        settings::changed();
+    }
+    if purple_lib::SAVE.swap(false, core::sync::atomic::Ordering::AcqRel) {
+        settings::save(runtime::requested_preferences());
+    }
     settings::retry_load();
 }

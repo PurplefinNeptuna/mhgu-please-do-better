@@ -79,8 +79,10 @@ class Probe:
             addr=r[2]+(r[3]<<32)
             region=next(((s,n,3,p) for s,n,p in self.regions if s<=addr<s+n),None)
             if region is None:
-                end=min([s for s,n,p in self.regions if addr<s<0x50010000]+[0x50010000])
-                region=(addr,end-addr if 0x50000000<=addr<0x50010000 else 4096,0,0)
+                # As the kernel answers: one free block up to the next mapping or the end of the
+                # 32-bit space, so a walk over all mappings (the Purple-lib search) ends quickly.
+                end=min([s for s,n,p in self.regions if addr<s]+[1<<32])
+                region=(addr,end-addr,0,0)
             s,n,t,p=region;u.mem_write(r[0],struct.pack('<QQ6I',s,n,t,0,p,0,0,0));u.reg_write(REGS[1],0)
         elif op==0x29:
             values={18:0x0100770008dd8000 if self.title else 0,12:0x50000000,13:0x10000,

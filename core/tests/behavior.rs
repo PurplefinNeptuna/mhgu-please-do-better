@@ -571,3 +571,81 @@ fn queries_check_the_program_and_the_whole_executable_span() {
     k.flush = 99;
     assert!(!sync(&k, 0x1100, 8));
 }
+
+// ---- Purple-lib ----
+use please_do_better_core::mode::Preferences;
+use please_do_better_core::purple_lib as purple;
+
+#[test]
+fn purple_lib_rows_map_to_the_preferences_both_ways() {
+    let p = Preferences { force: false, multiplier: 1 };
+    assert_eq!((purple::value(p, purple::ROW_FORCE), purple::value(p, purple::ROW_MULTIPLIER)), (0, 0));
+    for value in 0..=4 {
+        let q = purple::with_value(p, purple::ROW_MULTIPLIER, value).unwrap();
+        assert_eq!(q.multiplier as u32, value + 1, "label {value} is {}x", value + 1);
+        assert_eq!(purple::value(q, purple::ROW_MULTIPLIER), value);
+        assert!(!q.force);
+    }
+    let on = purple::with_value(p, purple::ROW_FORCE, 1).unwrap();
+    assert!(on.force && on.multiplier == 1);
+    assert_eq!(purple::value(on, purple::ROW_FORCE), 1);
+    assert_eq!(purple::with_value(p, purple::ROW_MULTIPLIER, 5), None, "6x does not exist");
+    assert_eq!(purple::with_value(p, purple::ROW_FORCE, 2), None);
+    assert_eq!(purple::with_value(p, 2, 0), None);
+}
+
+#[test]
+fn purple_lib_rows_match_the_plugin_ui_settings() {
+    assert_eq!(purple::ROW_TEXT.len() as u32, purple::ROWS);
+    assert_eq!(purple::ROW_TEXT[0].name.to_str().unwrap(), "Force Miraculous Luck");
+    assert_eq!(purple::ROW_TEXT[0].labels.len(), 2);
+    assert_eq!(purple::ROW_TEXT[1].name.to_str().unwrap(), "Reward multiplier");
+    let labels: Vec<_> = purple::ROW_TEXT[1].labels.iter().map(|l| l.to_str().unwrap()).collect();
+    assert_eq!(labels, ["1x", "2x", "3x", "4x", "5x"]);
+}
+
+#[test]
+fn purple_lib_help_pages_fit_a_help_page() {
+    assert!((1..=16).contains(&purple::HELP_PAGES.len()));
+    assert!((1..=18).contains(&purple::HELP_CATEGORY));
+    for page in purple::HELP_PAGES {
+        let text = page.to_str().unwrap();
+        assert!(text.split("\r\n").count() <= 5, "{text}");
+        assert!(text.split("\r\n").all(|line| line.len() <= 40), "{text}");
+    }
+}
+
+struct Bytes(Vec<u8>);
+impl purple::Memory for Bytes {
+    fn read(&mut self, address: u32, out: &mut [u8]) -> bool {
+        let start = address as usize;
+        match self.0.get(start..start + out.len()) {
+            Some(src) => {
+                out.copy_from_slice(src);
+                true
+            }
+            None => false,
+        }
+    }
+}
+
+/// The lookup that finds Purple-lib, run on this build's own NRO loaded at base 0 (Forge maps an
+/// NRO's segments at their file offsets): it must find the address nm reports for the ELF.
+#[test]
+fn the_symbol_lookup_finds_exports_in_a_real_nro() {
+    let (Ok(nro), Ok(symbols)) = (std::env::var("PDB_NRO"), std::env::var("PDB_SYMBOLS")) else {
+        eprintln!("PDB_NRO not set: ./build.sh test --host before a build; the full test sets it");
+        return;
+    };
+    let mut memory = Bytes(std::fs::read(nro).unwrap());
+    let listing = std::fs::read_to_string(symbols).unwrap();
+    for name in ["forge_onInit", "forge_onUpdate", "forge_onImGuiFreeRender"] {
+        let nm = listing
+            .lines()
+            .find_map(|l| l.strip_suffix(&format!(" T {name}")).map(|a| u32::from_str_radix(a, 16).unwrap()))
+            .unwrap_or_else(|| panic!("{name} not in nm"));
+        assert_eq!(purple::nro_symbol(&mut memory, 0, name.as_bytes()), Some(nm), "{name}");
+    }
+    assert_eq!(purple::nro_symbol(&mut memory, 0, purple::EXPORT_VERSION), None, "Please do Better is not Purple-lib");
+    assert_eq!(purple::nro_symbol(&mut memory, 0x1000, b"forge_onInit"), None, "no NRO header at the wrong base");
+}

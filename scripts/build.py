@@ -10,7 +10,7 @@ PROBES=('please_do_better_arm_probe','please_do_better_runtime_probe','please_do
 def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest()
 def source_hashes():
     """Tie receipts to the exact owned executable recipe inputs."""
-    files=['Cargo.toml','Cargo.lock','.cargo/config.toml','armv7a-none-eabi.json','build.rs']
+    files=['Cargo.toml','Cargo.lock','.cargo/config.toml','armv7a-none-eabi.json','build.rs','manifest.txt']
     files+=[str(p.relative_to(MOD)) for folder in ['src','core/src','core/tests','link']
             for p in sorted((MOD/folder).rglob('*')) if p.is_file()]
     return {n:digest(MOD/n) for n in files}
@@ -72,11 +72,18 @@ def build():
     if digest(MOD/'Cargo.lock')!=lock: raise ValueError('Cargo.lock changed during build')
     dest=BUILD_ROOT/('package/romfs/nativeNX/plugins/'+NRO)
     dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(CARGO_TARGET/NRO,dest)
+    # Mod managers read manifest.txt beside romfs/ for the name, version and authors.
+    shutil.copy2(MOD/'manifest.txt',BUILD_ROOT/'package/manifest.txt')
     native_outputs(env)
     record('build.json',{'version':VERSION,'status':'BUILT','nro_sha256':digest(dest),
         'forge_rs_revision':'d1865b68e9b194eb3eacc8bd71bbf601a5fac63e','source_sha256':source_hashes(),'runtime_test':'NOT RUN'})
 def test(host=False):
     env,rust=environment()
+    # The Purple-lib symbol lookup is tested on this build's own NRO and its nm listing (real bytes).
+    staged=BUILD_ROOT/('package/romfs/nativeNX/plugins/'+NRO)
+    if staged.exists() and (WORK_ROOT/'native/symbols.txt').exists():
+        env.update(PDB_NRO=str(staged),PDB_SYMBOLS=str(WORK_ROOT/'native/symbols.txt'))
+    elif not host: raise ValueError('Build first: the symbol lookup test reads the staged NRO')
     run([rust/'cargo','test','--locked','--config',MOD/'.cargo/vendor.toml','--manifest-path',MOD/'core/Cargo.toml',
          '--target','x86_64-unknown-linux-gnu'],cwd=MOD.parent,env=env)
     if host:

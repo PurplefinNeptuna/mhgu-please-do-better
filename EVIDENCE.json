@@ -558,7 +558,7 @@
           },
           {
             "name": "Great Luck patch",
-            "author": "花花花花花椰菜",
+            "author": "\u82b1\u82b1\u82b1\u82b1\u82b1\u6930\u83dc",
             "url": "https://github.com/RTHKKona/MHGU-Modding/wiki/Cheat-Codes",
             "scope": "Original Great Luck patch."
           }
@@ -3119,5 +3119,14 @@
   "approval_r29_2026_11_06": {
     "user_words": "ok, works perfectly\nso promote both",
     "payload_nro_sha256": "3583061f373aea64e2340a226c0e57d268e00b9be3534fa318f208f22b139621"
+  },
+  "static_r30": {
+    "date": "2026-11-13",
+    "nro_sha256": "947924d0085fbfcde38716f472cd72bbb5c4bb92e08be3b67370317fb3e58b55",
+    "core_host_tests": 22,
+    "arm_and_native_suites": "passed (./build.sh test)",
+    "verify": "22 hook windows, frame colour setter, NZCVQ/GE audit, exports, payload inventory",
+    "fixture_change": "please_do_better_runtime_probe answers svcQueryMemory for unmapped space with one block to the next mapping, as the kernel does, so the Purple-lib search in forge_onInit ends",
+    "runtime_test": "NOT RUN"
   }
 }

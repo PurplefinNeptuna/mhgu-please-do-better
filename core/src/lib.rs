@@ -8,6 +8,7 @@ pub mod mailbox;
 pub mod mode;
 pub mod platform;
 pub mod preferences;
+pub mod purple_lib;
 pub mod quantity;
 pub mod signatures;
 
