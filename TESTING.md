@@ -14,8 +14,9 @@ beside it; with an older Purple-lib the page and help topic do not appear.
 3. Open the Village/Hub help: the "Please do Better" topic's three pages should be in that
    language, each fitting the page.
 4. Back in English, check the texts read as before.
-5. In a quest, open Mod Options, change a value, and let a monster hit you so the menu closes by
-   itself: the `Saved:` line should still appear (Purple-lib's TESTING.md has the same step).
+5. In a quest, open Mod Options, change a value, and leave it open until the quest fails, which
+   closes the menu by itself (being hit, stunned or carted leaves it open): the `Saved:` line
+   should still appear (Purple-lib's TESTING.md has the same step).
 
 ## Log lines
 
