@@ -3172,5 +3172,12 @@
     "nro_sha256": "e668344e14acdb35e132861c61a5eea6b2ffbb68b4a98058d14490e17415f233",
     "host_tests": 23,
     "runtime_test": "NOT RUN"
+  },
+  "runtime_r33_2026_11_14": {
+    "emulators": "Eden and MHGURecomp 0.16.1",
+    "nro_sha256": "e668344e14acdb35... (installed on Eden matches)",
+    "with": "Purple-lib r11, Purple-lib Tester r7",
+    "log": "Eden: [please-do-better] r33 loaded; forcing and highlights ready; [purple-lib] Mod Options: 3 sets (Please do Better's page among them).",
+    "scope": "Loaded and registered beside the tester; its own page and rewards were not itemized in this run."
   }
 }
