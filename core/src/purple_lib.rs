@@ -11,7 +11,7 @@ pub const EXPORT_ADD_OPTIONS: &[u8] = b"purplelib_add_options";
 pub const EXPORT_ADD_HELP: &[u8] = b"purplelib_add_help";
 
 #[repr(C)]
-pub struct Row {
+pub struct OptionRow {
     pub name: *const c_char,
     pub help: *const c_char,
     pub labels: *const *const c_char,
@@ -24,7 +24,7 @@ pub struct Options {
     pub context: *mut c_void,
     pub title: Option<extern "C" fn(*mut c_void, u32) -> *const c_char>,
     pub row_count: u32,
-    pub row: Option<extern "C" fn(*mut c_void, u32, u32, *mut Row) -> bool>,
+    pub row: Option<extern "C" fn(*mut c_void, u32, u32, *mut OptionRow) -> bool>,
     pub get: Option<extern "C" fn(*mut c_void, u32) -> u32>,
     pub set: Option<extern "C" fn(*mut c_void, u32, u32)>,
     pub closed: Option<extern "C" fn(*mut c_void)>,

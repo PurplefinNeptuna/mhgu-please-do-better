@@ -12,7 +12,7 @@ use core::ffi::{c_char, c_void};
 use core::sync::atomic::{AtomicBool, Ordering};
 use please_do_better_core::platform::Kernel;
 use core::cell::UnsafeCell;
-use please_do_better_core::purple_lib::{self as api, Help, Memory, Options, ROW_TEXT, Row, LANGUAGES};
+use please_do_better_core::purple_lib::{self as api, Help, Memory, Options, ROW_TEXT, OptionRow, LANGUAGES};
 
 /// A value changed through Mod Options: the settings row must drop any pending load.
 pub static EDITED: AtomicBool = AtomicBool::new(false);
@@ -30,7 +30,7 @@ struct Labels(UnsafeCell<[[[*const c_char; 5]; api::ROWS as usize]; LANGUAGES]>)
 unsafe impl Sync for Labels {}
 static LABELS: Labels = Labels(UnsafeCell::new([[[core::ptr::null(); 5]; api::ROWS as usize]; LANGUAGES]));
 
-extern "C" fn row(_: *mut c_void, language: u32, index: u32, out: *mut Row) -> bool {
+extern "C" fn row(_: *mut c_void, language: u32, index: u32, out: *mut OptionRow) -> bool {
     let Some(text) = ROW_TEXT.get(index as usize) else { return false };
     if out.is_null() {
         return false;
@@ -38,7 +38,7 @@ extern "C" fn row(_: *mut c_void, language: u32, index: u32, out: *mut Row) -> b
     let language = api::language_index(language);
     // SAFETY: filled before registration and never written again.
     let labels = unsafe { &(*LABELS.0.get())[language][index as usize] };
-    // SAFETY: Purple-lib passes a writable `Row`.
+    // SAFETY: Purple-lib passes a writable `OptionRow`.
     unsafe {
         (*out).name = text.name[language].as_ptr();
         (*out).help = text.help[language].as_ptr();
