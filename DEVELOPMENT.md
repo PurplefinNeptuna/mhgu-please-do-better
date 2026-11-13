@@ -1,12 +1,12 @@
 # Please do Better: development and research
 
-**Current state.** r30 DEVELOPMENT candidate at `build/please-do-better/candidates/r30/`, accepted
-on Eden, Ryubing and MHGURecomp with Purple-lib r4 and without it ("working perfectly for both
-mod."). r30 keeps r29's reward code and adds an optional registration with Purple-lib: its two
-settings as a Mod Options page and a help topic in Village/Hub (*Purple-lib* below). Every hook is
-installed through Forge's hook API; highlights are white native frames. [Install and
-settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json);
-[tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r31 DEVELOPMENT candidate at `build/please-do-better/candidates/r31/`, not run;
+r30 is the last accepted build (Eden, Ryubing and MHGURecomp, with and without Purple-lib). r31
+translates its Purple-lib page and help topic into the game's seven languages; the reward code and
+the registration are r30's. Every hook is installed through Forge's hook API; highlights are white
+native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact
+results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release
+credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots by turning their native frame white. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
@@ -41,7 +41,12 @@ request (`runtime::requested_preferences` / `request_preferences`). `set` raises
 `closed` raises `SAVE`; `forge_onImGuiFreeRender` turns them into `settings::changed()` (drop a
 pending load) and `settings::save(...)`, keeping preference state and the INI on the ImGui
 callbacks. Row values: Force 0/1, multiplier label index = multiplier - 1. All strings are static,
-because Purple-lib keeps the pointers. The host test `the_symbol_lookup_finds_exports_in_a_real_nro`
+because Purple-lib keeps the pointers. Text (`core/src/purple_lib.rs`) is in the game's seven
+languages, picked from the language byte Purple-lib passes (unknown is English), with the game's own
+words where it has them: skillData 502 for Miraculous Luck, StartMenuMsg 175/176 for Off/On,
+ResultMsg 8 for rewards and StartMenuMsg 9 for Palicoes. The label pointer arrays are filled in
+`register` before Purple-lib can call `row`; a host test keeps every help line within 40 columns
+(a CJK character counts two) and five lines. The host test `the_symbol_lookup_finds_exports_in_a_real_nro`
 runs the reader on this build's own NRO against its nm listing.
 
 ## Please do Better native research

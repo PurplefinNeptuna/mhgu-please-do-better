@@ -597,21 +597,35 @@ fn purple_lib_rows_map_to_the_preferences_both_ways() {
 #[test]
 fn purple_lib_rows_match_the_plugin_ui_settings() {
     assert_eq!(purple::ROW_TEXT.len() as u32, purple::ROWS);
-    assert_eq!(purple::ROW_TEXT[0].name.to_str().unwrap(), "Force Miraculous Luck");
-    assert_eq!(purple::ROW_TEXT[0].labels.len(), 2);
-    assert_eq!(purple::ROW_TEXT[1].name.to_str().unwrap(), "Reward multiplier");
-    let labels: Vec<_> = purple::ROW_TEXT[1].labels.iter().map(|l| l.to_str().unwrap()).collect();
-    assert_eq!(labels, ["1x", "2x", "3x", "4x", "5x"]);
+    assert_eq!(purple::ROW_TEXT[0].name[0].to_str().unwrap(), "Force Miraculous Luck");
+    assert_eq!(purple::ROW_TEXT[1].name[0].to_str().unwrap(), "Reward multiplier");
+    for language in 0..purple::LANGUAGES {
+        assert_eq!(purple::labels(purple::ROW_FORCE, language).len(), 2);
+        let labels: Vec<_> = purple::labels(purple::ROW_MULTIPLIER, language).iter().map(|l| l.to_str().unwrap()).collect();
+        assert_eq!(labels, ["1x", "2x", "3x", "4x", "5x"]);
+    }
 }
 
 #[test]
-fn purple_lib_help_pages_fit_a_help_page() {
-    assert!((1..=16).contains(&purple::HELP_PAGES.len()));
+fn every_language_maps_from_the_game_byte_and_unknown_is_english() {
+    let expected = [(2, 1), (3, 2), (4, 3), (5, 4), (7, 5), (8, 6), (0, 0), (1, 0), (6, 0), (99, 0)];
+    for (byte, index) in expected {
+        assert_eq!(purple::language_index(byte), index, "{byte}");
+    }
+}
+
+#[test]
+fn purple_lib_text_fits_in_every_language() {
     assert!((1..=18).contains(&purple::HELP_CATEGORY));
-    for page in purple::HELP_PAGES {
-        let text = page.to_str().unwrap();
-        assert!(text.split("\r\n").count() <= 5, "{text}");
-        assert!(text.split("\r\n").all(|line| line.len() <= 40), "{text}");
+    let fits = |text: &str, lines: usize| text.split("\r\n").count() <= lines && text.split("\r\n").all(|l| purple::columns(l) <= 40);
+    for language in 0..purple::LANGUAGES {
+        for page in purple::HELP_TEXT[language] {
+            assert!(fits(page.to_str().unwrap(), 5), "{page:?}");
+        }
+        for row in &purple::ROW_TEXT {
+            assert!(fits(row.help[language].to_str().unwrap(), 2), "{:?}", row.help[language]);
+            assert!(purple::columns(row.name[language].to_str().unwrap()) <= 28, "{:?}", row.name[language]);
+        }
     }
 }
 

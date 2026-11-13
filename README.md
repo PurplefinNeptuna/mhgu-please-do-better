@@ -13,7 +13,7 @@ on all player reward pages. Palico rewards keep their normal quantities.
 ## Installation
 
 1. Close the emulator.
-2. Extract `please-do-better-r30-candidate.zip`.
+2. Extract `please-do-better-r31-candidate.zip`.
 3. Copy the whole `please-do-better` folder into your emulator's MHGU mod directory:
    - Eden: `~/.local/share/eden/load/0100770008DD8000/`
    - Ryujinx: `mods/contents/0100770008dd8000/` inside its data directory.
@@ -56,7 +56,9 @@ choices stay active for the current session. Load a player save and try again.
 With Purple-lib installed, both settings are also under **Options > Mod Options** in the start
 menu, on the "Please do Better" page (press L or R to reach it when other mods add pages too).
 A setting takes effect as soon as you change it. Closing the window saves your choices to the
-same INI as **Save settings**. The Village/Hub help also gets a "Please do Better" topic.
+same INI as **Save settings**. The Village/Hub help also gets a "Please do Better" topic. The page
+and the topic follow the game's language: English, French, Spanish, German, Italian, and
+Traditional and Simplified Chinese.
 
 ### INI settings
 

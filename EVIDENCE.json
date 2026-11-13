@@ -3144,5 +3144,12 @@
     "without_purple_lib": "Second launch in the same session on Eden (from 902 s) and Ryubing (log line 6652): no Purple-lib plugin loaded, [please-do-better] r30 loaded; forcing and highlights ready, and on Eden a Plugin UI save. MHGURecomp: reported working, no log (one log per start).",
     "accepted": true,
     "installed_nro_sha256": "947924d0085fbfcde38716f472cd72bbb5c4bb92e08be3b67370317fb3e58b55"
+  },
+  "static_r31": {
+    "date": "2026-11-13",
+    "nro_sha256": "bb7eaeb79da077b1b4b2f264c3d7c9f7ff012da782f8857fb1416c4bc90dbae7",
+    "core_host_tests": 23,
+    "arm_and_native_suites": "passed",
+    "runtime_test": "NOT RUN"
   }
 }

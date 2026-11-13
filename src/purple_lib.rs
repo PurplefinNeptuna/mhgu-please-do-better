@@ -11,7 +11,8 @@ use crate::runtime;
 use core::ffi::{c_char, c_void};
 use core::sync::atomic::{AtomicBool, Ordering};
 use please_do_better_core::platform::Kernel;
-use please_do_better_core::purple_lib::{self as api, Help, Memory, Options, ROW_TEXT, Row};
+use core::cell::UnsafeCell;
+use please_do_better_core::purple_lib::{self as api, Help, Memory, Options, ROW_TEXT, Row, LANGUAGES};
 
 /// A value changed through Mod Options: the settings row must drop any pending load.
 pub static EDITED: AtomicBool = AtomicBool::new(false);
@@ -22,26 +23,27 @@ extern "C" fn title(_: *mut c_void, _: u32) -> *const c_char {
     api::TITLE.as_ptr()
 }
 
-/// Label pointer arrays for each row, built from `ROW_TEXT` (Purple-lib keeps the pointers).
-struct Labels([[*const c_char; 5]; api::ROWS as usize]);
-// SAFETY: pointers to static strings, never written after construction.
+/// Label pointer arrays per language and row, filled once in `register` before Purple-lib can call
+/// `row` (Purple-lib keeps the pointers).
+struct Labels(UnsafeCell<[[[*const c_char; 5]; api::ROWS as usize]; LANGUAGES]>);
+// SAFETY: written once before registration, read-only afterwards.
 unsafe impl Sync for Labels {}
-static LABELS: Labels = Labels([
-    [c"Off".as_ptr(), c"On".as_ptr(), core::ptr::null(), core::ptr::null(), core::ptr::null()],
-    [c"1x".as_ptr(), c"2x".as_ptr(), c"3x".as_ptr(), c"4x".as_ptr(), c"5x".as_ptr()],
-]);
+static LABELS: Labels = Labels(UnsafeCell::new([[[core::ptr::null(); 5]; api::ROWS as usize]; LANGUAGES]));
 
-extern "C" fn row(_: *mut c_void, _: u32, index: u32, out: *mut Row) -> bool {
+extern "C" fn row(_: *mut c_void, language: u32, index: u32, out: *mut Row) -> bool {
     let Some(text) = ROW_TEXT.get(index as usize) else { return false };
     if out.is_null() {
         return false;
     }
+    let language = api::language_index(language);
+    // SAFETY: filled before registration and never written again.
+    let labels = unsafe { &(*LABELS.0.get())[language][index as usize] };
     // SAFETY: Purple-lib passes a writable `Row`.
     unsafe {
-        (*out).name = text.name.as_ptr();
-        (*out).help = text.help.as_ptr();
-        (*out).labels = LABELS.0[index as usize].as_ptr();
-        (*out).label_count = text.labels.len() as u32;
+        (*out).name = text.name[language].as_ptr();
+        (*out).help = text.help[language].as_ptr();
+        (*out).labels = labels.as_ptr();
+        (*out).label_count = api::labels(index, language).len() as u32;
     }
     true
 }
@@ -65,8 +67,8 @@ extern "C" fn closed(_: *mut c_void) {
 extern "C" fn help_title(_: *mut c_void, _: u32) -> *const c_char {
     api::TITLE.as_ptr()
 }
-extern "C" fn help_page(_: *mut c_void, _: u32, index: u32) -> *const c_char {
-    api::HELP_PAGES.get(index as usize).map_or(core::ptr::null(), |p| p.as_ptr())
+extern "C" fn help_page(_: *mut c_void, language: u32, index: u32) -> *const c_char {
+    api::HELP_TEXT[api::language_index(language)].get(index as usize).map_or(core::ptr::null(), |p| p.as_ptr())
 }
 
 /// Read-only records of static data; the null context is never dereferenced.
@@ -87,7 +89,7 @@ static HELP: Shared<Help> = Shared(Help {
     size: core::mem::size_of::<Help>() as u32,
     context: core::ptr::null_mut(),
     category: api::HELP_CATEGORY,
-    page_count: api::HELP_PAGES.len() as u32,
+    page_count: api::HELP_PAGES as u32,
     title: Some(help_title),
     page: Some(help_page),
     open: None,
@@ -136,6 +138,15 @@ pub enum Registered {
 /// first update, whatever order the plugins load in).
 pub fn register() -> Registered {
     let Some(base) = find() else { return Registered::Missing };
+    // SAFETY: nothing reads the table before the registration below.
+    let table = unsafe { &mut *LABELS.0.get() };
+    for (language, rows) in table.iter_mut().enumerate() {
+        for (row, slots) in rows.iter_mut().enumerate() {
+            for (slot, label) in slots.iter_mut().zip(api::labels(row as u32, language)) {
+                *slot = label.as_ptr();
+            }
+        }
+    }
     let lookup = |name| api::nro_symbol(&mut Process, base, name);
     let (Some(version), Some(add_options), Some(add_help)) =
         (lookup(api::EXPORT_VERSION), lookup(api::EXPORT_ADD_OPTIONS), lookup(api::EXPORT_ADD_HELP))

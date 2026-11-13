@@ -49,24 +49,75 @@ pub const ROW_FORCE: u32 = 0;
 pub const ROW_MULTIPLIER: u32 = 1;
 pub const ROWS: u32 = 2;
 
-pub struct RowText {
-    pub name: &'static CStr,
-    pub help: &'static CStr,
-    pub labels: &'static [&'static CStr],
+/// English, French, Spanish, German, Italian, Traditional and Simplified Chinese.
+pub const LANGUAGES: usize = 7;
+/// Index into the tables from the game's language byte, which Purple-lib passes (anything unknown
+/// is English).
+pub const fn language_index(byte: u32) -> usize {
+    match byte {
+        2 => 1,
+        3 => 2,
+        4 => 3,
+        5 => 4,
+        7 => 5,
+        8 => 6,
+        _ => 0,
+    }
 }
-/// Purple-lib keeps every pointer it is given, so the rows are static.
+
+/// Purple-lib keeps every pointer it is given, so all text is static. The game's own words are
+/// used where it has them: the skill name Miraculous Luck (skillData 502), its option labels
+/// Off/On (StartMenuMsg 175/176), its words for rewards (ResultMsg 8) and Palicoes (StartMenuMsg 9).
+pub struct RowText {
+    pub name: [&'static CStr; LANGUAGES],
+    pub help: [&'static CStr; LANGUAGES],
+}
 pub static ROW_TEXT: [RowText; ROWS as usize] = [
     RowText {
-        name: c"Force Miraculous Luck",
-        help: c"Use Miraculous Luck the next time rewards are generated.",
-        labels: &[c"Off", c"On"],
+        name: [c"Force Miraculous Luck", c"Forcer Grande fortune", c"Forzar Suerte +2", c"Glücksverstärker erzwingen", c"Forza Gran fortuna", c"強制激運", c"强制激运"],
+        help: [
+            c"Use Miraculous Luck the next time\r\nrewards are generated.",
+            c"Utilise Grande fortune lors de la\r\nprochaine génération de récompenses.",
+            c"Usa Suerte +2 la próxima vez que\r\nse generen las recompensas.",
+            c"Nutzt Glücksverstärker, wenn die\r\nnächste Belohnung erstellt wird.",
+            c"Usa Gran fortuna la prossima volta\r\nche vengono generati i premi.",
+            c"下次產生任務報酬時\r\n套用激運。",
+            c"下次生成任务报酬时\r\n套用激运。",
+        ],
     },
     RowText {
-        name: c"Reward multiplier",
-        help: c"Multiply every occupied slot on the player reward pages.",
-        labels: &[c"1x", c"2x", c"3x", c"4x", c"5x"],
+        name: [c"Reward multiplier", c"Multipl. récompenses", c"Multiplicador de recomp.", c"Belohnungsmultiplikator", c"Moltiplicatore premi", c"報酬倍率", c"报酬倍率"],
+        help: [
+            c"Multiply every occupied slot on the\r\nplayer reward pages.",
+            c"Multiplie chaque emplacement occupé\r\ndes pages de récompenses du joueur.",
+            c"Multiplica cada espacio ocupado de\r\nlas páginas de recompensas del jugador.",
+            c"Vervielfacht jeden belegten Platz\r\nauf den Belohnungsseiten des Jägers.",
+            c"Moltiplica ogni casella occupata\r\nnelle pagine dei premi del giocatore.",
+            c"將玩家報酬頁面中\r\n每個有道具的欄位乘以倍率。",
+            c"将玩家报酬页面中\r\n每个有道具的栏位乘以倍率。",
+        ],
     },
 ];
+/// Force Miraculous Luck's labels: the game's own option Off/On (StartMenuMsg 175/176).
+pub static OFF_ON: [[&CStr; 2]; LANGUAGES] = [
+    [c"Off", c"On"],
+    [c"Désactivé", c"Activé"],
+    [c"No", c"Sí"],
+    [c"Aus", c"An"],
+    [c"No", c"Sì"],
+    [c"不使用", c"使用"],
+    [c"不使用", c"使用"],
+];
+/// The multiplier's labels, the same in every language.
+pub static MULTIPLIER: [&CStr; 5] = [c"1x", c"2x", c"3x", c"4x", c"5x"];
+
+/// A row's labels in a language.
+pub fn labels(row: u32, language: usize) -> &'static [&'static CStr] {
+    match row {
+        ROW_FORCE => &OFF_ON[language],
+        _ => &MULTIPLIER,
+    }
+}
 
 /// The value Purple-lib shows: the label index.
 pub fn value(p: Preferences, row: u32) -> u32 {
@@ -87,13 +138,52 @@ pub fn with_value(mut p: Preferences, row: u32, value: u32) -> Option<Preference
     Some(p)
 }
 
-/// Help topic in Village/Hub (category 18): five lines at most, about 40 characters a line.
+/// Help topic in Village/Hub (category 18): five lines at most, about 40 columns a line (a CJK
+/// character takes two).
 pub const HELP_CATEGORY: u32 = 18;
-pub static HELP_PAGES: [&CStr; 3] = [
-    c"Please do Better marks the extra reward\r\nslots that Luck skills give with a\r\nwhite frame on the reward screen.",
-    c"Force Miraculous Luck gives Miraculous\r\nLuck the next time rewards are\r\ngenerated, without changing skills.",
-    c"Reward multiplier multiplies every\r\noccupied slot on the player reward\r\npages; the Palico page is unchanged.\r\nBoth are in Options > Mod Options.",
+pub const HELP_PAGES: usize = 3;
+pub static HELP_TEXT: [[&CStr; HELP_PAGES]; LANGUAGES] = [
+    [
+        c"Please do Better marks the extra reward\r\nslots that Luck skills give with a\r\nwhite frame on the reward screen.",
+        c"Force Miraculous Luck gives Miraculous\r\nLuck the next time rewards are\r\ngenerated, without changing skills.",
+        c"Reward multiplier multiplies every\r\noccupied slot on the player reward\r\npages; the Palico page is unchanged.\r\nBoth are in Options > Mod Options.",
+    ],
+    [
+        c"Please do Better encadre en blanc les\r\nemplacements de récompense en plus que\r\ndonnent les talents de chance.",
+        c"Forcer Grande fortune applique Grande\r\nfortune à la prochaine génération des\r\nrécompenses, sans changer de talents.",
+        c"Le multiplicateur multiplie chaque\r\nemplacement occupé des pages de\r\nrécompenses du joueur, pas celles des\r\nPalicos. Voir Options > Options de Mod.",
+    ],
+    [
+        c"Please do Better marca con un marco\r\nblanco los espacios extra de\r\nrecompensa que dan las habilidades\r\nde suerte.",
+        c"Forzar Suerte +2 aplica Suerte +2 la\r\npróxima vez que se generen las\r\nrecompensas, sin cambiar habilidades.",
+        c"El multiplicador multiplica cada\r\nespacio ocupado de las páginas de\r\nrecompensas del jugador, no las de\r\nlos Camaradas. Está en Opciones >\r\nOpciones de Mod.",
+    ],
+    [
+        c"Please do Better markiert die durch\r\nGlück zusätzlichen Belohnungsplätze\r\nmit einem weißen Rahmen.",
+        c"Glücksverstärker erzwingen nutzt\r\nGlücksverstärker bei der nächsten\r\nBelohnung, ohne Fertigkeiten zu ändern.",
+        c"Der Multiplikator vervielfacht jeden\r\nbelegten Platz der Belohnungsseiten\r\ndes Jägers, nicht die der Kameraden.\r\nUnter Optionen > Mod-Optionen.",
+    ],
+    [
+        c"Please do Better evidenzia in bianco\r\ngli spazi premio extra dati dalle\r\nabilità della fortuna.",
+        c"Forza Gran fortuna applica Gran\r\nfortuna alla prossima generazione\r\ndei premi, senza cambiare abilità.",
+        c"Il moltiplicatore moltiplica ogni\r\ncasella occupata nelle pagine dei\r\npremi del giocatore, non quelle dei\r\nCompagni. In Opzioni > Opzioni Mod.",
+    ],
+    [
+        c"Please do Better會以白框標示\r\n幸運類技能額外增加的報酬欄位。",
+        c"「強制激運」會在下次產生報酬時\r\n套用激運，不需變更技能。",
+        c"「報酬倍率」會將玩家報酬頁面中\r\n每個有道具的欄位乘以倍率，\r\n隨從的報酬不變。\r\n設定位於選項 > Mod選項。",
+    ],
+    [
+        c"Please do Better会以白框标示\r\n幸运类技能额外增加的报酬栏位。",
+        c"「强制激运」会在下次生成报酬时\r\n套用激运，不需更改技能。",
+        c"「报酬倍率」会将玩家报酬页面中\r\n每个有道具的栏位乘以倍率，\r\n随从的报酬不变。\r\n设置位于选项 > Mod选项。",
+    ],
 ];
+
+/// Display width as the help screens count it, roughly: a CJK character is two columns.
+pub fn columns(text: &str) -> usize {
+    text.chars().map(|c| if (c as u32) >= 0x2e80 { 2 } else { 1 }).sum()
+}
 
 /// Reads `out.len()` bytes at `address`, or returns false without touching unmapped memory.
 pub trait Memory {
