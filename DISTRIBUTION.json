@@ -15,10 +15,9 @@
       "mods/please-do-better/EVIDENCE.json"
     ],
     "static_summary": "r30: pinned toolchain build; 22 Rust host tests (including the Purple-lib symbol reader on this build's own NRO against nm) plus the mod's ARM and native suites in ./build.sh test; verify: pinned inputs, 22 hook windows and the frame colour setter, NZCVQ/GE audit, exports and payload inventory.",
-    "manual_summary": "r30 not run; r29 user-reported working on Eden and MHGURecomp 0.14.3."
+    "manual_summary": "r30 accepted on Eden, Ryubing and MHGURecomp with Purple-lib r4, and without Purple-lib on Eden and Ryubing (logged) and MHGURecomp (reported)."
   },
   "limitations": [
-    "r30 has not run in game; its Purple-lib page and help need Purple-lib r4",
     "A highlighted frame stays white after its item is taken, by the user's choice",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
@@ -101,7 +100,7 @@
       }
     ]
   },
-  "runtime_test": "r30 NOT RUN. r29 was reported working on Eden and MHGURecomp 0.14.3; see EVIDENCE.json.",
+  "runtime_test": "r30 accepted on Eden, Ryubing 1.3.3 and MHGURecomp: \"working perfectly for both mod.\" Installed NRO matches on all three; the Purple-lib-disabled case is logged on Eden and Ryubing and reported on MHGURecomp. See EVIDENCE.json.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json",

@@ -1,12 +1,12 @@
 # Please do Better: development and research
 
-**Current state.** r30 DEVELOPMENT candidate at `build/please-do-better/candidates/r30/`, not run;
-r29 is the last accepted build (Eden and MHGURecomp 0.14.3, "woo, its working for both"). r30
-keeps r29's reward code and adds an optional registration with Purple-lib: its two settings as a
-Mod Options page and a help topic in Village/Hub (*Purple-lib* below). Every hook is installed
-through Forge's hook API; highlights are white native frames. [Install and settings](README.md);
-[status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json); [tester steps](TESTING.md);
-[provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
+**Current state.** r30 DEVELOPMENT candidate at `build/please-do-better/candidates/r30/`, accepted
+on Eden, Ryubing and MHGURecomp with Purple-lib r4 and without it ("working perfectly for both
+mod."). r30 keeps r29's reward code and adds an optional registration with Purple-lib: its two
+settings as a Mod Options page and a help topic in Village/Hub (*Purple-lib* below). Every hook is
+installed through Forge's hook API; highlights are white native frames. [Install and
+settings](README.md); [status and hashes](DISTRIBUTION.json); [exact results](EVIDENCE.json);
+[tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release credits](DISTRIBUTION_NOTICES.md).
 
 Marks verified extra luck reward slots by turning their native frame white. Natural luck is the default; optional Force Miraculous Luck reproduces the wiki's two-site cheat without changing equipped skills. The 1x to 5x integer slider scales player reward pages and leaves the Palico page unchanged. The primary INI requires `[PleaseDoBetter]`; old formats use defaults.
 
