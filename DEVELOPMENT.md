@@ -1,7 +1,7 @@
 # Please do Better: development and research
 
-**Current state.** r32 DEVELOPMENT candidate at `build/please-do-better/candidates/r32/`, not
-run: r31's code registering with Purple-lib's API version 2 (Purple-lib r8 and later). r31 is the
+**Current state.** r33 DEVELOPMENT candidate at `build/please-do-better/candidates/r33/`, not
+run: r31's code registering with Purple-lib's API version 2 (Purple-lib r10 and later). r31 is the
 last accepted build (Eden with Purple-lib r6, English and Chinese; r30 on Ryubing and MHGURecomp
 too); its ZIP is in `build/please-do-better/candidates/r31/`. Every hook is installed through Forge's hook API; highlights are white
 native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact
@@ -29,7 +29,7 @@ Export only `EXPORT.json` entries. `source-export.json` records the parent commi
 
 ## Purple-lib
 
-Optional, Purple-lib API version 2 (its `API.md`; Purple-lib r8 and later). `src/purple_lib.rs::register` runs in
+Optional, Purple-lib API version 2 (its `API.md`; Purple-lib r10 and later). `src/purple_lib.rs::register` runs in
 `forge_onInit` after the hooks: it walks the mappings with `svcQueryMemory` for a readable and
 executable one that starts with an NRO header and defines `purplelib_api_version`
 (`core/src/purple_lib.rs::nro_symbol`, the WishFinder bridge's reader), checks the version, and

@@ -85,6 +85,7 @@ static OPTIONS: Shared<Options> = Shared(Options {
     set: Some(set),
     closed: Some(closed),
     value_text: None,
+    action: None,
 });
 static HELP: Shared<Help> = Shared(Help {
     size: core::mem::size_of::<Help>() as u32,

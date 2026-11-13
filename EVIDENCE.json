@@ -3166,5 +3166,11 @@
     "suites": "ARM32, compiled runtime/gateway, native copy, observation, display, frame-mapping and quantity suites passed",
     "verify": "22 hook windows, frame colour setter, NZCVQ/GE audit, exports, payload inventory",
     "runtime_test": "NOT RUN"
+  },
+  "static_r33": {
+    "date": "2026-11-14",
+    "nro_sha256": "e668344e14acdb35e132861c61a5eea6b2ffbb68b4a98058d14490e17415f233",
+    "host_tests": 23,
+    "runtime_test": "NOT RUN"
   }
 }

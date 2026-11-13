@@ -1,5 +1,5 @@
 {
-  "archive": "please-do-better-r32-candidate.zip",
+  "archive": "please-do-better-r33-candidate.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -14,11 +14,11 @@
     "manual": [
       "mods/please-do-better/EVIDENCE.json"
     ],
-    "static_summary": "r32: pinned toolchain build; 23 Rust host tests (the Purple-lib text in all seven languages, the symbol reader on this build's own NRO against nm) plus the mod's ARM and native suites; verify: 22 hook windows, frame colour setter, NZCVQ/GE audit, exports, payload inventory.",
-    "manual_summary": "r32 not run; r31 accepted on Eden with Purple-lib r6 (English and Chinese); r30 accepted on Eden, Ryubing and MHGURecomp with and without Purple-lib."
+    "static_summary": "r33: pinned toolchain build; 23 Rust host tests (the Purple-lib text in all seven languages, the symbol reader on this build's own NRO against nm) plus the mod's ARM and native suites; verify: 22 hook windows, frame colour setter, NZCVQ/GE audit, exports, payload inventory.",
+    "manual_summary": "r33 not run; r31 accepted on Eden with Purple-lib r6 (English and Chinese); r30 accepted on Eden, Ryubing and MHGURecomp with and without Purple-lib."
   },
   "limitations": [
-    "r32 has not run in game; it needs Purple-lib r8 or later for its Mod Options page",
+    "r33 has not run in game; it needs Purple-lib r10 or later for its Mod Options page",
     "A highlighted frame stays white after its item is taken, by the user's choice",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
@@ -47,11 +47,11 @@
     "url": null
   },
   "readme": "mods/please-do-better/README.md",
-  "reason": "r32: r31 (reward code from r29, the optional Purple-lib page and help topic in seven languages) registering with Purple-lib's API version 2, for Purple-lib r8 and later.",
+  "reason": "r33: r31 (reward code from r29, the optional Purple-lib page and help topic in seven languages) registering with Purple-lib's API version 2, for Purple-lib r10 and later.",
   "schema_version": 1,
   "status": "DEVELOPMENT",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx/MHGURecomp.",
-  "version": "r32",
+  "version": "r33",
   "gamebanana": {
     "ai_code": {
       "used": true,
@@ -101,7 +101,7 @@
       }
     ]
   },
-  "runtime_test": "r32 NOT RUN. r31 accepted on Eden with Purple-lib r6 (English and Chinese); r30 accepted on Ryubing 1.3.3 and MHGURecomp; see EVIDENCE.json.",
+  "runtime_test": "r33 NOT RUN. r31 accepted on Eden with Purple-lib r6 (English and Chinese); r30 accepted on Ryubing 1.3.3 and MHGURecomp; see EVIDENCE.json.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json",
@@ -109,14 +109,14 @@
   },
   "payloads": {
     "romfs/nativeNX/plugins/please_do_better.nro": {
-      "source": "build/please-do-better/candidates/r32/package/romfs/nativeNX/plugins/please_do_better.nro",
-      "sha256": "7fd8971bb584409638198e8d8ea8902cf45b0f26ec0a36fd25846adfa062fc8e"
+      "source": "build/please-do-better/candidates/r33/package/romfs/nativeNX/plugins/please_do_better.nro",
+      "sha256": "e668344e14acdb35e132861c61a5eea6b2ffbb68b4a98058d14490e17415f233"
     },
     "manifest.txt": {
-      "source": "build/please-do-better/candidates/r32/package/manifest.txt",
-      "sha256": "23ead63d85b152b1db74244b6dad993f73eab7fd40ebca942c7306f7aadb32a7"
+      "source": "build/please-do-better/candidates/r33/package/manifest.txt",
+      "sha256": "477c4d52bab33484ea52df09b94699dac12eaaba603b9df0102497c3a0f64f67"
     }
   },
-  "candidate": "build/please-do-better/candidates/r32/delivery",
+  "candidate": "build/please-do-better/candidates/r33/delivery",
   "candidate_builder": "scripts/build.py"
 }

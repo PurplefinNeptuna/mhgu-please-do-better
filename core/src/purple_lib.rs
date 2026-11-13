@@ -1,6 +1,6 @@
 //! Optional settings rows and a help topic in Purple-lib (its `API.md`). Purple-lib is looked up
 //! by symbol at start-up; without it nothing here runs. The records mirror Purple-lib's API
-//! version 2 (Purple-lib r8 and later); the row texts and the mapping between rows and `Preferences` are here so the host
+//! version 2 (Purple-lib r10 and later); the row texts and the mapping between rows and `Preferences` are here so the host
 //! tests can check them.
 use crate::mode::Preferences;
 use core::ffi::{CStr, c_char, c_void};
@@ -36,8 +36,9 @@ pub struct Options {
     pub get: Option<extern "C" fn(*mut c_void, u32) -> u32>,
     pub set: Option<extern "C" fn(*mut c_void, u32, u32)>,
     pub closed: Option<extern "C" fn(*mut c_void)>,
-    /// For text rows, which Please do Better does not use.
+    /// For text rows and action rows, which Please do Better does not use.
     pub value_text: Option<extern "C" fn(*mut c_void, u32, u32, u32) -> *const c_char>,
+    pub action: Option<extern "C" fn(*mut c_void, u32)>,
 }
 
 #[repr(C)]
@@ -53,7 +54,7 @@ pub struct Help {
 
 #[cfg(target_pointer_width = "32")]
 const _: () = assert!(
-    core::mem::size_of::<Options>() == 36 && core::mem::size_of::<Help>() == 28 && core::mem::size_of::<OptionRow>() == 40
+    core::mem::size_of::<Options>() == 40 && core::mem::size_of::<Help>() == 28 && core::mem::size_of::<OptionRow>() == 40
 );
 
 pub const TITLE: &CStr = c"Please do Better";

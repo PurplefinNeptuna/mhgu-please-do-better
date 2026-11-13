@@ -1,6 +1,6 @@
-# Please do Better r32: testing
+# Please do Better r33: testing
 
-r32 is r31, accepted on Eden, registering with Purple-lib's API version 2. Install Purple-lib r8
+r33 is r31, accepted on Eden, registering with Purple-lib's API version 2. Install Purple-lib r10
 beside it; with an older Purple-lib the page and help topic do not appear.
 
 ## Steps
@@ -21,7 +21,7 @@ beside it; with an older Purple-lib the page and help topic do not appear.
 
 | Line | Meaning |
 | --- | --- |
-| `[please-do-better] r32 loaded; forcing and highlights ready` | Started |
+| `[please-do-better] r33 loaded; forcing and highlights ready` | Started |
 | `[please-do-better] settings and help added to Purple-lib` | Registered with Purple-lib |
 | `[purple-lib] Mod Options: 1 sets` | Purple-lib accepted the page |
 | `[purple-lib] help category 18 "Village/Hub": 10 game topics + 1 added` | The help topic went in |
