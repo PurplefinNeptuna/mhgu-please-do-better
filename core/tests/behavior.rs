@@ -616,7 +616,7 @@ fn every_language_maps_from_the_game_byte_and_unknown_is_english() {
 
 #[test]
 fn purple_lib_text_fits_in_every_language() {
-    assert!((1..=18).contains(&purple::HELP_CATEGORY));
+    assert_eq!(purple::HELP_CATEGORY, 0, "the page's own help");
     let fits = |text: &str, lines: usize| text.split("\r\n").count() <= lines && text.split("\r\n").all(|l| purple::columns(l) <= 40);
     for language in 0..purple::LANGUAGES {
         for page in purple::HELP_TEXT[language] {

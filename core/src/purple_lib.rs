@@ -1,14 +1,14 @@
-//! Optional settings rows and a help topic in Purple-lib (its `API.md`). Purple-lib is looked up
+//! Optional settings rows and their page help in Purple-lib (its `API.md`). Purple-lib is looked up
 //! by symbol at start-up; without it nothing here runs. The records mirror Purple-lib's API
-//! version 2 (Purple-lib r10 and later); the row texts and the mapping between rows and `Preferences` are here so the host
-//! tests can check them.
+//! version 2 (Purple-lib r15 and later). The row texts and the mapping between rows and
+//! `Preferences` are here so the host tests can check them.
 use crate::mode::Preferences;
 use core::ffi::{CStr, c_char, c_void};
 
 pub const API_VERSION: u32 = 2;
 pub const EXPORT_VERSION: &[u8] = b"purplelib_api_version";
 pub const EXPORT_ADD_OPTIONS: &[u8] = b"purplelib_add_options";
-pub const EXPORT_ADD_HELP: &[u8] = b"purplelib_add_help";
+pub const EXPORT_ADD_SET_HELP: &[u8] = b"purplelib_add_set_help";
 
 #[repr(C)]
 /// Purple-lib zeroes it before each call; Please do Better's rows are labels rows, which use the
@@ -151,45 +151,46 @@ pub fn with_value(mut p: Preferences, row: u32, value: u32) -> Option<Preference
     Some(p)
 }
 
-/// Help topic in Village/Hub (category 18): five lines at most, about 40 columns a line (a CJK
+/// The topic of the page's own help, which the help button opens on the Mod Options page
+/// (`purplelib_add_set_help`, category 0): five lines at most, about 40 columns a line (a CJK
 /// character takes two).
-pub const HELP_CATEGORY: u32 = 18;
+pub const HELP_CATEGORY: u32 = 0;
 pub const HELP_PAGES: usize = 3;
 pub static HELP_TEXT: [[&CStr; HELP_PAGES]; LANGUAGES] = [
     [
         c"Please do Better marks the extra reward\r\nslots that Luck skills give with a\r\nwhite frame on the reward screen.",
         c"Force Miraculous Luck gives Miraculous\r\nLuck the next time rewards are\r\ngenerated, without changing skills.",
-        c"Reward multiplier multiplies every\r\noccupied slot on the player reward\r\npages; the Palico page is unchanged.\r\nBoth are in Options > Mod Options.",
+        c"Reward multiplier multiplies every\r\noccupied slot on the player reward\r\npages; the Palico page is unchanged.",
     ],
     [
         c"Please do Better encadre en blanc les\r\nemplacements de récompense en plus que\r\ndonnent les talents de chance.",
         c"Forcer Grande fortune applique Grande\r\nfortune à la prochaine génération des\r\nrécompenses, sans changer de talents.",
-        c"Le multiplicateur multiplie chaque\r\nemplacement occupé des pages de\r\nrécompenses du joueur, pas celles des\r\nPalicos. Voir Options > Options de Mod.",
+        c"Le multiplicateur multiplie chaque\r\nemplacement occupé des pages de\r\nrécompenses du joueur, pas celles des\r\nPalicos.",
     ],
     [
         c"Please do Better marca con un marco\r\nblanco los espacios extra de\r\nrecompensa que dan las habilidades\r\nde suerte.",
         c"Forzar Suerte +2 aplica Suerte +2 la\r\npróxima vez que se generen las\r\nrecompensas, sin cambiar habilidades.",
-        c"El multiplicador multiplica cada\r\nespacio ocupado de las páginas de\r\nrecompensas del jugador, no las de\r\nlos Camaradas. Está en Opciones >\r\nOpciones de Mod.",
+        c"El multiplicador multiplica cada\r\nespacio ocupado de las páginas de\r\nrecompensas del jugador, no las de\r\nlos Camaradas.",
     ],
     [
         c"Please do Better markiert die durch\r\nGlück zusätzlichen Belohnungsplätze\r\nmit einem weißen Rahmen.",
         c"Glücksverstärker erzwingen nutzt\r\nGlücksverstärker bei der nächsten\r\nBelohnung, ohne Fertigkeiten zu ändern.",
-        c"Der Multiplikator vervielfacht jeden\r\nbelegten Platz der Belohnungsseiten\r\ndes Jägers, nicht die der Kameraden.\r\nUnter Optionen > Mod-Optionen.",
+        c"Der Multiplikator vervielfacht jeden\r\nbelegten Platz der Belohnungsseiten\r\ndes Jägers, nicht die der Kameraden.",
     ],
     [
         c"Please do Better evidenzia in bianco\r\ngli spazi premio extra dati dalle\r\nabilità della fortuna.",
         c"Forza Gran fortuna applica Gran\r\nfortuna alla prossima generazione\r\ndei premi, senza cambiare abilità.",
-        c"Il moltiplicatore moltiplica ogni\r\ncasella occupata nelle pagine dei\r\npremi del giocatore, non quelle dei\r\nCompagni. In Opzioni > Opzioni Mod.",
+        c"Il moltiplicatore moltiplica ogni\r\ncasella occupata nelle pagine dei\r\npremi del giocatore, non quelle dei\r\nCompagni.",
     ],
     [
         c"Please do Better會以白框標示\r\n幸運類技能額外增加的報酬欄位。",
         c"「強制激運」會在下次產生報酬時\r\n套用激運，不需變更技能。",
-        c"「報酬倍率」會將玩家報酬頁面中\r\n每個有道具的欄位乘以倍率，\r\n隨從的報酬不變。\r\n設定位於選項 > Mod選項。",
+        c"「報酬倍率」會將玩家報酬頁面中\r\n每個有道具的欄位乘以倍率，\r\n隨從的報酬不變。",
     ],
     [
         c"Please do Better会以白框标示\r\n幸运类技能额外增加的报酬栏位。",
         c"「强制激运」会在下次生成报酬时\r\n套用激运，不需更改技能。",
-        c"「报酬倍率」会将玩家报酬页面中\r\n每个有道具的栏位乘以倍率，\r\n随从的报酬不变。\r\n设置位于选项 > Mod选项。",
+        c"「报酬倍率」会将玩家报酬页面中\r\n每个有道具的栏位乘以倍率，\r\n随从的报酬不变。",
     ],
 ];
 

@@ -8,12 +8,12 @@ on all player reward pages. Palico rewards keep their normal quantities.
 
 - MHGU 1.4.0 for Nintendo Switch.
 - [Fexty's Forge 1.5.1](https://github.com/Fexty12573/forge/releases/tag/v1.5.1).
-- Optional: Purple-lib r10 or later, to change the settings from the game's own Options menu.
+- Optional: Purple-lib r15 or later, to change the settings from the game's own Options menu.
 
 ## Installation
 
 1. Close the emulator.
-2. Extract `please-do-better-r33-candidate.zip`.
+2. Extract `please-do-better-r34-candidate.zip`.
 3. Copy the whole `please-do-better` folder into your emulator's MHGU mod directory:
    - Eden: `~/.local/share/eden/load/0100770008DD8000/`
    - Ryujinx: `mods/contents/0100770008dd8000/` inside its data directory.
@@ -56,9 +56,9 @@ choices stay active for the current session. Load a player save and try again.
 With Purple-lib installed, both settings are also under **Options > Mod Options** in the start
 menu, on the "Please do Better" page (press L or R to reach it when other mods add pages too).
 A setting takes effect as soon as you change it. Closing the window saves your choices to the
-same INI as **Save settings**. The Village/Hub help also gets a "Please do Better" topic. The page
-and the topic follow the game's language: English, French, Spanish, German, Italian, and
-Traditional and Simplified Chinese.
+same INI as **Save settings**. On that page, the help button shown in the button guide opens
+Please do Better's own help. The page and its help follow the game's language: English, French,
+Spanish, German, Italian, and Traditional and Simplified Chinese.
 
 ### INI settings
 

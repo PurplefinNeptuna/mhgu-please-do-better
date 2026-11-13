@@ -150,8 +150,8 @@ pub fn register() -> Registered {
         }
     }
     let lookup = |name| api::nro_symbol(&mut Process, base, name);
-    let (Some(version), Some(add_options), Some(add_help)) =
-        (lookup(api::EXPORT_VERSION), lookup(api::EXPORT_ADD_OPTIONS), lookup(api::EXPORT_ADD_HELP))
+    let (Some(version), Some(add_options), Some(add_set_help)) =
+        (lookup(api::EXPORT_VERSION), lookup(api::EXPORT_ADD_OPTIONS), lookup(api::EXPORT_ADD_SET_HELP))
     else {
         return Registered::Missing;
     };
@@ -161,7 +161,10 @@ pub fn register() -> Registered {
         return Registered::OtherVersion(version);
     }
     let add_options = unsafe { core::mem::transmute::<usize, extern "C" fn(*const Options) -> bool>(add_options as usize) };
-    let add_help = unsafe { core::mem::transmute::<usize, extern "C" fn(*const Help) -> bool>(add_help as usize) };
-    let (options, help) = (add_options(&OPTIONS.0), add_help(&HELP.0));
+    let add_set_help =
+        unsafe { core::mem::transmute::<usize, extern "C" fn(*const Options, *const Help) -> bool>(add_set_help as usize) };
+    // The page's help names the page, so it goes in after the page.
+    let options = add_options(&OPTIONS.0);
+    let help = options && add_set_help(&OPTIONS.0, &HELP.0);
     if options && help { Registered::Done } else { Registered::Refused { options, help } }
 }

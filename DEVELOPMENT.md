@@ -1,8 +1,8 @@
 # Please do Better: development and research
 
-**Current state.** r33 DEVELOPMENT candidate at `build/please-do-better/candidates/r33/`, not
-run: r31's code registering with Purple-lib's API version 2 (Purple-lib r10 and later). r31 is the
-last accepted build (Eden with Purple-lib r6, English and Chinese; r30 on Ryubing and MHGURecomp
+**Current state.** r34 DEVELOPMENT candidate at `build/please-do-better/candidates/r34/`, not
+run: Purple-lib API version 2, with its help topic on its Mod Options page's own help instead
+of the Village/Hub help; needs Purple-lib r15. r31 is the last accepted build (Eden with Purple-lib r6, English and Chinese; r30 on Ryubing and MHGURecomp
 too); its ZIP is in `build/please-do-better/candidates/r31/`. Every hook is installed through Forge's hook API; highlights are white
 native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact
 results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release
@@ -29,12 +29,12 @@ Export only `EXPORT.json` entries. `source-export.json` records the parent commi
 
 ## Purple-lib
 
-Optional, Purple-lib API version 2 (its `API.md`; Purple-lib r10 and later). `src/purple_lib.rs::register` runs in
+Optional, Purple-lib API version 2 (its `API.md`; Purple-lib r15 and later). `src/purple_lib.rs::register` runs in
 `forge_onInit` after the hooks: it walks the mappings with `svcQueryMemory` for a readable and
 executable one that starts with an NRO header and defines `purplelib_api_version`
 (`core/src/purple_lib.rs::nro_symbol`, the WishFinder bridge's reader), checks the version, and
-passes one Mod Options record (2 labels rows, no `value_text`) and one help record (category 18,
-3 pages). Without Purple-lib it returns quietly.
+passes one Mod Options record (2 labels rows, no `value_text`), then one help record (category 0,
+3 pages) to `purplelib_add_set_help` for the page's own help. Without Purple-lib it returns quietly.
 
 Purple-lib calls `get` and `set` inside the game's update, so they use only the lock-free mode
 request (`runtime::requested_preferences` / `request_preferences`). `set` raises `EDITED` and
