@@ -3179,5 +3179,12 @@
     "with": "Purple-lib r11, Purple-lib Tester r7",
     "log": "Eden: [please-do-better] r33 loaded; forcing and highlights ready; [purple-lib] Mod Options: 3 sets (Please do Better's page among them).",
     "scope": "Loaded and registered beside the tester; its own page and rewards were not itemized in this run."
+  },
+  "static_r35": {
+    "date": "2026-11-14",
+    "nro_sha256": "2f1664d17c1bc40211a825b37a4a2c7cc279ce849899a4d497449ee865f472f2",
+    "host_tests": 23,
+    "change": "Registers with Purple-lib API version 2 or later (was exactly 2); the version comparison itself has no host test.",
+    "runtime_test": "NOT RUN"
   }
 }

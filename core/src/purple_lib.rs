@@ -1,6 +1,6 @@
 //! Optional settings rows and their page help in Purple-lib (its `API.md`). Purple-lib is looked up
 //! by symbol at start-up; without it nothing here runs. The records mirror Purple-lib's API
-//! version 2 (Purple-lib r15 and later). The row texts and the mapping between rows and
+//! version 2 (Purple-lib r15 and later); a later API version still reads them. The row texts and the mapping between rows and
 //! `Preferences` are here so the host tests can check them.
 use crate::mode::Preferences;
 use core::ffi::{CStr, c_char, c_void};

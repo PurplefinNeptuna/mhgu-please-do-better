@@ -1,7 +1,8 @@
-# Please do Better r34: testing
+# Please do Better r35: testing
 
-r34 is r33 with its help moved from the Village/Hub help to its Mod Options page. Install Purple-lib
-r15 beside it; with an older Purple-lib the page and its help do not appear.
+Its settings are on a Mod Options page, with its help on that page's own help screen. r35 also
+registers with a Purple-lib whose API version is later than 2. Install Purple-lib r15 or later
+beside it; with an older Purple-lib the page and its help do not appear.
 
 ## Steps
 
@@ -22,11 +23,11 @@ r15 beside it; with an older Purple-lib the page and its help do not appear.
 
 | Line | Meaning |
 | --- | --- |
-| `[please-do-better] r34 loaded; forcing and highlights ready` | Started |
+| `[please-do-better] r35 loaded; forcing and highlights ready` | Started |
 | `[please-do-better] settings and help added to Purple-lib` | Registered with Purple-lib |
 | `[purple-lib] Mod Options: N sets, M topics in their own help` | Purple-lib accepted the page; M counts Please do Better's topic |
 | `[please-do-better] Saved: luck on, quantities 3x` | Mod Options closed after a change and the INI was written |
-| `Purple-lib API version N is not the supported 2` | An older Purple-lib: install r15 |
+| `Purple-lib API version N is older than the supported 2` | An older Purple-lib: install r15 |
 | `Purple-lib refused the registration` | Send the log |
 
 Without Purple-lib, no Purple-lib line appears; that is expected.

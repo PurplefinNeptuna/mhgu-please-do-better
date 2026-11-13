@@ -1,5 +1,5 @@
-//! Optional: Please do Better's settings in Purple-lib's Mod Options and a help topic in the
-//! Village/Hub help. Purple-lib is found by its exported symbols at start-up (Forge has no plugin
+//! Optional: Please do Better's settings in Purple-lib's Mod Options and a help topic on that
+//! page's own help. Purple-lib is found by its exported symbols at start-up (Forge has no plugin
 //! symbol lookup and `nn::ro::LookupSymbol` sees only the game's modules); without it this module
 //! does nothing and the Plugin UI panel stays the only way to change the settings.
 //!
@@ -131,7 +131,8 @@ fn find() -> Option<u32> {
 
 pub enum Registered {
     Missing,
-    OtherVersion(u32),
+    /// Purple-lib is older than `API_VERSION`; nothing was registered.
+    OlderVersion(u32),
     Refused { options: bool, help: bool },
     Done,
 }
@@ -157,8 +158,9 @@ pub fn register() -> Registered {
     };
     // SAFETY: Purple-lib's exports of these C signatures (its API.md), at their loaded addresses.
     let version = unsafe { core::mem::transmute::<usize, extern "C" fn() -> u32>(version as usize) }();
-    if version != api::API_VERSION {
-        return Registered::OtherVersion(version);
+    // A later Purple-lib still reads these records, by their `size`; an older one lacks the API.
+    if version < api::API_VERSION {
+        return Registered::OlderVersion(version);
     }
     let add_options = unsafe { core::mem::transmute::<usize, extern "C" fn(*const Options) -> bool>(add_options as usize) };
     let add_set_help =
