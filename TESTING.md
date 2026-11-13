@@ -13,6 +13,8 @@ Everything else is r30, accepted on Eden, Ryubing and MHGURecomp. Install Purple
 2. Open the Village/Hub help: the "Please do Better" topic's three pages should be in that
    language, each fitting the page.
 3. Back in English, check the texts read as before.
+4. In a quest, open Mod Options, change a value, and let a monster hit you so the menu closes by
+   itself: the `Saved:` line should still appear (see Purple-lib's TESTING.md step 4).
 
 ## Log lines
 
