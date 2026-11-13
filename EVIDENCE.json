@@ -3158,5 +3158,13 @@
     "with": "Purple-lib r6",
     "user": "promote them, they work perfectly, tested twice in eden, i tested chinese too, so it works",
     "log": "[please-do-better] r31 loaded; forcing and highlights ready; [please-do-better] settings and help added to Purple-lib. No Saved: line in either remaining Eden log."
+  },
+  "static_r32": {
+    "date": "2026-11-13",
+    "nro_sha256": "7fd8971bb584409638198e8d8ea8902cf45b0f26ec0a36fd25846adfa062fc8e",
+    "rust_host_tests": 23,
+    "suites": "ARM32, compiled runtime/gateway, native copy, observation, display, frame-mapping and quantity suites passed",
+    "verify": "22 hook windows, frame colour setter, NZCVQ/GE audit, exports, payload inventory",
+    "runtime_test": "NOT RUN"
   }
 }

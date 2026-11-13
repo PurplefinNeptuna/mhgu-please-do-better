@@ -1,21 +1,29 @@
 //! Optional settings rows and a help topic in Purple-lib (its `API.md`). Purple-lib is looked up
 //! by symbol at start-up; without it nothing here runs. The records mirror Purple-lib's API
-//! version 1; the row texts and the mapping between rows and `Preferences` are here so the host
+//! version 2 (Purple-lib r8 and later); the row texts and the mapping between rows and `Preferences` are here so the host
 //! tests can check them.
 use crate::mode::Preferences;
 use core::ffi::{CStr, c_char, c_void};
 
-pub const API_VERSION: u32 = 1;
+pub const API_VERSION: u32 = 2;
 pub const EXPORT_VERSION: &[u8] = b"purplelib_api_version";
 pub const EXPORT_ADD_OPTIONS: &[u8] = b"purplelib_add_options";
 pub const EXPORT_ADD_HELP: &[u8] = b"purplelib_add_help";
 
 #[repr(C)]
+/// Purple-lib zeroes it before each call; Please do Better's rows are labels rows, which use the
+/// first four fields.
 pub struct OptionRow {
     pub name: *const c_char,
     pub help: *const c_char,
     pub labels: *const *const c_char,
     pub label_count: u32,
+    pub kind: u32,
+    pub value_count: u32,
+    pub first: i32,
+    pub step: i32,
+    pub suffix: *const c_char,
+    pub flags: u32,
 }
 
 #[repr(C)]
@@ -28,6 +36,8 @@ pub struct Options {
     pub get: Option<extern "C" fn(*mut c_void, u32) -> u32>,
     pub set: Option<extern "C" fn(*mut c_void, u32, u32)>,
     pub closed: Option<extern "C" fn(*mut c_void)>,
+    /// For text rows, which Please do Better does not use.
+    pub value_text: Option<extern "C" fn(*mut c_void, u32, u32, u32) -> *const c_char>,
 }
 
 #[repr(C)]
@@ -42,7 +52,9 @@ pub struct Help {
 }
 
 #[cfg(target_pointer_width = "32")]
-const _: () = assert!(core::mem::size_of::<Options>() == 32 && core::mem::size_of::<Help>() == 28);
+const _: () = assert!(
+    core::mem::size_of::<Options>() == 36 && core::mem::size_of::<Help>() == 28 && core::mem::size_of::<OptionRow>() == 40
+);
 
 pub const TITLE: &CStr = c"Please do Better";
 pub const ROW_FORCE: u32 = 0;

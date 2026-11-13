@@ -8,12 +8,12 @@ on all player reward pages. Palico rewards keep their normal quantities.
 
 - MHGU 1.4.0 for Nintendo Switch.
 - [Fexty's Forge 1.5.1](https://github.com/Fexty12573/forge/releases/tag/v1.5.1).
-- Optional: Purple-lib, to change the settings from the game's own Options menu.
+- Optional: Purple-lib r8 or later, to change the settings from the game's own Options menu.
 
 ## Installation
 
 1. Close the emulator.
-2. Extract `please-do-better-r31.zip`.
+2. Extract `please-do-better-r32-candidate.zip`.
 3. Copy the whole `please-do-better` folder into your emulator's MHGU mod directory:
    - Eden: `~/.local/share/eden/load/0100770008DD8000/`
    - Ryujinx: `mods/contents/0100770008dd8000/` inside its data directory.

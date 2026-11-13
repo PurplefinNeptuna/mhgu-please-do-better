@@ -49,7 +49,7 @@ pub extern "C" fn forge_onInit() {
         purple_lib::Registered::Done => log::info!("[please-do-better] settings and help added to Purple-lib"),
         purple_lib::Registered::Missing => {}
         purple_lib::Registered::OtherVersion(v) => {
-            log::warn!("[please-do-better] Purple-lib API version {v} is not the supported 1; Mod Options not added")
+            log::warn!("[please-do-better] Purple-lib API version {v} is not the supported {}; Mod Options not added", please_do_better_core::purple_lib::API_VERSION)
         }
         purple_lib::Registered::Refused { options, help } => {
             log::warn!("[please-do-better] Purple-lib refused the registration (settings {options}, help {help})")
