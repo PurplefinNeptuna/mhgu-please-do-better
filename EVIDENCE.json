@@ -3205,5 +3205,11 @@
     "host_tests": 22,
     "change": "Registers from the exported purplelib_on_register (Purple-lib API version 3); the memory walk, the symbol reader and its host test are removed. The registration call itself has no host test; the workspace check compares the table's layout with Purple-lib's.",
     "runtime_test": "NOT RUN"
+  },
+  "runtime_r37_2026_11_14": {
+    "emulator": "MHGURecomp (recomplog.txt 2026-11-14 07:34)",
+    "user": "\"ok its work well in mhgurecomp, the mod logic is not changed so it can directly promoted to ready to distribute without eden tests\"",
+    "installed": "please_do_better.nro cfdef74943eb68f6 (Please do Better r37), purple_lib.nro 54d3cbe7d5d7815c (Purple-lib r17), purple_lib_tester.nro f517c26dee853fd1 (Tester r10); each matches its candidate",
+    "log": "\"[please-do-better] r37 loaded; forcing and highlights ready\", \"[please-do-better] settings and help added to Purple-lib\", \"[purple-lib] purplelib_on_register called in 2 mods\", \"[purple-lib] Mod Options: 3 sets, 6 topics in their own help\", \"[please-do-better] Saved: luck on, quantities 5x\", \"[please-do-better] Saved: luck on, quantities 3x\". No [please-do-better] warning or error."
   }
 }

@@ -1,9 +1,9 @@
 # Please do Better: development and research
 
-**Current state.** r37 DEVELOPMENT candidate at `build/please-do-better/candidates/r37/`, not run:
-it registers from `purplelib_on_register` (Purple-lib API version 3) and needs Purple-lib r17 or
-later for its Mod Options page. r36 loads and registers on Eden and MHGURecomp. r31 is the last accepted build; its ZIP is in
-`build/please-do-better/candidates/r31/` ([where it ran](EVIDENCE.json)). Every hook is installed through Forge's hook API; highlights are white
+**Current state.** r37 is READY_TO_DISTRIBUTE, released at `build/please-do-better/releases/r37/`
+and working on MHGURecomp; it was not run on Eden. It registers from `purplelib_on_register`
+(Purple-lib API version 3) and needs Purple-lib r17 or later for its Mod Options page. The
+tested candidate stays in `build/please-do-better/candidates/r37/` ([where it ran](EVIDENCE.json)). Every hook is installed through Forge's hook API; highlights are white
 native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact
 results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release
 credits](DISTRIBUTION_NOTICES.md).
