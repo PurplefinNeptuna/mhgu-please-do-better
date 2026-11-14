@@ -54,7 +54,8 @@ choices stay active for the current session. Load a player save and try again.
 ### In the game's Options menu
 
 With Purple-lib installed, both settings are also under **Options > Mod Options** in the start
-menu, on the "Please do Better" page (press L or R to reach it when other mods add pages too).
+menu: choose "Please do Better" from the list of mods (with Purple-lib r19 or older, press L or R
+until its page shows).
 A setting takes effect as soon as you change it. Closing the window saves your choices to the
 same INI as **Save settings**. On that page, the help button shown in the button guide opens
 Please do Better's own help. The page and its help follow the game's language: English, French,
