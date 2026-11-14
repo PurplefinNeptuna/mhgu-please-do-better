@@ -1,18 +1,16 @@
 //! Optional: Please do Better's settings in Purple-lib's Mod Options and a help topic per setting on that
-//! page's own help. Purple-lib is found by its exported symbols at start-up (Forge has no plugin
-//! symbol lookup and `nn::ro::LookupSymbol` sees only the game's modules); without it this module
-//! does nothing and the Plugin UI panel stays the only way to change the settings.
+//! page's own help. Purple-lib calls the plugin's `purplelib_on_register` with its table of
+//! functions at start-up; without Purple-lib nothing calls it, this module does nothing and the
+//! Plugin UI panel stays the only way to change the settings.
 //!
 //! Purple-lib calls `get` and `set` inside the game's update, so they only use the lock-free
 //! preference request; preference state and the INI stay on the ImGui callbacks, which pick up
 //! `EDITED` and `SAVE` in `forge_onImGuiFreeRender`.
-use crate::native::SvcKernel;
 use crate::runtime;
 use core::ffi::{c_char, c_void};
 use core::sync::atomic::{AtomicBool, Ordering};
-use please_do_better_core::platform::Kernel;
 use core::cell::UnsafeCell;
-use please_do_better_core::purple_lib::{self as api, Help, Memory, Options, ROW_TEXT, OptionRow, LANGUAGES};
+use please_do_better_core::purple_lib::{self as api, Api, Help, Options, ROW_TEXT, OptionRow, LANGUAGES};
 
 /// A value changed through Mod Options: the settings row must drop any pending load.
 pub static EDITED: AtomicBool = AtomicBool::new(false);
@@ -101,51 +99,28 @@ const fn topic(row: u32) -> Help {
 }
 static HELP: Shared<[Help; api::ROWS as usize]> = Shared([topic(api::ROW_FORCE), topic(api::ROW_MULTIPLIER)]);
 
-/// This process's memory, read only after the whole range is found in readable mappings.
-struct Process;
-impl Memory for Process {
-    fn read(&mut self, address: u32, out: &mut [u8]) -> bool {
-        if !crate::native::readable(address, out.len() as u32) {
-            return false;
-        }
-        for (i, byte) in out.iter_mut().enumerate() {
-            // SAFETY: the range was found mapped readable above.
-            *byte = unsafe { core::ptr::read_volatile((address as usize + i) as *const u8) };
-        }
-        true
-    }
-}
-
-/// Purple-lib's mapping: the readable and executable mapping that starts with an NRO header and
-/// defines `purplelib_api_version`.
-fn find() -> Option<u32> {
-    let mut address = 0u64;
-    for _ in 0..65536 {
-        let info = SvcKernel.query(address).ok()?;
-        if info.size == 0 || info.address + info.size >= 0x1_0000_0000 {
-            return None;
-        }
-        if info.permissions & 5 == 5 && api::nro_symbol(&mut Process, info.address as u32, api::EXPORT_VERSION).is_some() {
-            return Some(info.address as u32);
-        }
-        address = info.address + info.size;
-    }
-    None
-}
-
 pub enum Registered {
-    Missing,
     /// Purple-lib is older than `API_VERSION`; nothing was registered.
     OlderVersion(u32),
     Refused { options: bool, help: bool },
     Done,
+    /// A second call: the first one's registration stands.
+    Repeated,
 }
 
-/// Register with Purple-lib, from `forge_onInit` (Purple-lib accepts registrations until its
-/// first update, whatever order the plugins load in).
-pub fn register() -> Registered {
-    let Some(base) = find() else { return Registered::Missing };
-    // SAFETY: nothing reads the table before the registration below.
+/// Register through Purple-lib's table, from `purplelib_on_register`: the one time Purple-lib
+/// accepts records, during its first update.
+pub fn register(purple: &Api) -> Registered {
+    static CALLED: AtomicBool = AtomicBool::new(false);
+    // A later Purple-lib still reads these records, by their `size`; an older one lacks the API.
+    if purple.version < api::API_VERSION {
+        return Registered::OlderVersion(purple.version);
+    }
+    // Purple-lib keeps the label pointers after the first call, so the table is filled only once.
+    if CALLED.swap(true, Ordering::AcqRel) {
+        return Registered::Repeated;
+    }
+    // SAFETY: nothing reads the table before the registration below, and this runs once.
     let table = unsafe { &mut *LABELS.0.get() };
     for (language, rows) in table.iter_mut().enumerate() {
         for (row, slots) in rows.iter_mut().enumerate() {
@@ -154,23 +129,8 @@ pub fn register() -> Registered {
             }
         }
     }
-    let lookup = |name| api::nro_symbol(&mut Process, base, name);
-    let (Some(version), Some(add_options), Some(add_set_help)) =
-        (lookup(api::EXPORT_VERSION), lookup(api::EXPORT_ADD_OPTIONS), lookup(api::EXPORT_ADD_SET_HELP))
-    else {
-        return Registered::Missing;
-    };
-    // SAFETY: Purple-lib's exports of these C signatures (its API.md), at their loaded addresses.
-    let version = unsafe { core::mem::transmute::<usize, extern "C" fn() -> u32>(version as usize) }();
-    // A later Purple-lib still reads these records, by their `size`; an older one lacks the API.
-    if version < api::API_VERSION {
-        return Registered::OlderVersion(version);
-    }
-    let add_options = unsafe { core::mem::transmute::<usize, extern "C" fn(*const Options) -> bool>(add_options as usize) };
-    let add_set_help =
-        unsafe { core::mem::transmute::<usize, extern "C" fn(*const Options, *const Help) -> bool>(add_set_help as usize) };
     // The page's help names the page, so it goes in after the page; topics show in this order.
-    let options = add_options(&OPTIONS.0);
-    let help = options && HELP.0.iter().all(|topic| add_set_help(&OPTIONS.0, topic));
+    let options = (purple.add_options)(&OPTIONS.0);
+    let help = options && HELP.0.iter().all(|topic| (purple.add_set_help)(&OPTIONS.0, topic));
     if options && help { Registered::Done } else { Registered::Refused { options, help } }
 }

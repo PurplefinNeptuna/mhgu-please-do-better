@@ -6,7 +6,7 @@ from paths import MOD, BUILD_ROOT, WORK_ROOT, input_path
 RECIPE=MOD
 WORK=WORK_ROOT
 OUT=BUILD_ROOT
-CALLBACKS={'init','fini','forge_onLoad','forge_onInit','forge_onUpdate','forge_onImGuiInit','forge_onImGuiRender','forge_onImGuiFreeRender'}
+CALLBACKS={'init','fini','forge_onLoad','forge_onInit','forge_onUpdate','forge_onImGuiInit','forge_onImGuiRender','forge_onImGuiFreeRender','purplelib_on_register'}
 
 def sha(blob): return hashlib.sha256(blob).hexdigest()
 def require(ok,message):

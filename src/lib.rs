@@ -45,9 +45,21 @@ pub unsafe extern "C" fn forge_onLoad(params: *mut forge::PluginInitParams) {
 #[unsafe(no_mangle)]
 pub extern "C" fn forge_onInit() {
     runtime::start();
-    match purple_lib::register() {
+}
+
+/// Purple-lib calls this once, from its first `forge_onUpdate`, with its table of functions: the
+/// one time it accepts records. It finds the function by name in this plugin's symbol table
+/// (`link/exported.txt`). Without Purple-lib nothing calls it.
+///
+/// # Safety
+/// `api` is null or Purple-lib's table, which stays valid for the whole run.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn purplelib_on_register(api: *const please_do_better_core::purple_lib::Api) {
+    // SAFETY: the caller's contract.
+    let Some(api) = (unsafe { api.as_ref() }) else { return };
+    match purple_lib::register(api) {
         purple_lib::Registered::Done => log::info!("[please-do-better] settings and help added to Purple-lib"),
-        purple_lib::Registered::Missing => {}
+        purple_lib::Registered::Repeated => {}
         purple_lib::Registered::OlderVersion(v) => {
             log::warn!("[please-do-better] Purple-lib API version {v} is older than the supported {}; Mod Options not added", please_do_better_core::purple_lib::API_VERSION)
         }

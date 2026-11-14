@@ -1,14 +1,12 @@
-//! Optional settings rows and their page help in Purple-lib (its `API.md`). Purple-lib is looked up
-//! by symbol at start-up; without it nothing here runs. The records mirror Purple-lib's API
-//! version 2 (Purple-lib r15 and later); a later API version still reads them. The row texts and the mapping between rows and
+//! Optional settings rows and their page help in Purple-lib (its `API.md`). Purple-lib calls the
+//! plugin's `purplelib_on_register` with its table of functions; without Purple-lib nothing here
+//! runs. The records and the table mirror Purple-lib's API version 3 (Purple-lib r17 and later); a
+//! later API version still reads them. The row texts and the mapping between rows and
 //! `Preferences` are here so the host tests can check them.
 use crate::mode::Preferences;
 use core::ffi::{CStr, c_char, c_void};
 
-pub const API_VERSION: u32 = 2;
-pub const EXPORT_VERSION: &[u8] = b"purplelib_api_version";
-pub const EXPORT_ADD_OPTIONS: &[u8] = b"purplelib_add_options";
-pub const EXPORT_ADD_SET_HELP: &[u8] = b"purplelib_add_set_help";
+pub const API_VERSION: u32 = 3;
 
 #[repr(C)]
 /// Purple-lib zeroes it before each call; Please do Better's rows are labels rows, which use the
@@ -52,9 +50,24 @@ pub struct Help {
     pub open: Option<extern "C" fn(*mut c_void)>,
 }
 
+/// Purple-lib's functions, as it passes them to `purplelib_on_register`; valid for the whole run.
+#[repr(C)]
+pub struct Api {
+    pub version: u32,
+    pub add_options: extern "C" fn(*const Options) -> bool,
+    pub add_help: extern "C" fn(*const Help) -> bool,
+    pub hold_input: extern "C" fn(),
+    pub options_shown: extern "C" fn(*const Options) -> bool,
+    pub options_row: extern "C" fn(*const Options) -> i32,
+    pub add_set_help: extern "C" fn(*const Options, *const Help) -> bool,
+}
+
 #[cfg(target_pointer_width = "32")]
 const _: () = assert!(
-    core::mem::size_of::<Options>() == 40 && core::mem::size_of::<Help>() == 28 && core::mem::size_of::<OptionRow>() == 40
+    core::mem::size_of::<Options>() == 40
+        && core::mem::size_of::<Help>() == 28
+        && core::mem::size_of::<OptionRow>() == 40
+        && core::mem::size_of::<Api>() == 28
 );
 
 pub const TITLE: &CStr = c"Please do Better";
@@ -223,66 +236,4 @@ pub static HELP_TEXT: [[[&CStr; HELP_PAGES]; LANGUAGES]; ROWS as usize] = [
 /// Display width as the help screens count it, roughly: a CJK character is two columns.
 pub fn columns(text: &str) -> usize {
     text.chars().map(|c| if (c as u32) >= 0x2e80 { 2 } else { 1 }).sum()
-}
-
-/// Reads `out.len()` bytes at `address`, or returns false without touching unmapped memory.
-pub trait Memory {
-    fn read(&mut self, address: u32, out: &mut [u8]) -> bool;
-    fn words<const N: usize>(&mut self, address: u32) -> Option<[u32; N]> {
-        let mut raw = [0u8; 64];
-        let bytes = &mut raw[..N * 4];
-        self.read(address, bytes).then(|| core::array::from_fn(|i| u32::from_le_bytes(bytes[i * 4..i * 4 + 4].try_into().unwrap())))
-    }
-}
-
-/// A defined symbol of the NRO mapped at `base`. Forge maps an NRO's segments at their file
-/// offsets, so the dynamic table (found through the header's MOD0 offset) and every symbol value
-/// are offsets from `base`. Imports have value 0 and are never returned. The same reader as the
-/// WishFinder bridge for My Weapon Tree.
-pub fn nro_symbol(m: &mut impl Memory, base: u32, name: &[u8]) -> Option<u32> {
-    if name.is_empty() || name.len() > 40 || m.words::<1>(base + 0x10)?[0] != u32::from_le_bytes(*b"NRO0") {
-        return None;
-    }
-    let mod0 = m.words::<1>(base + 4)?[0];
-    let [magic, dynamic] = m.words::<2>(base + mod0)?;
-    if magic != u32::from_le_bytes(*b"MOD0") {
-        return None;
-    }
-    let dynamic = mod0.wrapping_add((dynamic as i32) as u32);
-    let (mut hash, mut strtab, mut symtab, mut strsz) = (None, None, None, None);
-    for i in 0..32u32 {
-        let [tag, value] = m.words::<2>(base + dynamic + i * 8)?;
-        if tag == 0 {
-            break;
-        }
-        match tag {
-            4 => hash = Some(value),
-            5 => strtab = Some(value),
-            6 => symtab = Some(value),
-            10 => strsz = Some(value),
-            11 if value != 16 => return None,
-            _ => {}
-        }
-    }
-    let (hash, strtab, symtab, strsz) = (hash?, strtab?, symtab?, strsz?);
-    let [_, count] = m.words::<2>(base + hash)?;
-    if !(2..=4096).contains(&count) || strsz > 0x10_0000 {
-        return None;
-    }
-    let mut needle = [0u8; 41];
-    needle[..name.len()].copy_from_slice(name);
-    for i in 1..count {
-        let [st_name, st_value, _, _] = m.words::<4>(base + symtab + i * 16)?;
-        if st_value == 0 || st_name >= strsz {
-            continue;
-        }
-        let mut found = [0u8; 41];
-        if !m.read(base + strtab + st_name, &mut found[..name.len() + 1]) {
-            return None;
-        }
-        if found[..=name.len()] == needle[..=name.len()] {
-            return Some(base + st_value);
-        }
-    }
-    None
 }

@@ -8,6 +8,7 @@
         forge_onImGuiInit;
         forge_onImGuiRender;
         forge_onImGuiFreeRender;
+        purplelib_on_register;
 
     local: *;
 };

@@ -79,11 +79,6 @@ def build():
         'forge_rs_revision':'d1865b68e9b194eb3eacc8bd71bbf601a5fac63e','source_sha256':source_hashes(),'runtime_test':'NOT RUN'})
 def test(host=False):
     env,rust=environment()
-    # The Purple-lib symbol lookup is tested on this build's own NRO and its nm listing (real bytes).
-    staged=BUILD_ROOT/('package/romfs/nativeNX/plugins/'+NRO)
-    if staged.exists() and (WORK_ROOT/'native/symbols.txt').exists():
-        env.update(PDB_NRO=str(staged),PDB_SYMBOLS=str(WORK_ROOT/'native/symbols.txt'))
-    elif not host: raise ValueError('Build first: the symbol lookup test reads the staged NRO')
     run([rust/'cargo','test','--locked','--config',MOD/'.cargo/vendor.toml','--manifest-path',MOD/'core/Cargo.toml',
          '--target','x86_64-unknown-linux-gnu'],cwd=MOD.parent,env=env)
     if host:

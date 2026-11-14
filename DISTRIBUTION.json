@@ -1,5 +1,5 @@
 {
-  "archive": "please-do-better-r36-candidate.zip",
+  "archive": "please-do-better-r37-candidate.zip",
   "dependencies": [
     {
       "name": "Forge",
@@ -14,11 +14,11 @@
     "manual": [
       "mods/please-do-better/EVIDENCE.json"
     ],
-    "static_summary": "r36: pinned toolchain build; 23 Rust host tests (the Purple-lib text in all seven languages, the symbol reader on this build's own NRO against nm) plus the mod's ARM and native suites; verify: 22 hook windows, frame colour setter, NZCVQ/GE audit, exports, payload inventory.",
-    "manual_summary": "r36 not run; r35 works on MHGURecomp with Purple-lib r16 (no Saved: line in that log); r31 accepted on Eden with Purple-lib r6 (English and Chinese)."
+    "static_summary": "r37: pinned toolchain build; 22 Rust host tests (the Purple-lib text in all seven languages) plus the mod's ARM and native suites; verify: 22 hook windows, frame colour setter, NZCVQ/GE audit, exports including purplelib_on_register, payload inventory. The workspace check compares its copy of Purple-lib's records and table with Purple-lib's.",
+    "manual_summary": "r37 not run; r36 loads and registers on Eden and MHGURecomp with Purple-lib r17; r35 works on MHGURecomp with Purple-lib r16 (no Saved: line in that log); r31 accepted on Eden with Purple-lib r6 (English and Chinese)."
   },
   "limitations": [
-    "r36 has not run in game; r35 ran on MHGURecomp only. It needs Purple-lib r15 or later for its Mod Options page and help",
+    "r37 has not run in game; r36 loaded and registered on Eden and MHGURecomp. It needs Purple-lib r17 or later for its Mod Options page and help",
     "A highlighted frame stays white after its item is taken, by the user's choice",
     "r26 ran on Eden master-07677aa500-master with a player report for luck highlights; loading beside a foreign hook on the same entry has not been exercised and rests on Forge's hook.c and host fixtures",
     "Gameplay evidence for r25 is one unitemized user report on Eden (2026-11-02). Ryujinx and native Switch coverage remain unconfirmed.",
@@ -47,11 +47,11 @@
     "url": null
   },
   "readme": "mods/please-do-better/README.md",
-  "reason": "r36: the Mod Options page's own help has two topics, one per setting, each saying what it does and why, in all seven languages, instead of one topic named after the mod. Registers with Purple-lib API version 2 or later; needs Purple-lib r15 or later.",
+  "reason": "r37: registers from purplelib_on_register, which Purple-lib r17 and later call with their table of functions (API version 3), instead of walking memory for Purple-lib. The page and its help are as in r36: two topics, one per setting, in all seven languages.",
   "schema_version": 1,
   "status": "DEVELOPMENT",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx/MHGURecomp.",
-  "version": "r36",
+  "version": "r37",
   "gamebanana": {
     "ai_code": {
       "used": true,
@@ -101,7 +101,7 @@
       }
     ]
   },
-  "runtime_test": "r36 NOT RUN. r35 works on MHGURecomp with Purple-lib r16, its help on its Mod Options page (user report and log); not run on Eden or Ryubing. r31 accepted on Eden with Purple-lib r6; see EVIDENCE.json.",
+  "runtime_test": "r37 NOT RUN. r36 loads and registers on Eden and MHGURecomp with Purple-lib r17 (logs). r35 works on MHGURecomp with Purple-lib r16. r31 accepted on Eden with Purple-lib r6; see EVIDENCE.json.",
   "support": {
     "DEVELOPMENT.md": "mods/please-do-better/DEVELOPMENT.md",
     "EVIDENCE.json": "mods/please-do-better/EVIDENCE.json",
@@ -109,14 +109,14 @@
   },
   "payloads": {
     "romfs/nativeNX/plugins/please_do_better.nro": {
-      "source": "build/please-do-better/candidates/r36/package/romfs/nativeNX/plugins/please_do_better.nro",
-      "sha256": "a8865074e6ee26a40609beed3867005408287807bc5734b39885e5238d0bd436"
+      "source": "build/please-do-better/candidates/r37/package/romfs/nativeNX/plugins/please_do_better.nro",
+      "sha256": "cfdef74943eb68f665c6c497510fc41a59f48ea6eaab28cb9b188feea0fd78ad"
     },
     "manifest.txt": {
-      "source": "build/please-do-better/candidates/r36/package/manifest.txt",
-      "sha256": "2667fba965bca10a8d06ef0ba4b90d0c9eec44c30f59303114927b7a556bf00f"
+      "source": "build/please-do-better/candidates/r37/package/manifest.txt",
+      "sha256": "d8dc137eec131b4752a91c2418e2f880d4749d02d70bb68f2f6b3d43ad2c7db3"
     }
   },
-  "candidate": "build/please-do-better/candidates/r36/delivery",
+  "candidate": "build/please-do-better/candidates/r37/delivery",
   "candidate_builder": "scripts/build.py"
 }

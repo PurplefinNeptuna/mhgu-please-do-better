@@ -628,38 +628,3 @@ fn purple_lib_text_fits_in_every_language() {
         }
     }
 }
-
-struct Bytes(Vec<u8>);
-impl purple::Memory for Bytes {
-    fn read(&mut self, address: u32, out: &mut [u8]) -> bool {
-        let start = address as usize;
-        match self.0.get(start..start + out.len()) {
-            Some(src) => {
-                out.copy_from_slice(src);
-                true
-            }
-            None => false,
-        }
-    }
-}
-
-/// The lookup that finds Purple-lib, run on this build's own NRO loaded at base 0 (Forge maps an
-/// NRO's segments at their file offsets): it must find the address nm reports for the ELF.
-#[test]
-fn the_symbol_lookup_finds_exports_in_a_real_nro() {
-    let (Ok(nro), Ok(symbols)) = (std::env::var("PDB_NRO"), std::env::var("PDB_SYMBOLS")) else {
-        eprintln!("PDB_NRO not set: ./build.sh test --host before a build; the full test sets it");
-        return;
-    };
-    let mut memory = Bytes(std::fs::read(nro).unwrap());
-    let listing = std::fs::read_to_string(symbols).unwrap();
-    for name in ["forge_onInit", "forge_onUpdate", "forge_onImGuiFreeRender"] {
-        let nm = listing
-            .lines()
-            .find_map(|l| l.strip_suffix(&format!(" T {name}")).map(|a| u32::from_str_radix(a, 16).unwrap()))
-            .unwrap_or_else(|| panic!("{name} not in nm"));
-        assert_eq!(purple::nro_symbol(&mut memory, 0, name.as_bytes()), Some(nm), "{name}");
-    }
-    assert_eq!(purple::nro_symbol(&mut memory, 0, purple::EXPORT_VERSION), None, "Please do Better is not Purple-lib");
-    assert_eq!(purple::nro_symbol(&mut memory, 0x1000, b"forge_onInit"), None, "no NRO header at the wrong base");
-}

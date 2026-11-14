@@ -1,8 +1,8 @@
-# Please do Better r36: testing
+# Please do Better r37: testing
 
 Its settings are on a Mod Options page, with a help topic for each setting on that page's own
-help screen. Install Purple-lib r15 or later
-beside it; with an older Purple-lib the page and its help do not appear.
+help screen. Install Purple-lib r17 or later
+beside it; with an older Purple-lib the page and its help do not appear, and no line says so.
 
 ## Steps
 
@@ -23,11 +23,12 @@ beside it; with an older Purple-lib the page and its help do not appear.
 
 | Line | Meaning |
 | --- | --- |
-| `[please-do-better] r36 loaded; forcing and highlights ready` | Started |
-| `[please-do-better] settings and help added to Purple-lib` | Registered with Purple-lib |
+| `[please-do-better] r37 loaded; forcing and highlights ready` | Started |
+| `[please-do-better] settings and help added to Purple-lib` | Purple-lib called the mod and took its page and help |
+| `[purple-lib] purplelib_on_register called in N mods` | N counts Please do Better (2 with Purple-lib Tester installed) |
 | `[purple-lib] Mod Options: N sets, M topics in their own help` | Purple-lib accepted the page; M counts Please do Better's two topics |
 | `[please-do-better] Saved: luck on, quantities 3x` | Mod Options closed after a change and the INI was written |
-| `Purple-lib API version N is older than the supported 2` | An older Purple-lib: install r15 |
+| `Purple-lib API version N is older than the supported 3` | An older Purple-lib called the mod: install r17 |
 | `Purple-lib refused the registration` | Send the log |
 
 Without Purple-lib, no Purple-lib line appears; that is expected.

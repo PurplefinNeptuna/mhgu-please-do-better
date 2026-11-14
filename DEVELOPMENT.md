@@ -1,8 +1,8 @@
 # Please do Better: development and research
 
-**Current state.** r36 DEVELOPMENT candidate at `build/please-do-better/candidates/r36/`, not run:
-its Mod Options page's own help has one topic per setting; it registers with Purple-lib API version
-2 or later and needs Purple-lib r15 or later. r35 works on MHGURecomp. r31 is the last accepted build; its ZIP is in
+**Current state.** r37 DEVELOPMENT candidate at `build/please-do-better/candidates/r37/`, not run:
+it registers from `purplelib_on_register` (Purple-lib API version 3) and needs Purple-lib r17 or
+later for its Mod Options page. r36 loads and registers on Eden and MHGURecomp. r31 is the last accepted build; its ZIP is in
 `build/please-do-better/candidates/r31/` ([where it ran](EVIDENCE.json)). Every hook is installed through Forge's hook API; highlights are white
 native frames. [Install and settings](README.md); [status and hashes](DISTRIBUTION.json); [exact
 results](EVIDENCE.json); [tester steps](TESTING.md); [provenance](THIRD_PARTY.md); [release
@@ -29,13 +29,14 @@ Export only `EXPORT.json` entries. `source-export.json` records the parent commi
 
 ## Purple-lib
 
-Optional, Purple-lib API version 2 (its `API.md`; Purple-lib r15 and later). `src/purple_lib.rs::register` runs in
-`forge_onInit` after the hooks: it walks the mappings with `svcQueryMemory` for a readable and
-executable one that starts with an NRO header and defines `purplelib_api_version`
-(`core/src/purple_lib.rs::nro_symbol`, the WishFinder bridge's reader), checks the version is 2 or later, and
+Optional, Purple-lib API version 3 (its `API.md`; Purple-lib r17 and later). The plugin exports
+`purplelib_on_register` (`src/lib.rs`, `link/exported.txt`), which Purple-lib calls once from its
+first update with its table of functions (`core/src/purple_lib.rs::Api`). `src/purple_lib.rs::register`
+checks the table's version is 3 or later, ignores a second call, and
 passes one Mod Options record (2 labels rows, no `value_text`), then two help records (category 0,
 2 pages each: what the setting does, then why) to `purplelib_add_set_help` for the page's own help,
-one per row in row order, titled with the row's name; a topic's `context` is its row index. Without Purple-lib it returns quietly.
+one per row in row order, titled with the row's name; a topic's `context` is its row index. Without Purple-lib, or with one
+older than r17, nothing calls it and nothing is logged. `scripts/please_do_better.py` `CALLBACKS` lists the export for the audit.
 
 Purple-lib calls `get` and `set` inside the game's update, so they use only the lock-free mode
 request (`runtime::requested_preferences` / `request_preferences`). `set` raises `EDITED` and
@@ -47,8 +48,7 @@ languages, picked from the language byte Purple-lib passes (unknown is English),
 words where it has them: skillData 502 for Miraculous Luck, StartMenuMsg 175/176 for Off/On,
 ResultMsg 8 for rewards and StartMenuMsg 9 for Palicoes. The label pointer arrays are filled in
 `register` before Purple-lib can call `row`; a host test keeps every help line within 40 columns
-(a CJK character counts two) and five lines. The host test `the_symbol_lookup_finds_exports_in_a_real_nro`
-runs the reader on this build's own NRO against its nm listing.
+(a CJK character counts two) and five lines.
 
 ## Please do Better native research
 

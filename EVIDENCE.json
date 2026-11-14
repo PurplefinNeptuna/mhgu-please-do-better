@@ -3192,5 +3192,18 @@
     "user": "newer purple-lib, the tester, and please do better works wonderfully, please save the log",
     "installed": "purple_lib.nro 48ad904a5a3f456d (Purple-lib r16), please_do_better.nro 2f1664d17c1bc402 (Please do Better r35), purple_lib_tester.nro 43036a1a754daffd (Tester r9); each matches its candidate",
     "log": "\"[please-do-better] r35 loaded; forcing and highlights ready\", \"settings and help added to Purple-lib\"; Purple-lib counts 5 page help topics (the tester's 4 and this one). No Saved: line in this log."
+  },
+  "runtime_r36_2026_11_14": {
+    "emulators": "Eden (eden_log.txt 2026-11-14 07:20) and MHGURecomp (recomplog.txt 2026-11-14 07:17)",
+    "installed": "On both: purple_lib.nro 54d3cbe7d5d7815c (Purple-lib r17), purple_lib_tester.nro f517c26dee853fd1 (Tester r10), please_do_better.nro a8865074e6ee26a4 (Please do Better r36); each matches its candidate",
+    "log": "On both: \"[please-do-better] r36 loaded; forcing and highlights ready\", \"[please-do-better] settings and help added to Purple-lib\"; Purple-lib counts 3 sets and 6 page help topics (the tester's 4 and this mod's 2). Eden only, at 165 s: \"[WARN] [please-do-better] Reward mapping incomplete; uncertain highlights skipped; restart if persistent\". No Saved: line in either log.",
+    "scope": "The user's report (\"ok, this works well on eden and mhgurecomp.\") was about Purple-lib r17 and the tester; for r36 the logs show loading and registration only."
+  },
+  "static_r37": {
+    "date": "2026-11-14",
+    "nro_sha256": "cfdef74943eb68f665c6c497510fc41a59f48ea6eaab28cb9b188feea0fd78ad",
+    "host_tests": 22,
+    "change": "Registers from the exported purplelib_on_register (Purple-lib API version 3); the memory walk, the symbol reader and its host test are removed. The registration call itself has no host test; the workspace check compares the table's layout with Purple-lib's.",
+    "runtime_test": "NOT RUN"
   }
 }
