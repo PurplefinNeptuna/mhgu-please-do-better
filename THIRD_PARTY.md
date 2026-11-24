@@ -1,5 +1,8 @@
 # Notices
 
+Project-owned code in this folder is copyright PurplefinNeptuna (2026), under the GNU General
+Public License version 3 or (at your option) any later version; see `LICENSE`.
+
 The two-site `[Great Luck]` cheat is credited to 花花花花花椰菜 in the offline
 MHGU-Modding wiki snapshot. Source:
 [Cheat Codes](https://github.com/RTHKKona/MHGU-Modding/wiki/Cheat-Codes).
