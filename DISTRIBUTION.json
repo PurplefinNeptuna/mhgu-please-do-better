@@ -42,14 +42,14 @@
   ],
   "package_name": "please-do-better",
   "publication": {
-    "date": null,
-    "published": false,
-    "url": null
+    "published": true,
+    "url": "https://github.com/PurplefinNeptuna/mhgu-please-do-better/releases/tag/r37",
+    "date": "2026-11-24"
   },
   "readme": "mods/please-do-better/README.md",
   "reason": "r37: registers from purplelib_on_register, which Purple-lib r17 and later call with their table of functions (API version 3), instead of walking memory for Purple-lib. The page and its help are as in r36: two topics, one per setting, in all seven languages.",
   "schema_version": 1,
-  "status": "READY_TO_DISTRIBUTE",
+  "status": "PUBLISHED",
   "target": "MHGU Nintendo Switch 1.4.0; upstream Forge 1.5.1; Eden/Ryujinx/MHGURecomp.",
   "version": "r37",
   "gamebanana": {

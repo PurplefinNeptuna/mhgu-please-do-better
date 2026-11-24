@@ -1,6 +1,6 @@
 # Please do Better: development and research
 
-**Current state.** r37 is READY_TO_DISTRIBUTE, released at `build/please-do-better/releases/r37/`
+**Current state.** r37 is PUBLISHED as the GitHub release `r37`, released at `build/please-do-better/releases/r37/`
 and working on MHGURecomp; it was not run on Eden. It registers from `purplelib_on_register`
 (Purple-lib API version 3) and needs Purple-lib r17 or later for its Mod Options page. The
 tested candidate stays in `build/please-do-better/candidates/r37/` ([where it ran](EVIDENCE.json)). Every hook is installed through Forge's hook API; highlights are white
