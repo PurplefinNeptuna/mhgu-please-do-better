@@ -28,7 +28,7 @@ Export only `EXPORT.json` entries. `source-export.json` records the parent commi
 
 ## How it works
 
-Design, hooks and native detail live in the skills: [GE and instruction-state audits](../../.agents/skills/mhgu-forge-modding/references/worked/ge-audits.md), [Mod Options clients: Damage Numbers and Please do Better](../../.agents/skills/mhgu-forge-modding/references/worked/mod-options-clients.md), [Please do Better: capture and attribution](../../.agents/skills/mhgu-forge-modding/references/worked/reward-capture.md), [Please do Better: hooks and multiplier](../../.agents/skills/mhgu-forge-modding/references/worked/reward-multiplier.md).
+Design, hooks and native detail are in `docs/worked/`: [Please do Better: cache and instruction-state audit](docs/worked/cache-audit.md), [Please do Better: Mod Options](docs/worked/mod-options.md), [Please do Better: capture and attribution](docs/worked/reward-capture.md), [Please do Better: hooks and multiplier](docs/worked/reward-multiplier.md).
 
 ## Please do Better native research
 
