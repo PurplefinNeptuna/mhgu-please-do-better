@@ -95,7 +95,6 @@ Startup safety records and one record per failure class only. No capture or per-
 - **Read the old allocation after native return, or compare earlier copy mappings with later destination bytes.**
 - **Select slots by item ID alone.** Bindings use exact UI, batch, list, group, index, frame-node and icon-node identity.
 - **Log per frame in release.** Run traces and address or matrix dumps were removed.
-- **Blame this plugin for Forge menu corruption seen with an older loader.** That was the legacy loader's multi-list buffer-offset defect, and stock Forge 1.5.1 is the baseline.
 
 ## Open items
 
