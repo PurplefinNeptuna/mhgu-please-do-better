@@ -95,6 +95,6 @@ It works on MHGURecomp too.
 
 ## License
 
-Copyright (c) 2026 PurplefinNeptuna. Please do Better is free software under the GNU
-General Public License, version 3 or (at your option) any later version. The source code
-and the license text are at https://github.com/PurplefinNeptuna/mhgu-please-do-better.
+Copyright (c) 2026 PurplefinNeptuna. Please do Better is licensed under the GNU GPL, version 3 or
+later. The source code and the license text are at
+https://github.com/PurplefinNeptuna/mhgu-please-do-better.
