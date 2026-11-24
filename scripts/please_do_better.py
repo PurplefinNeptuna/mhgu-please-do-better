@@ -39,8 +39,6 @@ def validate_inputs():
     start=int(setter[1],16)
     require(image[start:start+32]==struct.pack('<8I',*[int(x,16) for x in setter[2].split(',')]),'Vertex colour setter window differs')
     require(struct.unpack_from('<3I',image,0x4d1804)==(0xe1a00004,0xe3001102,0xebf6797d),'Second site 0x102 continuation differs')
-    cheat=MOD/'vendor/wiki-cheats'/'Always Lucky/cheats/FB08F1D20FD1204F.txt'
-    require(sha(cheat.read_bytes())=='378d0df1a25845bdf3d315dd38b6d6de1dedaf4c34d25475de4e8a6c2d9a4351','Two-site cheat input changed')
     report={'main':str(input_path('main')),'sha256':binary.MAIN_SHA,'build_id':binary.BUILD_ID[:32].upper(),'sites':sites,
             'hooks':[{'site':s,'window':w,'paired':p,'original_words':[hex(x) for x in words]} for s,w,words,p in rows],
             'frame_colour_setter':{'address':hex(start),'checked':True},

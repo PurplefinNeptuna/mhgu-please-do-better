@@ -77,8 +77,6 @@
     "src/settings.rs",
     "src/svc.S",
     "tests/README.md",
-    "vendor/libnx/LICENSE-MIT",
-    "vendor/wiki-cheats/Always Lucky/cheats/FB08F1D20FD1204F.txt",
-    "vendor/wiki-cheats/NOTICE.md"
+    "vendor/libnx/LICENSE-MIT"
   ]
 }
