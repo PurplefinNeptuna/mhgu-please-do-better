@@ -1,5 +1,9 @@
 # Release notices
 
+Copyright (c) 2026 PurplefinNeptuna. Please do Better is licensed under the GNU GPL,
+version 3 or later. The license text follows. Its Free Software Foundation
+copyright line covers the license text itself, not this mod.
+
 ## Forge
 
 [Fexty's MHGU Forge fork](https://github.com/Fexty12573/forge), based on
